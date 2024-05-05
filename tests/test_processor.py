@@ -1,3 +1,5 @@
+import datetime
+import decimal
 import pathlib
 import typing
 
@@ -5,9 +7,12 @@ import pytest
 from beanhub_extract.data_types import Transaction
 from jinja2.sandbox import SandboxedEnvironment
 
+from beanhub_import.data_types import ActionAddTxn
+from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportRule
 from beanhub_import.data_types import InputConfigDetails
+from beanhub_import.data_types import PostingTemplate
 from beanhub_import.data_types import SimpleFileMatch
 from beanhub_import.data_types import SimpleTxnMatchRule
 from beanhub_import.data_types import StrContainsMatch
@@ -15,6 +20,7 @@ from beanhub_import.data_types import StrExactMatch
 from beanhub_import.data_types import StrPrefixMatch
 from beanhub_import.data_types import StrRegexMatch
 from beanhub_import.data_types import StrSuffixMatch
+from beanhub_import.data_types import TransactionTemplate
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
@@ -160,17 +166,55 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
     "txn, input_config, import_rules, expected",
     [
         (
-            Transaction(extractor="MOCK_EXTRACTOR"),
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
             InputConfigDetails(),
             [
                 ImportRule(
                     match=SimpleTxnMatchRule(
                         extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
                     ),
-                    actions=[],
+                    actions=[
+                        ActionAddTxn(
+                            file="{{ extractor }}.bean",
+                            txn=TransactionTemplate(
+                                postings=[
+                                    PostingTemplate(
+                                        account="Assets:Bank:{{ source_account }}",
+                                        amount="{{ amount }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ]
+                            ),
+                        )
+                    ],
                 )
             ],
-            [],
+            [
+                GeneratedTransaction(
+                    id="mock.csv:123",
+                    date="2024-05-05",
+                    file="MOCK_EXTRACTOR.bean",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    payee=None,
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:Foobar",
+                            amount="123.45",
+                            currency="BTC",
+                        ),
+                    ],
+                )
+            ],
         ),
     ],
 )

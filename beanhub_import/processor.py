@@ -11,11 +11,12 @@ from beanhub_extract.utils import strip_txn_base_path
 from jinja2.sandbox import SandboxedEnvironment
 
 from .data_types import ActionType
+from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
 from .data_types import ImportRule
 from .data_types import InputConfigDetails
-from .data_types import Posting
+from .data_types import PostingTemplate
 from .data_types import SimpleFileMatch
 from .data_types import SimpleTxnMatchRule
 from .data_types import StrContainsMatch
@@ -115,7 +116,7 @@ def process_transaction(
                 for key in ("id", "date", "flag", "narration", "payee")
             }
 
-            posting_templates: list[Posting] = []
+            posting_templates: list[PostingTemplate] = []
             if input_config.prepend_postings is not None:
                 posting_templates.extend(input_config.prepend_postings)
             if action.txn.postings is not None:
@@ -128,7 +129,7 @@ def process_transaction(
             generated_postings = []
             for posting_template in posting_templates:
                 generated_postings.append(
-                    Posting(
+                    GeneratedPosting(
                         account=render_str(posting_template.account),
                         amount=render_str(posting_template.amount),
                         currency=render_str(posting_template.currency),

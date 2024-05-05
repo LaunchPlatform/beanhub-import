@@ -1,6 +1,7 @@
 import enum
 import typing
 
+import pydantic
 from pydantic import BaseModel
 
 
@@ -58,7 +59,7 @@ class ActionType(str, enum.Enum):
     add_txn = "add_txn"
 
 
-class Posting(ImportBaseModel):
+class PostingTemplate(ImportBaseModel):
     # account of the posting
     account: str | None = None
     # amount of the posting
@@ -68,14 +69,24 @@ class Posting(ImportBaseModel):
     # TODO: support cost / price and etc
 
 
-class Transaction(ImportBaseModel):
+class TransactionTemplate(ImportBaseModel):
     # the import-id for de-duplication
     id: str | None = None
     date: str | None = None
     flag: str | None = None
     narration: str | None = None
     payee: str | None = None
-    postings: list[Posting] | None = None
+    postings: list[PostingTemplate] | None = None
+
+
+class GeneratedPosting(ImportBaseModel):
+    # account of the posting
+    account: str
+    # amount of the posting
+    amount: str | None = None
+    # currency of the posting
+    currency: str | None = None
+    # TODO: support cost / price and etc
 
 
 class GeneratedTransaction(ImportBaseModel):
@@ -86,13 +97,13 @@ class GeneratedTransaction(ImportBaseModel):
     flag: str
     narration: str
     payee: str | None = None
-    postings: list[Posting]
+    postings: list[GeneratedPosting]
 
 
 class ActionAddTxn(ImportBaseModel):
-    type: typing.Literal[ActionType.add_txn]
+    type: typing.Literal[ActionType.add_txn] = pydantic.Field(ActionType.add_txn)
     file: str
-    txn: Transaction
+    txn: TransactionTemplate
 
 
 Action = ActionAddTxn
@@ -103,9 +114,9 @@ SimpleFileMatch = str | StrExactMatch | StrRegexMatch
 
 class InputConfigDetails(ImportBaseModel):
     extractor: str | None = None
-    prepend_postings: list[Posting] | None = None
-    appending_postings: list[Posting] | None = None
-    default_txn: Transaction | None = None
+    prepend_postings: list[PostingTemplate] | None = None
+    appending_postings: list[PostingTemplate] | None = None
+    default_txn: TransactionTemplate | None = None
 
 
 class InputConfig(ImportBaseModel):
