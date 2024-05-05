@@ -131,6 +131,115 @@ def test_extract_imported_transactions(
             },
             id="single-remove-add",
         ),
+        pytest.param(
+            [
+                GeneratedTransaction(
+                    id="MOCK_ID",
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="main.bean",
+                    postings=[],
+                )
+            ],
+            [
+                ImportedTransaction(
+                    file=pathlib.Path("main.bean"), lineno=0, id="MOCK_ID"
+                )
+            ],
+            {
+                pathlib.Path("main.bean"): ChangeSet(
+                    add=[],
+                    update=[
+                        GeneratedTransaction(
+                            id="MOCK_ID",
+                            date="2024-05-05",
+                            flag="*",
+                            narration="MOCK_DESC",
+                            file="main.bean",
+                            postings=[],
+                        )
+                    ],
+                    remove=[],
+                ),
+            },
+            id="single-update",
+        ),
+        pytest.param(
+            [
+                GeneratedTransaction(
+                    id="id0",
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="main.bean",
+                    postings=[],
+                ),
+                GeneratedTransaction(
+                    id="id1",
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="other.bean",
+                    postings=[],
+                ),
+                GeneratedTransaction(
+                    id="id2",
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="other.bean",
+                    postings=[],
+                ),
+            ],
+            [
+                ImportedTransaction(file=pathlib.Path("main.bean"), lineno=0, id="id0"),
+                ImportedTransaction(file=pathlib.Path("main.bean"), lineno=0, id="id1"),
+            ],
+            {
+                pathlib.Path("main.bean"): ChangeSet(
+                    add=[],
+                    update=[
+                        GeneratedTransaction(
+                            id="id0",
+                            date="2024-05-05",
+                            flag="*",
+                            narration="MOCK_DESC",
+                            file="main.bean",
+                            postings=[],
+                        ),
+                    ],
+                    remove=[
+                        ImportedTransaction(
+                            file=pathlib.Path("main.bean"), lineno=0, id="id1"
+                        ),
+                    ],
+                ),
+                pathlib.Path("other.bean"): ChangeSet(
+                    add=[
+                        GeneratedTransaction(
+                            id="id1",
+                            date="2024-05-05",
+                            flag="*",
+                            narration="MOCK_DESC",
+                            file="other.bean",
+                            postings=[],
+                        ),
+                        GeneratedTransaction(
+                            id="id2",
+                            date="2024-05-05",
+                            flag="*",
+                            narration="MOCK_DESC",
+                            file="other.bean",
+                            postings=[],
+                        ),
+                    ],
+                    update=[],
+                    remove=[],
+                ),
+            },
+            id="complex",
+        ),
     ],
 )
 def test_compute_changes(
