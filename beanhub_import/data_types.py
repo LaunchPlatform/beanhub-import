@@ -82,8 +82,7 @@ class ActionAddTxn(ImportBaseModel):
 ActionType = ActionAddTxn
 
 
-class SimpleFileMatch(ImportBaseModel):
-    pass
+SimpleFileMatch = StrMatch
 
 
 class InputConfigDetails(ImportBaseModel):
