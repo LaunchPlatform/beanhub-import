@@ -57,7 +57,37 @@ def test_extract_imported_transactions(
 @pytest.mark.parametrize(
     "gen_txns, import_txns, expected",
     [
-        ([], [], {}),
+        pytest.param([], [], {}, id="empty"),
+        pytest.param(
+            [
+                GeneratedTransaction(
+                    id="MOCK_ID",
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="main.bean",
+                    postings=[],
+                )
+            ],
+            [],
+            {
+                pathlib.Path("main.bean"): ChangeSet(
+                    add=[
+                        GeneratedTransaction(
+                            id="MOCK_ID",
+                            date="2024-05-05",
+                            flag="*",
+                            narration="MOCK_DESC",
+                            file="main.bean",
+                            postings=[],
+                        )
+                    ],
+                    remove=[],
+                    update=[],
+                )
+            },
+            id="single-add",
+        ),
     ],
 )
 def test_compute_changes(

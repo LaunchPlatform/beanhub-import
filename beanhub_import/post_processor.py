@@ -68,9 +68,9 @@ def compute_changes(
     for txn in generated_txns:
         imported_txn = imported_id_txns.get(txn.id)
         if imported_txn is None:
-            to_add[txn.file].append(txn)
+            to_add[pathlib.Path(txn.file)].append(txn)
         else:
-            to_update[txn.file].append(txn)
+            to_update[pathlib.Path(txn.file)].append(txn)
 
     all_files = frozenset(to_remove.keys()).union(to_add.keys()).union(to_update.keys())
     return {
