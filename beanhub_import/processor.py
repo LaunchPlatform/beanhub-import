@@ -14,6 +14,7 @@ from .data_types import ActionType
 from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
 from .data_types import ImportRule
+from .data_types import Posting
 from .data_types import SimpleFileMatch
 from .data_types import SimpleTxnMatchRule
 from .data_types import StrContainsMatch
@@ -104,9 +105,24 @@ def process_transaction(
 
             narration = action.txn.narration
             if narration is None:
-                narration = "{{ desc | default(bank_desc) | tojson }}"
+                narration = "{{ desc | default(bank_desc) }}"
 
             payee = action.txn.payee
+
+            generated_postings = []
+            # TODO: add prepend postings from input config
+            posting_templates: list[Posting] = []
+            if action.txn.postings is not None:
+                posting_templates.extend(action.txn.postings)
+            # TODO: add append postings from input config
+            for posting_template in posting_templates:
+                generated_postings.append(
+                    Posting(
+                        account=render_str(posting_template.account),
+                        amount=render_str(posting_template.amount),
+                        currency=render_str(posting_template.currency),
+                    )
+                )
 
             yield GeneratedTransaction(
                 file=render_str(action.file),
@@ -115,8 +131,7 @@ def process_transaction(
                 flag=render_str(flag),
                 narration=render_str(narration),
                 payee=render_str(payee),
-                # TODO:
-                postings=[],
+                postings=generated_postings,
             )
             # TODO: handle input file config here
             # TODO: gen txn entry
