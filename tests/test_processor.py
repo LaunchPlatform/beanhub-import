@@ -3,18 +3,28 @@ import typing
 
 import pytest
 from beanhub_extract.data_types import Transaction
+from jinja2.sandbox import SandboxedEnvironment
 
+from beanhub_import.data_types import GeneratedTransaction
+from beanhub_import.data_types import ImportRule
+from beanhub_import.data_types import InputConfigDetails
+from beanhub_import.data_types import SimpleFileMatch
+from beanhub_import.data_types import SimpleTxnMatchRule
+from beanhub_import.data_types import StrContainsMatch
+from beanhub_import.data_types import StrExactMatch
+from beanhub_import.data_types import StrPrefixMatch
+from beanhub_import.data_types import StrRegexMatch
+from beanhub_import.data_types import StrSuffixMatch
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
-from beanhub_import.processor import SimpleFileMatch
-from beanhub_import.processor import SimpleTxnMatchRule
-from beanhub_import.processor import StrContainsMatch
-from beanhub_import.processor import StrExactMatch
-from beanhub_import.processor import StrPrefixMatch
-from beanhub_import.processor import StrRegexMatch
-from beanhub_import.processor import StrSuffixMatch
+from beanhub_import.processor import process_transaction
 from beanhub_import.processor import walk_dir_files
+
+
+@pytest.fixture
+def template_env() -> SandboxedEnvironment:
+    return SandboxedEnvironment()
 
 
 @pytest.mark.parametrize(
@@ -144,3 +154,41 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
 )
 def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected: bool):
     assert match_transaction(txn, rule) == expected
+
+
+@pytest.mark.parametrize(
+    "txn, input_config, import_rules, expected",
+    [
+        (
+            Transaction(extractor="MOCK_EXTRACTOR"),
+            InputConfigDetails(),
+            [
+                ImportRule(
+                    match=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    actions=[],
+                )
+            ],
+            [],
+        ),
+    ],
+)
+def test_process_transaction(
+    template_env: SandboxedEnvironment,
+    input_config: InputConfigDetails,
+    import_rules: list[ImportRule],
+    txn: Transaction,
+    expected: list[GeneratedTransaction],
+):
+    assert (
+        list(
+            process_transaction(
+                template_env=template_env,
+                input_config=input_config,
+                import_rules=import_rules,
+                txn=txn,
+            )
+        )
+        == expected
+    )

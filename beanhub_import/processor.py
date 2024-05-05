@@ -86,12 +86,12 @@ def first_non_none(*values):
 
 def process_transaction(
     template_env: SandboxedEnvironment,
-    import_config: InputConfigDetails,
+    input_config: InputConfigDetails,
     import_rules: list[ImportRule],
     txn: Transaction,
 ) -> typing.Generator[GeneratedTransaction, None, None]:
     txn_ctx = dataclasses.asdict(txn)
-    default_txn = import_config.default_txn
+    default_txn = input_config.default_txn
 
     def render_str(value: str | None) -> str | None:
         if value is None:
@@ -116,14 +116,14 @@ def process_transaction(
             }
 
             posting_templates: list[Posting] = []
-            if import_config.prepend_postings is not None:
-                posting_templates.extend(import_config.prepend_postings)
+            if input_config.prepend_postings is not None:
+                posting_templates.extend(input_config.prepend_postings)
             if action.txn.postings is not None:
                 posting_templates.extend(action.txn.postings)
             elif default_txn is not None and default_txn.postings is not None:
                 posting_templates.extend(default_txn.postings)
-            if import_config.appending_postings is not None:
-                posting_templates.extend(import_config.appending_postings)
+            if input_config.appending_postings is not None:
+                posting_templates.extend(input_config.appending_postings)
 
             generated_postings = []
             for posting_template in posting_templates:
@@ -177,7 +177,7 @@ def process_imports(
                     txn = strip_txn_base_path(input_dir, transaction)
                     for generated_txn in process_transaction(
                         template_env=template_env,
-                        import_config=input_config.config,
+                        input_config=input_config.config,
                         import_rules=import_doc.import_rules,
                         txn=txn,
                     ):
