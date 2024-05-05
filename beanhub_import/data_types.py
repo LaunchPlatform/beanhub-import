@@ -100,5 +100,5 @@ class ImportRule(ImportBaseModel):
 
 class ImportDoc(ImportBaseModel):
     input_files: list[InputConfig]
-    output_files: list[OutputConfig]
     import_rules: list[ImportRule]
+    output_files: list[OutputConfig] | None = None
