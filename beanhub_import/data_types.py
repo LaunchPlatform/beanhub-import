@@ -89,6 +89,7 @@ class SimpleFileMatch(ImportBaseModel):
 class InputConfigDetails(ImportBaseModel):
     prepend_postings: list[Posting] | None = None
     appending_postings: list[Posting] | None = None
+    default_txn_values: Transaction | None = None
 
 
 class InputConfig(ImportBaseModel):
