@@ -14,6 +14,7 @@ from .data_types import ActionType
 from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
 from .data_types import ImportRule
+from .data_types import InputConfigDetails
 from .data_types import Posting
 from .data_types import SimpleFileMatch
 from .data_types import SimpleTxnMatchRule
@@ -23,6 +24,14 @@ from .data_types import StrMatch
 from .data_types import StrPrefixMatch
 from .data_types import StrRegexMatch
 from .data_types import StrSuffixMatch
+
+
+DEFAULT_TXN_TEMPLATE = dict(
+    id="{{ file }}:{{ lineno }}",
+    date="{{ date }}",
+    flag="*",
+    narration="{{ desc | default(bank_desc) }}",
+)
 
 
 def walk_dir_files(
@@ -71,12 +80,18 @@ def match_transaction(txn: Transaction, rule: SimpleTxnMatchRule) -> bool:
     )
 
 
+def first_non_none(*values):
+    return next((value for value in values if value is not None), None)
+
+
 def process_transaction(
     template_env: SandboxedEnvironment,
-    txn: Transaction,
+    import_config: InputConfigDetails,
     import_rules: list[ImportRule],
+    txn: Transaction,
 ) -> typing.Generator[GeneratedTransaction, None, None]:
     txn_ctx = dataclasses.asdict(txn)
+    default_txn = import_config.default_txn
 
     def render_str(value: str | None) -> str | None:
         if value is None:
@@ -91,30 +106,26 @@ def process_transaction(
                 # we only support add txn for now
                 raise ValueError(f"Unsupported action type {action.type}")
 
-            import_id = action.txn.id
-            if import_id is None:
-                import_id = "{{ file }}:{{ lineno }}"
+            template_values = {
+                key: first_non_none(
+                    getattr(action.txn, key),
+                    getattr(default_txn, key) if default_txn is not None else None,
+                    DEFAULT_TXN_TEMPLATE.get(key),
+                )
+                for key in ("id", "date", "flag", "narration", "payee")
+            }
 
-            date = action.txn.date
-            if date is None:
-                date = "{{ date }}"
-
-            flag = action.txn.flag
-            if flag is None:
-                flag = "*"
-
-            narration = action.txn.narration
-            if narration is None:
-                narration = "{{ desc | default(bank_desc) }}"
-
-            payee = action.txn.payee
-
-            generated_postings = []
-            # TODO: add prepend postings from input config
             posting_templates: list[Posting] = []
+            if import_config.prepend_postings is not None:
+                posting_templates.extend(import_config.prepend_postings)
             if action.txn.postings is not None:
                 posting_templates.extend(action.txn.postings)
-            # TODO: add append postings from input config
+            elif default_txn is not None and default_txn.postings is not None:
+                posting_templates.extend(default_txn.postings)
+            if import_config.appending_postings is not None:
+                posting_templates.extend(import_config.appending_postings)
+
+            generated_postings = []
             for posting_template in posting_templates:
                 generated_postings.append(
                     Posting(
@@ -126,22 +137,16 @@ def process_transaction(
 
             yield GeneratedTransaction(
                 file=render_str(action.file),
-                id=render_str(import_id),
-                date=render_str(date),
-                flag=render_str(flag),
-                narration=render_str(narration),
-                payee=render_str(payee),
                 postings=generated_postings,
+                **{key: render_str(value) for key, value in template_values.items()},
             )
-            # TODO: handle input file config here
-            # TODO: gen txn entry
-            pass
         break
 
 
 def process_imports(
-    import_doc: ImportDoc, input_dir: pathlib.Path, output_dir: pathlib.Path
-):
+    import_doc: ImportDoc,
+    input_dir: pathlib.Path,
+) -> typing.Generator[GeneratedTransaction, None, None]:
     logger = logging.getLogger(__name__)
     template_env = SandboxedEnvironment()
     for filepath in walk_dir_files(input_dir):
@@ -171,10 +176,12 @@ def process_imports(
                 for transaction in extractor():
                     txn = strip_txn_base_path(input_dir, transaction)
                     for generated_txn in process_transaction(
-                        template_env, txn, import_doc.import_rules
+                        template_env=template_env,
+                        import_config=input_config.config,
+                        import_rules=import_doc.import_rules,
+                        txn=txn,
                     ):
-                        # TODO:
-                        print(generated_txn)
+                        yield generated_txn
             processed = True
             break
         if processed:
