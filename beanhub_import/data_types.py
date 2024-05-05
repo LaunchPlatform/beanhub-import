@@ -31,7 +31,7 @@ class StrContainsMatch(ImportBaseModel):
 StrMatch = str | StrPrefixMatch | StrSuffixMatch | StrExactMatch | StrContainsMatch
 
 
-class SimpleMatchRule(ImportBaseModel):
+class SimpleTxnMatchRule(ImportBaseModel):
     extractor: StrMatch | None = None
     file: StrMatch | None = None
     date: StrMatch | None = None
@@ -50,7 +50,7 @@ class SimpleMatchRule(ImportBaseModel):
     payee: StrMatch | None = None
 
 
-MatchRule = SimpleMatchRule
+TxnMatchRule = SimpleTxnMatchRule
 
 
 @enum.unique
@@ -106,7 +106,7 @@ class OutputConfig(ImportBaseModel):
 
 
 class ImportRule(ImportBaseModel):
-    match: MatchRule
+    match: TxnMatchRule
     actions: list[ActionType]
 
 

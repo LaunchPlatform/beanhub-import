@@ -4,11 +4,14 @@ import pathlib
 import re
 import typing
 
+from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
 from beanhub_extract.utils import strip_txn_base_path
 
 from .data_types import ImportDoc
+from .data_types import ImportRule
 from .data_types import SimpleFileMatch
+from .data_types import SimpleTxnMatchRule
 from .data_types import StrContainsMatch
 from .data_types import StrExactMatch
 from .data_types import StrMatch
@@ -38,7 +41,9 @@ def match_file(
         raise ValueError(f"Unexpected file match type {type(pattern)}")
 
 
-def match_str(pattern: StrMatch, value: str) -> bool:
+def match_str(pattern: StrMatch, value: str | None) -> bool:
+    if value is None:
+        return False
     if isinstance(pattern, str):
         return re.match(pattern, value) is not None
     elif isinstance(pattern, StrExactMatch):
@@ -51,6 +56,25 @@ def match_str(pattern: StrMatch, value: str) -> bool:
         return pattern.contains in value
     else:
         raise ValueError(f"Unexpected str match type {type(pattern)}")
+
+
+def match_transaction(txn: Transaction, rule: SimpleTxnMatchRule) -> bool:
+    return all(
+        match_str(pattern, getattr(txn, key))
+        for key, pattern in rule.dict().items()
+        if pattern is not None
+    )
+
+
+def process_transaction(txn: Transaction, import_rules: list[ImportRule]):
+    for import_rule in import_rules:
+        if not match_transaction(txn, import_rule.match):
+            continue
+        for action in import_rule.actions:
+            # TODO: handle input file config here
+            # TODO: gen txn entry
+            pass
+        break
 
 
 def process_imports(
@@ -76,10 +100,15 @@ def process_imports(
                         rel_filepath,
                     )
                     continue
+            logger.info(
+                "Processing file %s with extractor %s", rel_filepath, extractor_name
+            )
             with filepath.open("rt") as fo:
                 extractor = extractor_cls(fo)
                 for transaction in extractor():
-                    print(strip_txn_base_path(input_dir, transaction))
+                    txn = strip_txn_base_path(input_dir, transaction)
+                    process_transaction(txn, import_doc.import_rules)
             processed = True
+            break
         if processed:
             continue
