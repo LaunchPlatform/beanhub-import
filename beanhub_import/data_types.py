@@ -78,6 +78,7 @@ SimpleFileMatch = StrMatch | StrRegexMatch
 
 
 class InputConfigDetails(ImportBaseModel):
+    extractor: str | None = None
     prepend_postings: list[Posting] | None = None
     appending_postings: list[Posting] | None = None
     default_txn: Transaction | None = None
@@ -98,6 +99,6 @@ class ImportRule(ImportBaseModel):
 
 
 class ImportDoc(ImportBaseModel):
-    input_configs: list[InputConfig]
-    output_configs: list[OutputConfig]
+    input_files: list[InputConfig]
+    output_files: list[OutputConfig]
     import_rules: list[ImportRule]

@@ -34,5 +34,10 @@ def process_imports(
     import_doc: ImportDoc, input_dir: pathlib.Path, output_dir: pathlib.Path
 ):
     for filepath in walk_dir_files(input_dir):
-        for input_config in import_doc.input_configs:
-            pass
+        for input_config in import_doc.input_files:
+            if not match_file(input_config.match, filepath):
+                continue
+            extractor_name = input_config.config.extractor
+            if extractor_name is None:
+                # TODO: identify input file automatically
+                pass
