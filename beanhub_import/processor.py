@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 import os
 import pathlib
@@ -7,7 +8,10 @@ import typing
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
 from beanhub_extract.utils import strip_txn_base_path
+from jinja2.sandbox import SandboxedEnvironment
 
+from .data_types import ActionType
+from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
 from .data_types import ImportRule
 from .data_types import SimpleFileMatch
@@ -66,11 +70,54 @@ def match_transaction(txn: Transaction, rule: SimpleTxnMatchRule) -> bool:
     )
 
 
-def process_transaction(txn: Transaction, import_rules: list[ImportRule]):
+def process_transaction(
+    template_env: SandboxedEnvironment,
+    txn: Transaction,
+    import_rules: list[ImportRule],
+) -> typing.Generator[GeneratedTransaction, None, None]:
+    txn_ctx = dataclasses.asdict(txn)
+
+    def render_str(value: str | None) -> str | None:
+        if value is None:
+            return None
+        return template_env.from_string(value).render(**txn_ctx)
+
     for import_rule in import_rules:
         if not match_transaction(txn, import_rule.match):
             continue
         for action in import_rule.actions:
+            if action.type != ActionType.add_txn:
+                # we only support add txn for now
+                raise ValueError(f"Unsupported action type {action.type}")
+
+            import_id = action.txn.id
+            if import_id is None:
+                import_id = "{{ file }}:{{ lineno }}"
+
+            date = action.txn.date
+            if date is None:
+                date = "{{ date }}"
+
+            flag = action.txn.flag
+            if flag is None:
+                flag = "*"
+
+            narration = action.txn.narration
+            if narration is None:
+                narration = "{{ desc | default(bank_desc) | tojson }}"
+
+            payee = action.txn.payee
+
+            yield GeneratedTransaction(
+                file=render_str(action.file),
+                id=render_str(import_id),
+                date=render_str(date),
+                flag=render_str(flag),
+                narration=render_str(narration),
+                payee=render_str(payee),
+                # TODO:
+                postings=[],
+            )
             # TODO: handle input file config here
             # TODO: gen txn entry
             pass
@@ -81,6 +128,7 @@ def process_imports(
     import_doc: ImportDoc, input_dir: pathlib.Path, output_dir: pathlib.Path
 ):
     logger = logging.getLogger(__name__)
+    template_env = SandboxedEnvironment()
     for filepath in walk_dir_files(input_dir):
         processed = False
         for input_config in import_doc.input_files:
@@ -107,7 +155,11 @@ def process_imports(
                 extractor = extractor_cls(fo)
                 for transaction in extractor():
                     txn = strip_txn_base_path(input_dir, transaction)
-                    process_transaction(txn, import_doc.import_rules)
+                    for generated_txn in process_transaction(
+                        template_env, txn, import_doc.import_rules
+                    ):
+                        # TODO:
+                        print(generated_txn)
             processed = True
             break
         if processed:

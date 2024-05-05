@@ -78,6 +78,17 @@ class Transaction(ImportBaseModel):
     postings: list[Posting] | None = None
 
 
+class GeneratedTransaction(ImportBaseModel):
+    file: str
+    # the import-id for de-duplication
+    id: str
+    date: str
+    flag: str
+    narration: str
+    payee: str | None = None
+    postings: list[Posting]
+
+
 class ActionAddTxn(ImportBaseModel):
     type: typing.Literal[ActionType.add_txn]
     file: str
