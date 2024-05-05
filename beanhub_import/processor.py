@@ -5,10 +5,8 @@ import typing
 
 from .data_types import ImportDoc
 from .data_types import SimpleFileMatch
-from .data_types import StrContainsMatch
 from .data_types import StrExactMatch
-from .data_types import StrPrefixMatch
-from .data_types import StrSuffixMatch
+from .data_types import StrRegexMatch
 
 
 def walk_dir_files(
@@ -23,15 +21,11 @@ def match_file(
     pattern: SimpleFileMatch, filepath: pathlib.Path | pathlib.PurePath
 ) -> bool:
     if isinstance(pattern, str):
-        return re.match(pattern, str(filepath)) is not None
+        return filepath.match(pattern)
+    if isinstance(pattern, StrRegexMatch):
+        return re.match(pattern.regex, str(filepath)) is not None
     elif isinstance(pattern, StrExactMatch):
         return str(filepath) == pattern.equals
-    elif isinstance(pattern, StrContainsMatch):
-        return pattern.contains in str(filepath)
-    elif isinstance(pattern, StrPrefixMatch):
-        return str(filepath).startswith(pattern.prefix)
-    elif isinstance(pattern, StrSuffixMatch):
-        return str(filepath).endswith(pattern.suffix)
     else:
         raise ValueError(f"Unexpected pattern type {type(pattern)}")
 

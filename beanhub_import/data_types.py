@@ -12,19 +12,11 @@ class StrExactMatch(ImportBaseModel):
     equals: str
 
 
-class StrContainsMatch(ImportBaseModel):
-    contains: str
+class StrRegexMatch(ImportBaseModel):
+    regex: str
 
 
-class StrPrefixMatch(ImportBaseModel):
-    prefix: str
-
-
-class StrSuffixMatch(ImportBaseModel):
-    suffix: str
-
-
-StrMatch = str | StrExactMatch | StrContainsMatch | StrPrefixMatch | StrSuffixMatch
+StrMatch = str | StrExactMatch
 
 
 class SimpleMatchRule(ImportBaseModel):
@@ -82,7 +74,7 @@ class ActionAddTxn(ImportBaseModel):
 ActionType = ActionAddTxn
 
 
-SimpleFileMatch = StrMatch
+SimpleFileMatch = StrMatch | StrRegexMatch
 
 
 class InputConfigDetails(ImportBaseModel):
