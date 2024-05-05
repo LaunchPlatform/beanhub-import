@@ -6,7 +6,6 @@ import typing
 import pytest
 import yaml
 from beanhub_extract.data_types import Transaction
-from beanhub_extract.utils import strip_txn_base_path
 from jinja2.sandbox import SandboxedEnvironment
 
 from beanhub_import.data_types import ActionAddTxn
