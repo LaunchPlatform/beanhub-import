@@ -2,10 +2,13 @@ import pathlib
 import typing
 
 import pytest
+from beanhub_extract.data_types import Transaction
 
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
+from beanhub_import.processor import match_transaction
 from beanhub_import.processor import SimpleFileMatch
+from beanhub_import.processor import SimpleTxnMatchRule
 from beanhub_import.processor import StrContainsMatch
 from beanhub_import.processor import StrExactMatch
 from beanhub_import.processor import StrPrefixMatch
@@ -98,3 +101,46 @@ def test_match_file(pattern: SimpleFileMatch, path: str, expected: bool):
 )
 def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
     assert match_str(pattern, value) == expected
+
+
+@pytest.mark.parametrize(
+    "txn, rule, expected",
+    [
+        (
+            Transaction(extractor="MOCK_EXTRACTOR"),
+            SimpleTxnMatchRule(extractor=StrExactMatch(equals="MOCK_EXTRACTOR")),
+            True,
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR"),
+            SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER_EXTRACTOR")),
+            False,
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
+            SimpleTxnMatchRule(
+                extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
+                desc=StrExactMatch(equals="MOCK_DESC"),
+            ),
+            True,
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
+            SimpleTxnMatchRule(
+                extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
+                desc=StrExactMatch(equals="OTHER_DESC"),
+            ),
+            False,
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
+            SimpleTxnMatchRule(
+                extractor=StrExactMatch(equals="OTHER_DESC"),
+                desc=StrExactMatch(equals="MOCK_DESC"),
+            ),
+            False,
+        ),
+    ],
+)
+def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected: bool):
+    assert match_transaction(txn, rule) == expected

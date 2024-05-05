@@ -65,6 +65,7 @@ class Posting(ImportBaseModel):
     amount: str | None = None
     # currency of the posting
     currency: str | None = None
+    # TODO: support cost / price and etc
 
 
 class Transaction(ImportBaseModel):

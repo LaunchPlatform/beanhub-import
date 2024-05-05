@@ -60,7 +60,7 @@ def match_str(pattern: StrMatch, value: str | None) -> bool:
 
 def match_transaction(txn: Transaction, rule: SimpleTxnMatchRule) -> bool:
     return all(
-        match_str(pattern, getattr(txn, key))
+        match_str(getattr(rule, key), getattr(txn, key))
         for key, pattern in rule.dict().items()
         if pattern is not None
     )
