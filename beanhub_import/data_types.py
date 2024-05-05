@@ -1,4 +1,6 @@
+import dataclasses
 import enum
+import pathlib
 import typing
 
 import pydantic
@@ -137,3 +139,10 @@ class ImportDoc(ImportBaseModel):
     inputs: list[InputConfig]
     imports: list[ImportRule]
     outputs: list[OutputConfig] | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class ImportedTransaction:
+    file: pathlib.Path
+    lineno: int
+    id: str

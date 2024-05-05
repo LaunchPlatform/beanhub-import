@@ -1,0 +1,5 @@
+2025-03-04 "*" "Buy dinner"
+    import-id: "id2"
+    Assets:Cash   -8 USD
+    Expenses:Food  8 USD
+

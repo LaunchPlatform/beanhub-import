@@ -12,6 +12,35 @@ files = [
 ]
 
 [[package]]
+name = "beancount-black"
+version = "1.0.2"
+description = "Opinioned code formatter, just like Python's black code formatter but for Beancount"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "beancount_black-1.0.2-py3-none-any.whl", hash = "sha256:62323f5ee54b989717dc1ad7f45999e41ffad18f9ff91d0526d4cafec5c7f666"},
+    {file = "beancount_black-1.0.2.tar.gz", hash = "sha256:e09dc3414e7e625138ee00a0d352a3447608f72879ac663b0a60b9e83277e0f3"},
+]
+
+[package.dependencies]
+beancount-parser = ">=1.0.1,<2.0.0"
+click = ">=7.0.0,<9.0.0"
+
+[[package]]
+name = "beancount-parser"
+version = "1.0.1"
+description = "Standalone Lark based Beancount syntax parser (not relying on Beancount library), MIT license"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "beancount_parser-1.0.1-py3-none-any.whl", hash = "sha256:aa83bebd2165f816192b63aea7b010670663528781294956c75d6bc7ee6d288f"},
+    {file = "beancount_parser-1.0.1.tar.gz", hash = "sha256:13cd9a9900636c20d76de6ea43e4a40da30b8adb0aa4e7e41913d7d7a3d4d109"},
+]
+
+[package.dependencies]
+lark = ">=1.1.2,<2.0.0"
+
+[[package]]
 name = "beanhub-extract"
 version = "0.0.5"
 description = "The simple library for extracting all kind of bank account transaction export files, mostly for beanhub-import to inject and generate transactions"
@@ -24,6 +53,20 @@ files = [
 
 [package.dependencies]
 pytz = ">=2024.1,<2025.0"
+
+[[package]]
+name = "click"
+version = "8.1.7"
+description = "Composable command line interface toolkit"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "click-8.1.7-py3-none-any.whl", hash = "sha256:ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28"},
+    {file = "click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
 name = "colorama"
@@ -77,6 +120,23 @@ MarkupSafe = ">=2.0"
 
 [package.extras]
 i18n = ["Babel (>=2.7)"]
+
+[[package]]
+name = "lark"
+version = "1.1.9"
+description = "a modern parsing library"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "lark-1.1.9-py3-none-any.whl", hash = "sha256:a0dd3a87289f8ccbb325901e4222e723e7d745dbfc1803eaf5f3d2ace19cf2db"},
+    {file = "lark-1.1.9.tar.gz", hash = "sha256:15fa5236490824c2c4aba0e22d2d6d823575dcaf4cdd1848e34b6ad836240fba"},
+]
+
+[package.extras]
+atomic-cache = ["atomicwrites"]
+interegular = ["interegular (>=0.3.1,<0.4.0)"]
+nearley = ["js2py"]
+regex = ["regex"]
 
 [[package]]
 name = "markupsafe"
@@ -418,4 +478,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "ed9e33d35654281ca6d5154c6ecaf6afea25146202b338b35e3f35fa6ca145a9"
+content-hash = "05b3e4f24114bc775bf7b163caa3cb6b7d8c84949d78db7ba2de46f832a8fd44"

@@ -1,0 +1,3 @@
+include "accounts.bean"
+include "books/*.bean"
+

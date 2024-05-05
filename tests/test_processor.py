@@ -354,7 +354,7 @@ def test_process_transaction(
 def test_process_imports(
     fixtures_folder: pathlib.Path, folder: str, expected: list[GeneratedTransaction]
 ):
-    folder_path = fixtures_folder / folder
+    folder_path = fixtures_folder / "processor" / folder
     with open(folder_path / "import.yaml", "rt") as fo:
         payload = yaml.safe_load(fo)
     doc = ImportDoc.model_validate(payload)

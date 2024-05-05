@@ -1,0 +1,13 @@
+2024-05-04 "*" "Buy dinner"
+    import-id: "id0"
+    Assets:Cash   -8 USD
+    Expenses:Food  8 USD
+
+2024-05-05 "*" "Buy dinner"
+    Assets:Cash   -10 USD
+    Expenses:Food  10 USD
+
+2024-05-06 "*" "Travel"
+    import-id: "id1"
+    Assets:Cash   -50 USD
+    Expenses:Travel 50 USD
