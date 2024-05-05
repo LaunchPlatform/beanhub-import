@@ -95,7 +95,7 @@ class ActionAddTxn(ImportBaseModel):
     txn: Transaction
 
 
-ActionType = ActionAddTxn
+Action = ActionAddTxn
 
 
 SimpleFileMatch = str | StrExactMatch | StrRegexMatch
@@ -119,7 +119,7 @@ class OutputConfig(ImportBaseModel):
 
 class ImportRule(ImportBaseModel):
     match: TxnMatchRule
-    actions: list[ActionType]
+    actions: list[Action]
 
 
 class ImportDoc(ImportBaseModel):
