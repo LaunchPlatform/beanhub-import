@@ -165,7 +165,7 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
 @pytest.mark.parametrize(
     "txn, input_config, import_rules, expected",
     [
-        (
+        pytest.param(
             Transaction(
                 extractor="MOCK_EXTRACTOR",
                 file="mock.csv",
@@ -239,6 +239,64 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                     ],
                 )
             ],
+            id="generic",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            InputConfigDetails(
+                default_txn=TransactionTemplate(
+                    id="my-{{ file }}:{{ lineno }}",
+                    date="2024-01-01",
+                    flag="!",
+                    narration="my-{{ desc }}",
+                    postings=[
+                        PostingTemplate(
+                            account="Assets:Bank:{{ source_account }}",
+                            amount="{{ amount }}",
+                            currency="{{ currency }}",
+                        ),
+                    ],
+                ),
+            ),
+            [
+                ImportRule(
+                    match=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    actions=[
+                        ActionAddTxn(
+                            file="{{ extractor }}.bean",
+                            txn=TransactionTemplate(),
+                        )
+                    ],
+                )
+            ],
+            [
+                GeneratedTransaction(
+                    id="my-mock.csv:123",
+                    date="2024-01-01",
+                    file="MOCK_EXTRACTOR.bean",
+                    flag="!",
+                    narration="my-MOCK_DESC",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:Foobar",
+                            amount="123.45",
+                            currency="BTC",
+                        ),
+                    ],
+                )
+            ],
+            id="default-values",
         ),
     ],
 )
