@@ -9,6 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 pytz = "^2024.1"
+beanhub-extract = "^0.0.2"
 
 [tool.poetry.dev-dependencies]
 
