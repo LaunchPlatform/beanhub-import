@@ -13,32 +13,17 @@ files = [
 
 [[package]]
 name = "beanhub-extract"
-version = "0.0.2"
+version = "0.0.5"
 description = "The simple library for extracting all kind of bank account transaction export files, mostly for beanhub-import to inject and generate transactions"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "beanhub_extract-0.0.2-py3-none-any.whl", hash = "sha256:c59c663ed44b97324b43b9cb2eefd5ad1da362b9cfc4559fec55d19ae7b563f5"},
-    {file = "beanhub_extract-0.0.2.tar.gz", hash = "sha256:2eb0fe2e9f7c4a385400b10b9f944defb811cd60ff2400fa3e7737134551ba3e"},
+    {file = "beanhub_extract-0.0.5-py3-none-any.whl", hash = "sha256:d231a4afa42a15a8c1c80d2f5506aface5ecf336b6d2fea861eeebb3c2eedf78"},
+    {file = "beanhub_extract-0.0.5.tar.gz", hash = "sha256:e23ebe428b33bcf81c15472aec85ed377058563e24ed419f1fa556ee74ae9d06"},
 ]
 
 [package.dependencies]
-click = ">=8.1.7,<9.0.0"
 pytz = ">=2024.1,<2025.0"
-
-[[package]]
-name = "click"
-version = "8.1.7"
-description = "Composable command line interface toolkit"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "click-8.1.7-py3-none-any.whl", hash = "sha256:ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28"},
-    {file = "click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de"},
-]
-
-[package.dependencies]
-colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
 name = "colorama"
@@ -433,4 +418,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "a13f26393adaf665607601c9b7dad8df413c6c4f6fcd509228d903934db8972d"
+content-hash = "ed9e33d35654281ca6d5154c6ecaf6afea25146202b338b35e3f35fa6ca145a9"

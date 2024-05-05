@@ -134,6 +134,6 @@ class ImportRule(ImportBaseModel):
 
 
 class ImportDoc(ImportBaseModel):
-    input_files: list[InputConfig]
-    import_rules: list[ImportRule]
-    output_files: list[OutputConfig] | None = None
+    inputs: list[InputConfig]
+    imports: list[ImportRule]
+    outputs: list[OutputConfig] | None = None

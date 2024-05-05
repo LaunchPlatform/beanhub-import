@@ -331,7 +331,7 @@ def test_process_transaction(
             [
                 GeneratedTransaction(
                     file="output.bean",
-                    id="mercury.csv:2",
+                    id="mercury.csv:-3",
                     date="2024-04-16",
                     flag="*",
                     narration="Amazon Web Services",

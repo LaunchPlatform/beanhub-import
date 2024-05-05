@@ -90,6 +90,7 @@ def process_transaction(
     input_config: InputConfigDetails,
     import_rules: list[ImportRule],
     txn: Transaction,
+    default_import_id: str | None = None,
 ) -> typing.Generator[GeneratedTransaction, None, None]:
     txn_ctx = dataclasses.asdict(txn)
     default_txn = input_config.default_txn
@@ -113,8 +114,14 @@ def process_transaction(
                     getattr(default_txn, key) if default_txn is not None else None,
                     DEFAULT_TXN_TEMPLATE.get(key),
                 )
-                for key in ("id", "date", "flag", "narration", "payee")
+                for key in ("date", "flag", "narration", "payee")
             }
+            template_values["id"] = first_non_none(
+                getattr(action.txn, "id"),
+                getattr(default_txn, "id") if default_txn is not None else None,
+                default_import_id,
+                DEFAULT_TXN_TEMPLATE["id"],
+            )
 
             posting_templates: list[PostingTemplate] = []
             if input_config.prepend_postings is not None:
@@ -152,7 +159,7 @@ def process_imports(
     template_env = SandboxedEnvironment()
     for filepath in walk_dir_files(input_dir):
         processed = False
-        for input_config in import_doc.input_files:
+        for input_config in import_doc.inputs:
             if not match_file(input_config.match, filepath):
                 continue
             rel_filepath = filepath.relative_to(input_dir)
@@ -179,7 +186,8 @@ def process_imports(
                     for generated_txn in process_transaction(
                         template_env=template_env,
                         input_config=input_config.config,
-                        import_rules=import_doc.import_rules,
+                        import_rules=import_doc.imports,
+                        default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
                     ):
                         yield generated_txn

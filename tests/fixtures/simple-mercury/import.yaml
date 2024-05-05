@@ -1,4 +1,4 @@
-input_files:
+inputs:
 - match: "*.csv"
   config:
     extractor: mercury
@@ -7,7 +7,7 @@ input_files:
         amount: "{{ amount }}"
         currency: "{{ currency | default('USD') }}"
 
-import_rules:
+imports:
   - match:
       extractor:
         equals: "mercury"
