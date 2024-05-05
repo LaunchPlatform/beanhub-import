@@ -146,3 +146,13 @@ class ImportedTransaction:
     file: pathlib.Path
     lineno: int
     id: str
+
+
+@dataclasses.dataclass(frozen=True)
+class ChangeSet:
+    # list of imported transaction to remove
+    remove: list[ImportedTransaction]
+    # map from
+    update: list[GeneratedTransaction]
+    # list of generated transaction to add
+    add: list[GeneratedTransaction]

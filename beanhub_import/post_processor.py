@@ -5,6 +5,7 @@
 # apply black with filter for remove & update
 # append new txns
 # apply black again
+import collections
 import json
 import pathlib
 import typing
@@ -14,6 +15,8 @@ from beancount_parser.parser import traverse
 from lark import Lark
 from lark import Tree
 
+from .data_types import ChangeSet
+from .data_types import GeneratedTransaction
 from .data_types import ImportedTransaction
 
 
@@ -45,3 +48,36 @@ def extract_imported_transactions(
                     yield ImportedTransaction(
                         file=bean_path, lineno=last_txn.meta.line, id=metadata_value
                     )
+
+
+def compute_changes(
+    generated_txns: list[GeneratedTransaction], imported_txns: list[ImportedTransaction]
+) -> dict[pathlib.Path, ChangeSet]:
+    generated_id_txns = {txn.id: txn for txn in generated_txns}
+    imported_id_txns = {txn.id: txn for txn in imported_txns}
+
+    to_remove = collections.defaultdict(list)
+    for txn in imported_txns:
+        generated_txn = generated_id_txns.get(txn.id)
+        if generated_txn is not None and txn.file != generated_txn.file:
+            # it appears that the generated txn's file is different from the old one, let's remove it
+            to_remove[txn.file].append(txn)
+
+    to_add = collections.defaultdict(list)
+    to_update = collections.defaultdict(list)
+    for txn in generated_txns:
+        imported_txn = imported_id_txns.get(txn.id)
+        if imported_txn is None:
+            to_add[txn.file].append(txn)
+        else:
+            to_update[txn.file].append(txn)
+
+    all_files = frozenset(to_remove.keys()).union(to_add.keys()).union(to_update.keys())
+    return {
+        file_path: ChangeSet(
+            remove=to_remove[file_path],
+            add=to_add[file_path],
+            update=to_update[file_path],
+        )
+        for file_path in all_files
+    }

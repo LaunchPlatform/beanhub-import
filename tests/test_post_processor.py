@@ -6,7 +6,10 @@ import pytest
 from beancount_parser.parser import make_parser
 from lark import Lark
 
+from beanhub_import.data_types import ChangeSet
+from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportedTransaction
+from beanhub_import.post_processor import compute_changes
 from beanhub_import.post_processor import extract_imported_transactions
 
 
@@ -49,3 +52,17 @@ def test_extract_imported_transactions(
         )
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    "gen_txns, import_txns, expected",
+    [
+        ([], [], {}),
+    ],
+)
+def test_compute_changes(
+    gen_txns: list[GeneratedTransaction],
+    import_txns: list[ImportedTransaction],
+    expected: dict[str, ChangeSet],
+):
+    assert compute_changes(gen_txns, import_txns) == expected
