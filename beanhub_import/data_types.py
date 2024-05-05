@@ -8,15 +8,27 @@ class ImportBaseModel(BaseModel):
     pass
 
 
-class StrExactMatch(ImportBaseModel):
-    equals: str
-
-
 class StrRegexMatch(ImportBaseModel):
     regex: str
 
 
-StrMatch = str | StrExactMatch
+class StrExactMatch(ImportBaseModel):
+    equals: str
+
+
+class StrPrefixMatch(ImportBaseModel):
+    prefix: str
+
+
+class StrSuffixMatch(ImportBaseModel):
+    suffix: str
+
+
+class StrContainsMatch(ImportBaseModel):
+    contains: str
+
+
+StrMatch = str | StrPrefixMatch | StrSuffixMatch | StrExactMatch | StrContainsMatch
 
 
 class SimpleMatchRule(ImportBaseModel):
@@ -74,7 +86,7 @@ class ActionAddTxn(ImportBaseModel):
 ActionType = ActionAddTxn
 
 
-SimpleFileMatch = StrMatch | StrRegexMatch
+SimpleFileMatch = str | StrExactMatch | StrRegexMatch
 
 
 class InputConfigDetails(ImportBaseModel):

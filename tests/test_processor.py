@@ -4,9 +4,13 @@ import typing
 import pytest
 
 from beanhub_import.processor import match_file
+from beanhub_import.processor import match_str
 from beanhub_import.processor import SimpleFileMatch
+from beanhub_import.processor import StrContainsMatch
 from beanhub_import.processor import StrExactMatch
+from beanhub_import.processor import StrPrefixMatch
 from beanhub_import.processor import StrRegexMatch
+from beanhub_import.processor import StrSuffixMatch
 from beanhub_import.processor import walk_dir_files
 
 
@@ -60,3 +64,33 @@ def test_walk_dir_files(
 )
 def test_match_file(pattern: SimpleFileMatch, path: str, expected: bool):
     assert match_file(pattern, pathlib.PurePosixPath(path)) == expected
+
+
+@pytest.mark.parametrize(
+    "pattern, value, expected",
+    [
+        ("^Foo([0-9]+)", "Foo0", True),
+        ("^Foo([0-9]+)", "Foo", False),
+        ("^Foo([0-9]+)", "foo0", False),
+        ("^Foo([0-9]+)", "", False),
+        (StrPrefixMatch(prefix="Foo"), "Foo", True),
+        (StrPrefixMatch(prefix="Foo"), "Foobar", True),
+        (StrPrefixMatch(prefix="Foo"), "FooBAR", True),
+        (StrPrefixMatch(prefix="Foo"), "xFooBAR", False),
+        (StrPrefixMatch(prefix="Foo"), "", False),
+        (StrSuffixMatch(suffix="Bar"), "Bar", True),
+        (StrSuffixMatch(suffix="Bar"), "fooBar", True),
+        (StrSuffixMatch(suffix="Bar"), "FooBar", True),
+        (StrSuffixMatch(suffix="Bar"), "Foobar", False),
+        (StrSuffixMatch(suffix="Bar"), "FooBarx", False),
+        (StrSuffixMatch(suffix="Bar"), "", False),
+        (StrContainsMatch(contains="Foo"), "Foo", True),
+        (StrContainsMatch(contains="Foo"), "prefix-Foo", True),
+        (StrContainsMatch(contains="Foo"), "Foo-suffix", True),
+        (StrContainsMatch(contains="Foo"), "prefix-Foo-suffix", True),
+        (StrContainsMatch(contains="Foo"), "prefix-Fo-suffix", False),
+        (StrContainsMatch(contains="Foo"), "", False),
+    ],
+)
+def test_match_str(pattern: SimpleFileMatch, value: str, expected: bool):
+    assert match_str(pattern, value) == expected

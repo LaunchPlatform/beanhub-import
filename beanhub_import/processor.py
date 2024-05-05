@@ -9,8 +9,12 @@ from beanhub_extract.utils import strip_txn_base_path
 
 from .data_types import ImportDoc
 from .data_types import SimpleFileMatch
+from .data_types import StrContainsMatch
 from .data_types import StrExactMatch
+from .data_types import StrMatch
+from .data_types import StrPrefixMatch
 from .data_types import StrRegexMatch
+from .data_types import StrSuffixMatch
 
 
 def walk_dir_files(
@@ -31,7 +35,22 @@ def match_file(
     elif isinstance(pattern, StrExactMatch):
         return str(filepath) == pattern.equals
     else:
-        raise ValueError(f"Unexpected pattern type {type(pattern)}")
+        raise ValueError(f"Unexpected file match type {type(pattern)}")
+
+
+def match_str(pattern: StrMatch, value: str) -> bool:
+    if isinstance(pattern, str):
+        return re.match(pattern, value) is not None
+    elif isinstance(pattern, StrExactMatch):
+        return value == pattern.equals
+    elif isinstance(pattern, StrPrefixMatch):
+        return value.startswith(pattern.prefix)
+    elif isinstance(pattern, StrSuffixMatch):
+        return value.endswith(pattern.suffix)
+    elif isinstance(pattern, StrContainsMatch):
+        return pattern.contains in value
+    else:
+        raise ValueError(f"Unexpected str match type {type(pattern)}")
 
 
 def process_imports(
