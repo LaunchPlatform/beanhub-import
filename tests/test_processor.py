@@ -176,7 +176,22 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                 currency="BTC",
                 amount=decimal.Decimal("123.45"),
             ),
-            InputConfigDetails(),
+            InputConfigDetails(
+                prepend_postings=[
+                    PostingTemplate(
+                        account="Expenses:Food",
+                        amount="{{ -(amount - 5) }}",
+                        currency="{{ currency }}",
+                    ),
+                ],
+                appending_postings=[
+                    PostingTemplate(
+                        account="Expenses:Fees",
+                        amount="-5",
+                        currency="{{ currency }}",
+                    ),
+                ],
+            ),
             [
                 ImportRule(
                     match=SimpleTxnMatchRule(
@@ -205,11 +220,20 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                     file="MOCK_EXTRACTOR.bean",
                     flag="*",
                     narration="MOCK_DESC",
-                    payee=None,
                     postings=[
+                        GeneratedPosting(
+                            account="Expenses:Food",
+                            amount="-118.45",
+                            currency="BTC",
+                        ),
                         GeneratedPosting(
                             account="Assets:Bank:Foobar",
                             amount="123.45",
+                            currency="BTC",
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:Fees",
+                            amount="-5",
                             currency="BTC",
                         ),
                     ],
