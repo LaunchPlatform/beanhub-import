@@ -82,11 +82,54 @@ def test_extract_imported_transactions(
                             postings=[],
                         )
                     ],
-                    remove=[],
                     update=[],
+                    remove=[],
                 )
             },
             id="single-add",
+        ),
+        pytest.param(
+            [
+                GeneratedTransaction(
+                    id="MOCK_ID",
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="main.bean",
+                    postings=[],
+                )
+            ],
+            [
+                ImportedTransaction(
+                    file=pathlib.Path("other.bean"), lineno=0, id="MOCK_ID"
+                )
+            ],
+            {
+                pathlib.Path("main.bean"): ChangeSet(
+                    add=[
+                        GeneratedTransaction(
+                            id="MOCK_ID",
+                            date="2024-05-05",
+                            flag="*",
+                            narration="MOCK_DESC",
+                            file="main.bean",
+                            postings=[],
+                        )
+                    ],
+                    update=[],
+                    remove=[],
+                ),
+                pathlib.Path("other.bean"): ChangeSet(
+                    add=[],
+                    update=[],
+                    remove=[
+                        ImportedTransaction(
+                            file=pathlib.Path("other.bean"), lineno=0, id="MOCK_ID"
+                        )
+                    ],
+                ),
+            },
+            id="single-remove-add",
         ),
     ],
 )

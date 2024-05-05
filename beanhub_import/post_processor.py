@@ -59,7 +59,7 @@ def compute_changes(
     to_remove = collections.defaultdict(list)
     for txn in imported_txns:
         generated_txn = generated_id_txns.get(txn.id)
-        if generated_txn is not None and txn.file != generated_txn.file:
+        if generated_txn is not None and txn.file != pathlib.Path(generated_txn.file):
             # it appears that the generated txn's file is different from the old one, let's remove it
             to_remove[txn.file].append(txn)
 
@@ -67,10 +67,11 @@ def compute_changes(
     to_update = collections.defaultdict(list)
     for txn in generated_txns:
         imported_txn = imported_id_txns.get(txn.id)
-        if imported_txn is None:
-            to_add[pathlib.Path(txn.file)].append(txn)
+        generated_file = pathlib.Path(txn.file)
+        if imported_txn is not None and imported_txn.file == generated_file:
+            to_update[generated_file].append(txn)
         else:
-            to_update[pathlib.Path(txn.file)].append(txn)
+            to_add[generated_file].append(txn)
 
     all_files = frozenset(to_remove.keys()).union(to_add.keys()).union(to_update.keys())
     return {
