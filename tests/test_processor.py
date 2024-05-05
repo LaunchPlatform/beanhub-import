@@ -4,12 +4,15 @@ import pathlib
 import typing
 
 import pytest
+import yaml
 from beanhub_extract.data_types import Transaction
+from beanhub_extract.utils import strip_txn_base_path
 from jinja2.sandbox import SandboxedEnvironment
 
 from beanhub_import.data_types import ActionAddTxn
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
+from beanhub_import.data_types import ImportDoc
 from beanhub_import.data_types import ImportRule
 from beanhub_import.data_types import InputConfigDetails
 from beanhub_import.data_types import PostingTemplate
@@ -24,6 +27,7 @@ from beanhub_import.data_types import TransactionTemplate
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
+from beanhub_import.processor import process_imports
 from beanhub_import.processor import process_transaction
 from beanhub_import.processor import walk_dir_files
 
@@ -318,3 +322,41 @@ def test_process_transaction(
         )
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    "folder, expected",
+    [
+        (
+            "simple-mercury",
+            [
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="mercury.csv:2",
+                    date="2024-04-16",
+                    flag="*",
+                    narration="Amazon Web Services",
+                    payee=None,
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount="-353.63",
+                            currency="USD",
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:FooBar", amount="353.63", currency="USD"
+                        ),
+                    ],
+                ),
+            ],
+        )
+    ],
+)
+def test_process_imports(
+    fixtures_folder: pathlib.Path, folder: str, expected: list[GeneratedTransaction]
+):
+    folder_path = fixtures_folder / folder
+    with open(folder_path / "import.yaml", "rt") as fo:
+        payload = yaml.safe_load(fo)
+    doc = ImportDoc.model_validate(payload)
+    assert list(process_imports(import_doc=doc, input_dir=folder_path)) == expected

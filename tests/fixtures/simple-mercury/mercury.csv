@@ -1,0 +1,5 @@
+Date (UTC),Description,Amount,Status,Source Account,Bank Description,Reference,Note,Last Four Digits,Name On Card,Category,GL Code,Timestamp,Original Currency
+04-17-2024,GUSTO,-46.00,Sent,Mercury Checking xx12,GUSTO; FEE 111111; Launch Platform LLC,,,,,,,04-17-2024 21:30:40,
+04-16-2024,Amazon Web Services,-353.63,Sent,Mercury Credit,Amazon web services,,,5678,Fang-Pen Lin,Software,,04-16-2024 03:25:55,USD
+04-16-2024,Adobe,-54.99,Sent,Mercury Credit,ADOBE  *ADOBE,,,5678,Fang-Pen Lin,Software,,04-16-2024 03:24:57,USD
+04-15-2024,Jane Doe,-1500.00,Sent,Mercury Checking xx1234,Send Money transaction initiated on Mercury,Profit distribution,,,,,,04-15-2024 14:35:37,
