@@ -9,10 +9,10 @@
 
 ; comment3
 ; comment4
-2024-03-05 * "DoorDash" "Buy dinner"
+2024-03-05 ! "Uber Eats" "Buy lunch"
   import-id: "id1"
-  Assets:Cash                                            -15.0 USD
-  Expenses:Food                                           15.0 USD
+  Assets:Cash                                           111.45 USD
+  Expenses:Food                                        -111.45 USD
 
 2024-03-06 * "Lyft" "Travel"
   import-id: "id2"
