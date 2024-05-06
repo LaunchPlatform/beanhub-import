@@ -103,7 +103,7 @@ def txn_to_text(txn: GeneratedTransaction) -> str:
     ]
     line = " ".join(columns)
     return "\n".join(
-        [line, f"  import-id: {txn.id}" * (map(posting_to_text, txn.postings))]
+        [line, f"  import-id: {txn.id}", *(map(posting_to_text, txn.postings))]
     )
 
 
