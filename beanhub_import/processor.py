@@ -178,6 +178,8 @@ def process_imports(
 ) -> typing.Generator[GeneratedTransaction, None, None]:
     logger = logging.getLogger(__name__)
     template_env = SandboxedEnvironment()
+    if import_doc.context is not None:
+        template_env.globals.update(import_doc.context)
     for filepath in walk_dir_files(input_dir):
         processed = False
         for input_config in import_doc.inputs:

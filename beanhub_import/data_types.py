@@ -141,6 +141,7 @@ class ImportRule(ImportBaseModel):
 
 
 class ImportDoc(ImportBaseModel):
+    context: dict | None = None
     inputs: list[InputConfig]
     imports: list[ImportRule]
     outputs: list[OutputConfig] | None = None

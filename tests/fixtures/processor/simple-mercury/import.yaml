@@ -1,3 +1,9 @@
+context:
+  myvar:
+    a: 123
+    b: "yolo"
+    account: "Expenses:FooBar"
+
 inputs:
 - match: "*.csv"
   config:
@@ -19,7 +25,7 @@ imports:
         txn:
           narration: "{{ desc }}"
           postings:
-            - account: Expenses:FooBar
+            - account: "{{ myvar.account }}"
               amount:
                 number: "{{ -amount }}"
                 currency: "{{ currency | default('USD', true) }}"
