@@ -28,13 +28,13 @@ click = ">=7.0.0,<9.0.0"
 
 [[package]]
 name = "beancount-parser"
-version = "1.0.1"
+version = "1.2.0"
 description = "Standalone Lark based Beancount syntax parser (not relying on Beancount library), MIT license"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "beancount_parser-1.0.1-py3-none-any.whl", hash = "sha256:aa83bebd2165f816192b63aea7b010670663528781294956c75d6bc7ee6d288f"},
-    {file = "beancount_parser-1.0.1.tar.gz", hash = "sha256:13cd9a9900636c20d76de6ea43e4a40da30b8adb0aa4e7e41913d7d7a3d4d109"},
+    {file = "beancount_parser-1.2.0-py3-none-any.whl", hash = "sha256:3f096a4422060cf262a9266e5e42e2d80fd6bd2d2739f2ff2a0851817e7e6c10"},
+    {file = "beancount_parser-1.2.0.tar.gz", hash = "sha256:4e99386f46e1a1970c2516a8c678769136b8e1dcc2e0f5a1e1676c55bca52eba"},
 ]
 
 [package.dependencies]
@@ -106,13 +106,13 @@ files = [
 
 [[package]]
 name = "jinja2"
-version = "3.1.3"
+version = "3.1.4"
 description = "A very fast and expressive template engine."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "Jinja2-3.1.3-py3-none-any.whl", hash = "sha256:7d6d50dd97d52cbc355597bd845fabfbac3f551e1f99619e39a35ce8c370b5fa"},
-    {file = "Jinja2-3.1.3.tar.gz", hash = "sha256:ac8bd6544d4bb2c9792bf3a159e80bba8fda7f07e81bc3aed565432d5925ba90"},
+    {file = "jinja2-3.1.4-py3-none-any.whl", hash = "sha256:bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d"},
+    {file = "jinja2-3.1.4.tar.gz", hash = "sha256:4a3aee7acbbe7303aede8e9648d13b8bf88a429282aa6122a993f0ac800cb369"},
 ]
 
 [package.dependencies]
@@ -478,4 +478,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "05b3e4f24114bc775bf7b163caa3cb6b7d8c84949d78db7ba2de46f832a8fd44"
+content-hash = "04d9d6d53a72febb9a2de024f8ad5dbc298e484205dc8485f260e31ab1c8ce8d"
