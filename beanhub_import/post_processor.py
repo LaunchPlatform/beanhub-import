@@ -1,5 +1,6 @@
 import collections
 import copy
+import itertools
 import json
 import pathlib
 import typing
@@ -12,6 +13,7 @@ from beancount_parser.parser import traverse
 from lark import Lark
 from lark import Tree
 
+from . import constants
 from .data_types import ChangeSet
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
@@ -19,7 +21,7 @@ from .data_types import ImportedTransaction
 
 
 def extract_imported_transactions(
-    parser: Lark, bean_file: pathlib.Path, import_id_key: str = "import-id"
+    parser: Lark, bean_file: pathlib.Path, import_id_key: str = constants.IMPORT_ID_KEY
 ) -> typing.Generator[ImportedTransaction, None, None]:
     last_txn = None
     for bean_path, tree in traverse(parser=parser, bean_file=bean_file):
@@ -94,20 +96,28 @@ def posting_to_text(posting: GeneratedPosting) -> str:
     return (" " * 2) + " ".join([posting.account, posting.amount, posting.currency])
 
 
-def txn_to_text(txn: GeneratedTransaction) -> str:
+def txn_to_text(
+    txn: GeneratedTransaction, import_id_key: str = constants.IMPORT_ID_KEY
+) -> str:
     columns = [
         txn.date,
         txn.flag,
-        *((txn.payee,) if txn.payee is not None else ()),
+        *((json.dumps(txn.payee),) if txn.payee is not None else ()),
         json.dumps(txn.narration),
     ]
     line = " ".join(columns)
     return "\n".join(
-        [line, f"  import-id: {txn.id}", *(map(posting_to_text, txn.postings))]
+        [
+            line,
+            f"  {import_id_key}: {json.dumps(txn.id)}",
+            *(map(posting_to_text, txn.postings)),
+        ]
     )
 
 
-def apply_change_set(tree: Lark, change_set: ChangeSet) -> Lark:
+def apply_change_set(
+    tree: Lark, change_set: ChangeSet, import_id_key: str = constants.IMPORT_ID_KEY
+) -> Lark:
     if tree.data != "start":
         raise ValueError("expected start as the root rule")
     parser = make_parser()
@@ -117,7 +127,10 @@ def apply_change_set(tree: Lark, change_set: ChangeSet) -> Lark:
         lineno: to_parser_entry(parser, txn_to_text(txn))
         for lineno, txn in change_set.update.items()
     }
-    entries_to_add = [to_parser_entry(txn_to_text(txn)) for txn in change_set.add]
+    entries_to_add = [
+        to_parser_entry(parser, txn_to_text(txn, import_id_key=import_id_key))
+        for txn in change_set.add
+    ]
 
     new_tree = copy.deepcopy(tree)
     entries, tail_comments = collect_entries(new_tree)
@@ -133,7 +146,7 @@ def apply_change_set(tree: Lark, change_set: ChangeSet) -> Lark:
         )
 
     new_children = []
-    for entry in entries:
+    for entry in itertools.chain(entries, entries_to_add):
         if entry.type == EntryType.COMMENTS:
             new_children.extend(entry.comments)
             continue
@@ -141,7 +154,8 @@ def apply_change_set(tree: Lark, change_set: ChangeSet) -> Lark:
             # We also drop the comments
             continue
         actual_entry = line_to_entries.get(entry.statement.meta.line, entry)
-        new_children.extend(actual_entry.comments)
+        # use comments from existing entry regardless
+        new_children.extend(entry.comments)
         new_children.append(actual_entry.statement)
         for metadata in actual_entry.metadata:
             new_children.extend(metadata.comments)
@@ -152,8 +166,6 @@ def apply_change_set(tree: Lark, change_set: ChangeSet) -> Lark:
             for metadata in posting.metadata:
                 new_children.extend(metadata.comments)
                 new_children.append(metadata.statement)
-
-    new_children.extend(entries_to_add)
 
     if tailing_comments_entry is not None:
         new_children.extend(tailing_comments_entry.comments)

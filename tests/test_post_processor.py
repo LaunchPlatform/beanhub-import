@@ -1,14 +1,18 @@
 import dataclasses
 import functools
+import io
 import pathlib
 
 import pytest
+from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
 from lark import Lark
 
 from beanhub_import.data_types import ChangeSet
+from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportedTransaction
+from beanhub_import.post_processor import apply_change_set
 from beanhub_import.post_processor import compute_changes
 from beanhub_import.post_processor import extract_imported_transactions
 
@@ -22,6 +26,11 @@ def strip_txn_for_compare(base_path: pathlib.Path, txn: ImportedTransaction):
 @pytest.fixture
 def parser() -> Lark:
     return make_parser()
+
+
+@pytest.fixture
+def formatter() -> Formatter:
+    return Formatter()
 
 
 @pytest.mark.parametrize(
@@ -248,3 +257,81 @@ def test_compute_changes(
     expected: dict[str, ChangeSet],
 ):
     assert compute_changes(gen_txns, import_txns) == expected
+
+
+@pytest.mark.parametrize(
+    "bean_file, change_set, expected_file",
+    [
+        (
+            "simple.bean",
+            ChangeSet(
+                add=[
+                    GeneratedTransaction(
+                        id="id99",
+                        date="2024-05-05",
+                        flag="*",
+                        narration="MOCK_DESC",
+                        file="main.bean",
+                        postings=[
+                            GeneratedPosting(
+                                account="Assets:Cash",
+                                amount="123.45",
+                                currency="USD",
+                            ),
+                            GeneratedPosting(
+                                account="Expenses:Food",
+                                amount="-123.45",
+                                currency="USD",
+                            ),
+                        ],
+                    ),
+                ],
+                update={
+                    12: GeneratedTransaction(
+                        id="id1",
+                        date="2024-03-05",
+                        flag="!",
+                        payee="Uber Eats",
+                        narration="Buy lunch",
+                        file="main.bean",
+                        postings=[
+                            GeneratedPosting(
+                                account="Assets:Cash",
+                                amount="111.45",
+                                currency="USD",
+                            ),
+                            GeneratedPosting(
+                                account="Expenses:Food",
+                                amount="-111.45",
+                                currency="USD",
+                            ),
+                        ],
+                    ),
+                },
+                remove=[
+                    ImportedTransaction(
+                        file=pathlib.Path("main.bean"), lineno=28, id="id3"
+                    )
+                ],
+            ),
+            "simple-expected.bean",
+        )
+    ],
+)
+def test_apply_change_sets(
+    parser: Lark,
+    formatter: Formatter,
+    fixtures_folder: pathlib.Path,
+    bean_file: str,
+    change_set: ChangeSet,
+    expected_file: str,
+):
+    bean_file_path = fixtures_folder / "post_processor" / "apply-changes" / bean_file
+    expected_file_path = (
+        fixtures_folder / "post_processor" / "apply-changes" / expected_file
+    )
+    tree = parser.parse(bean_file_path.read_text())
+    new_tree = apply_change_set(tree, change_set)
+    output_str = io.StringIO()
+    formatter.format(new_tree, output_str)
+    assert output_str.getvalue() == expected_file_path.read_text()
