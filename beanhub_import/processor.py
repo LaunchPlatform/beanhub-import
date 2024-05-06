@@ -31,7 +31,7 @@ DEFAULT_TXN_TEMPLATE = dict(
     id="{{ file }}:{{ lineno }}",
     date="{{ date }}",
     flag="*",
-    narration="{{ desc | default(bank_desc) }}",
+    narration="{{ desc | default(bank_desc, true) }}",
 )
 
 
