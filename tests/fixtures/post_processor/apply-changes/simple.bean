@@ -4,6 +4,7 @@
 
 2024-03-04 * "DoorDash" "Buy dinner"
     import-id: "id0"
+    other: USD
     Assets:Cash   -8 USD
     Expenses:Food  8 USD
 

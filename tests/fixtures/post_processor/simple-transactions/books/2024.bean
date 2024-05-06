@@ -4,6 +4,7 @@
     Expenses:Food  8 USD
 
 2024-05-05 "*" "Buy dinner"
+    other: USD
     Assets:Cash   -10 USD
     Expenses:Food  10 USD
 

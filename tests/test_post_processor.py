@@ -41,7 +41,7 @@ def formatter() -> Formatter:
             "simple-transactions",
             [
                 dict(file="books/2024.bean", lineno=1, id="id0"),
-                dict(file="books/2024.bean", lineno=10, id="id1"),
+                dict(file="books/2024.bean", lineno=11, id="id1"),
                 dict(file="books/2025.bean", lineno=1, id="id2"),
             ],
         ),
@@ -309,7 +309,7 @@ def test_compute_changes(
                     ),
                 ],
                 update={
-                    12: GeneratedTransaction(
+                    13: GeneratedTransaction(
                         id="id1",
                         date="2024-03-05",
                         flag="!",
@@ -330,7 +330,7 @@ def test_compute_changes(
                 },
                 remove=[
                     ImportedTransaction(
-                        file=pathlib.Path("main.bean"), lineno=28, id="id3"
+                        file=pathlib.Path("main.bean"), lineno=29, id="id3"
                     )
                 ],
             ),

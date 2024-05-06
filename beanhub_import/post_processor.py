@@ -43,10 +43,15 @@ def extract_imported_transactions(
                 last_txn = date_directive
             elif first_child.data == "metadata_item":
                 metadata_key = first_child.children[0].value
-                metadata_value = json.loads(first_child.children[1].value)
-                if metadata_key == import_id_key:
+                metadata_value = first_child.children[1]
+                if (
+                    metadata_key == import_id_key
+                    and metadata_value.type == "ESCAPED_STRING"
+                ):
                     yield ImportedTransaction(
-                        file=bean_path, lineno=last_txn.meta.line, id=metadata_value
+                        file=bean_path,
+                        lineno=last_txn.meta.line,
+                        id=json.loads(metadata_value.value),
                     )
 
 
