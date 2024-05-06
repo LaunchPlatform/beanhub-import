@@ -82,7 +82,7 @@ def test_extract_imported_transactions(
                             postings=[],
                         )
                     ],
-                    update=[],
+                    update={},
                     remove=[],
                 )
             },
@@ -116,12 +116,12 @@ def test_extract_imported_transactions(
                             postings=[],
                         )
                     ],
-                    update=[],
+                    update={},
                     remove=[],
                 ),
                 pathlib.Path("other.bean"): ChangeSet(
                     add=[],
-                    update=[],
+                    update={},
                     remove=[
                         ImportedTransaction(
                             file=pathlib.Path("other.bean"), lineno=0, id="MOCK_ID"
@@ -150,8 +150,8 @@ def test_extract_imported_transactions(
             {
                 pathlib.Path("main.bean"): ChangeSet(
                     add=[],
-                    update=[
-                        GeneratedTransaction(
+                    update={
+                        0: GeneratedTransaction(
                             id="MOCK_ID",
                             date="2024-05-05",
                             flag="*",
@@ -159,7 +159,7 @@ def test_extract_imported_transactions(
                             file="main.bean",
                             postings=[],
                         )
-                    ],
+                    },
                     remove=[],
                 ),
             },
@@ -194,13 +194,13 @@ def test_extract_imported_transactions(
             ],
             [
                 ImportedTransaction(file=pathlib.Path("main.bean"), lineno=0, id="id0"),
-                ImportedTransaction(file=pathlib.Path("main.bean"), lineno=0, id="id1"),
+                ImportedTransaction(file=pathlib.Path("main.bean"), lineno=1, id="id1"),
             ],
             {
                 pathlib.Path("main.bean"): ChangeSet(
                     add=[],
-                    update=[
-                        GeneratedTransaction(
+                    update={
+                        0: GeneratedTransaction(
                             id="id0",
                             date="2024-05-05",
                             flag="*",
@@ -208,10 +208,10 @@ def test_extract_imported_transactions(
                             file="main.bean",
                             postings=[],
                         ),
-                    ],
+                    },
                     remove=[
                         ImportedTransaction(
-                            file=pathlib.Path("main.bean"), lineno=0, id="id1"
+                            file=pathlib.Path("main.bean"), lineno=1, id="id1"
                         ),
                     ],
                 ),
@@ -234,7 +234,7 @@ def test_extract_imported_transactions(
                             postings=[],
                         ),
                     ],
-                    update=[],
+                    update={},
                     remove=[],
                 ),
             },

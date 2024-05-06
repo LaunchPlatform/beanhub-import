@@ -153,6 +153,6 @@ class ChangeSet:
     # list of imported transaction to remove
     remove: list[ImportedTransaction]
     # map from
-    update: list[GeneratedTransaction]
+    update: dict[int, GeneratedTransaction]
     # list of generated transaction to add
     add: list[GeneratedTransaction]
