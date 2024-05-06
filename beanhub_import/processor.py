@@ -161,8 +161,17 @@ def process_transaction(
                     )
                 )
 
+            output_file = first_non_none(action.file, input_config.default_file)
+            if output_file is None:
+                logger.error(
+                    "Output file not defined when generating transaction with rule %s",
+                    import_rule,
+                )
+                raise ValueError(
+                    f"Output file not defined when generating transaction with rule {import_rule}"
+                )
             yield GeneratedTransaction(
-                file=render_str(action.file),
+                file=render_str(output_file),
                 postings=generated_postings,
                 **{key: render_str(value) for key, value in template_values.items()},
             )

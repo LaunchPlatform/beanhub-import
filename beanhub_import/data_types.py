@@ -109,7 +109,7 @@ class GeneratedTransaction(ImportBaseModel):
 
 class ActionAddTxn(ImportBaseModel):
     type: typing.Literal[ActionType.add_txn] = pydantic.Field(ActionType.add_txn)
-    file: str
+    file: str | None = None
     txn: TransactionTemplate
 
 
@@ -121,6 +121,7 @@ SimpleFileMatch = str | StrExactMatch | StrRegexMatch
 
 class InputConfigDetails(ImportBaseModel):
     extractor: str | None = None
+    default_file: str | None = None
     prepend_postings: list[PostingTemplate] | None = None
     appending_postings: list[PostingTemplate] | None = None
     default_txn: TransactionTemplate | None = None
