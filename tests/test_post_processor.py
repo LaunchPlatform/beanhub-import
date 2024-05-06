@@ -252,11 +252,34 @@ def test_extract_imported_transactions(
     ],
 )
 def test_compute_changes(
+    tmp_path: pathlib.Path,
     gen_txns: list[GeneratedTransaction],
     import_txns: list[ImportedTransaction],
     expected: dict[str, ChangeSet],
 ):
-    assert compute_changes(gen_txns, import_txns) == expected
+    import_txns = [
+        ImportedTransaction(
+            **(dataclasses.asdict(txn) | dict(file=tmp_path / txn.file))
+        )
+        for txn in import_txns
+    ]
+
+    def strip_imported_txn(change_set: ChangeSet) -> ChangeSet:
+        kwargs = dataclasses.asdict(change_set)
+        kwargs["remove"] = [
+            ImportedTransaction(
+                **(dataclasses.asdict(txn) | dict(file=txn.file.relative_to(tmp_path)))
+            )
+            for txn in change_set.remove
+        ]
+        return ChangeSet(**kwargs)
+
+    assert {
+        key.relative_to(tmp_path): strip_imported_txn(value)
+        for key, value in compute_changes(
+            gen_txns, import_txns, work_dir=tmp_path
+        ).items()
+    } == expected
 
 
 @pytest.mark.parametrize(

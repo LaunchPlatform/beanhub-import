@@ -51,7 +51,9 @@ def extract_imported_transactions(
 
 
 def compute_changes(
-    generated_txns: list[GeneratedTransaction], imported_txns: list[ImportedTransaction]
+    generated_txns: list[GeneratedTransaction],
+    imported_txns: list[ImportedTransaction],
+    work_dir: pathlib.Path,
 ) -> dict[pathlib.Path, ChangeSet]:
     generated_id_txns = {txn.id: txn for txn in generated_txns}
     imported_id_txns = {txn.id: txn for txn in imported_txns}
@@ -59,7 +61,9 @@ def compute_changes(
     to_remove = collections.defaultdict(list)
     for txn in imported_txns:
         generated_txn = generated_id_txns.get(txn.id)
-        if generated_txn is not None and txn.file != pathlib.Path(generated_txn.file):
+        if generated_txn is not None and txn.file.resolve() != (
+            work_dir / generated_txn.file
+        ):
             # it appears that the generated txn's file is different from the old one, let's remove it
             to_remove[txn.file].append(txn)
 
@@ -67,8 +71,8 @@ def compute_changes(
     to_update = collections.defaultdict(dict)
     for txn in generated_txns:
         imported_txn = imported_id_txns.get(txn.id)
-        generated_file = pathlib.Path(txn.file)
-        if imported_txn is not None and imported_txn.file == generated_file:
+        generated_file = (work_dir / txn.file).resolve()
+        if imported_txn is not None and imported_txn.file.resolve() == generated_file:
             to_update[generated_file][imported_txn.lineno] = txn
         else:
             to_add[generated_file].append(txn)
