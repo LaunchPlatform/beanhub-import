@@ -9,6 +9,8 @@ from beanhub_extract.data_types import Transaction
 from jinja2.sandbox import SandboxedEnvironment
 
 from beanhub_import.data_types import ActionAddTxn
+from beanhub_import.data_types import Amount
+from beanhub_import.data_types import AmountTemplate
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
@@ -183,15 +185,19 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                 prepend_postings=[
                     PostingTemplate(
                         account="Expenses:Food",
-                        amount="{{ -(amount - 5) }}",
-                        currency="{{ currency }}",
+                        amount=AmountTemplate(
+                            number="{{ -(amount - 5) }}",
+                            currency="{{ currency }}",
+                        ),
                     ),
                 ],
                 appending_postings=[
                     PostingTemplate(
                         account="Expenses:Fees",
-                        amount="-5",
-                        currency="{{ currency }}",
+                        amount=AmountTemplate(
+                            number="-5",
+                            currency="{{ currency }}",
+                        ),
                     ),
                 ],
             ),
@@ -207,8 +213,10 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                                 postings=[
                                     PostingTemplate(
                                         account="Assets:Bank:{{ source_account }}",
-                                        amount="{{ amount }}",
-                                        currency="{{ currency }}",
+                                        amount=AmountTemplate(
+                                            number="{{ amount }}",
+                                            currency="{{ currency }}",
+                                        ),
                                     ),
                                 ]
                             ),
@@ -226,18 +234,24 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                     postings=[
                         GeneratedPosting(
                             account="Expenses:Food",
-                            amount="-118.45",
-                            currency="BTC",
+                            amount=Amount(
+                                number="-118.45",
+                                currency="BTC",
+                            ),
                         ),
                         GeneratedPosting(
                             account="Assets:Bank:Foobar",
-                            amount="123.45",
-                            currency="BTC",
+                            amount=Amount(
+                                number="123.45",
+                                currency="BTC",
+                            ),
                         ),
                         GeneratedPosting(
                             account="Expenses:Fees",
-                            amount="-5",
-                            currency="BTC",
+                            amount=Amount(
+                                number="-5",
+                                currency="BTC",
+                            ),
                         ),
                     ],
                 )
@@ -264,8 +278,10 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                     postings=[
                         PostingTemplate(
                             account="Assets:Bank:{{ source_account }}",
-                            amount="{{ amount }}",
-                            currency="{{ currency }}",
+                            amount=AmountTemplate(
+                                number="{{ amount }}",
+                                currency="{{ currency }}",
+                            ),
                         ),
                     ],
                 ),
@@ -293,8 +309,10 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                     postings=[
                         GeneratedPosting(
                             account="Assets:Bank:Foobar",
-                            amount="123.45",
-                            currency="BTC",
+                            amount=Amount(
+                                number="123.45",
+                                currency="BTC",
+                            ),
                         ),
                     ],
                 )
@@ -339,11 +357,14 @@ def test_process_transaction(
                     postings=[
                         GeneratedPosting(
                             account="Assets:Bank:US:Mercury",
-                            amount="-353.63",
-                            currency="USD",
+                            amount=Amount(
+                                number="-353.63",
+                                currency="USD",
+                            ),
                         ),
                         GeneratedPosting(
-                            account="Expenses:FooBar", amount="353.63", currency="USD"
+                            account="Expenses:FooBar",
+                            amount=Amount(number="353.63", currency="USD"),
                         ),
                     ],
                 ),

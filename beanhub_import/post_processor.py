@@ -97,7 +97,16 @@ def to_parser_entry(parser: Lark, text: str) -> Entry:
 
 
 def posting_to_text(posting: GeneratedPosting) -> str:
-    return (" " * 2) + " ".join([posting.account, posting.amount, posting.currency])
+    columns = [
+        posting.account,
+    ]
+    if posting.amount is not None:
+        columns.append(f"{posting.amount.number} {posting.amount.currency}")
+    if posting.cost is not None:
+        columns.append(posting.cost)
+    if posting.price is not None:
+        columns.append(f"@ {posting.price.number} {posting.price.currency}")
+    return (" " * 2) + " ".join(columns)
 
 
 def txn_to_text(

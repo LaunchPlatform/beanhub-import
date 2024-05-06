@@ -4,8 +4,9 @@ inputs:
     extractor: mercury
     prepend_postings:
       - account: Assets:Bank:US:Mercury
-        amount: "{{ amount }}"
-        currency: "{{ currency | default('USD') }}"
+        amount:
+          number: "{{ amount }}"
+          currency: "{{ currency | default('USD', true) }}"
 
 imports:
   - match:
@@ -19,5 +20,6 @@ imports:
           narration: "{{ desc }}"
           postings:
             - account: Expenses:FooBar
-              amount: "{{ -amount }}"
-              currency: "{{ currency | default('USD') }}"
+              amount:
+                number: "{{ -amount }}"
+                currency: "{{ currency | default('USD', true) }}"

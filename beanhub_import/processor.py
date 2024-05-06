@@ -11,6 +11,7 @@ from beanhub_extract.utils import strip_txn_base_path
 from jinja2.sandbox import SandboxedEnvironment
 
 from .data_types import ActionType
+from .data_types import Amount
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
@@ -135,11 +136,27 @@ def process_transaction(
 
             generated_postings = []
             for posting_template in posting_templates:
+                amount = None
+                if posting_template.amount is not None:
+                    amount = Amount(
+                        number=render_str(posting_template.amount.number),
+                        currency=render_str(posting_template.amount.currency),
+                    )
+                price = None
+                if posting_template.price is not None:
+                    price = Amount(
+                        number=render_str(posting_template.price.number),
+                        currency=render_str(posting_template.price.currency),
+                    )
+                cost = None
+                if posting_template.cost is not None:
+                    cost = render_str(posting_template.cost)
                 generated_postings.append(
                     GeneratedPosting(
                         account=render_str(posting_template.account),
-                        amount=render_str(posting_template.amount),
-                        currency=render_str(posting_template.currency),
+                        amount=amount,
+                        price=price,
+                        cost=cost,
                     )
                 )
 

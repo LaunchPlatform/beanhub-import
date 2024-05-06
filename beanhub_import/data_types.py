@@ -61,14 +61,17 @@ class ActionType(str, enum.Enum):
     add_txn = "add_txn"
 
 
+class AmountTemplate(ImportBaseModel):
+    number: str | None = None
+    currency: str | None = None
+
+
 class PostingTemplate(ImportBaseModel):
     # account of the posting
     account: str | None = None
-    # amount of the posting
-    amount: str | None = None
-    # currency of the posting
-    currency: str | None = None
-    # TODO: support cost / price and etc
+    amount: AmountTemplate | None = None
+    price: AmountTemplate | None = None
+    cost: str | None = None
 
 
 class TransactionTemplate(ImportBaseModel):
@@ -81,14 +84,16 @@ class TransactionTemplate(ImportBaseModel):
     postings: list[PostingTemplate] | None = None
 
 
+class Amount(ImportBaseModel):
+    number: str
+    currency: str
+
+
 class GeneratedPosting(ImportBaseModel):
-    # account of the posting
     account: str
-    # amount of the posting
-    amount: str | None = None
-    # currency of the posting
-    currency: str | None = None
-    # TODO: support cost / price and etc
+    amount: Amount | None = None
+    price: Amount | None = None
+    cost: str | None = None
 
 
 class GeneratedTransaction(ImportBaseModel):

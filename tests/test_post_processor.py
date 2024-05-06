@@ -8,6 +8,7 @@ from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
 from lark import Lark
 
+from beanhub_import.data_types import Amount
 from beanhub_import.data_types import ChangeSet
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
@@ -298,13 +299,11 @@ def test_compute_changes(
                         postings=[
                             GeneratedPosting(
                                 account="Assets:Cash",
-                                amount="123.45",
-                                currency="USD",
+                                amount=Amount(number="123.45", currency="USD"),
                             ),
                             GeneratedPosting(
                                 account="Expenses:Food",
-                                amount="-123.45",
-                                currency="USD",
+                                amount=Amount(number="-123.45", currency="USD"),
                             ),
                         ],
                     ),
@@ -320,13 +319,11 @@ def test_compute_changes(
                         postings=[
                             GeneratedPosting(
                                 account="Assets:Cash",
-                                amount="111.45",
-                                currency="USD",
+                                amount=Amount(number="111.45", currency="USD"),
                             ),
                             GeneratedPosting(
                                 account="Expenses:Food",
-                                amount="-111.45",
-                                currency="USD",
+                                amount=Amount(number="-111.45", currency="USD"),
                             ),
                         ],
                     ),
