@@ -167,7 +167,9 @@ def process_transaction(
                 **{key: render_str(value) for key, value in template_values.items()},
             )
         break
-    logger.debug("No match found for transaction at %s:%s", txn.file, txn.lineno)
+    logger.debug(
+        "No match found for transaction %s at %s:%s", txn, txn.file, txn.lineno
+    )
 
 
 def process_imports(
