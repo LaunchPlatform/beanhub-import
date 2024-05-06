@@ -93,6 +93,7 @@ def process_transaction(
     txn: Transaction,
     default_import_id: str | None = None,
 ) -> typing.Generator[GeneratedTransaction, None, None]:
+    logger = logging.getLogger(__name__)
     txn_ctx = dataclasses.asdict(txn)
     default_txn = input_config.default_txn
 
@@ -166,6 +167,7 @@ def process_transaction(
                 **{key: render_str(value) for key, value in template_values.items()},
             )
         break
+    logger.debug("No match found for transaction at %s:%s", txn.file, txn.lineno)
 
 
 def process_imports(
