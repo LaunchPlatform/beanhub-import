@@ -9,16 +9,16 @@ from beancount_parser.parser import make_parser
 from lark import Lark
 
 from beanhub_import.data_types import Amount
+from beanhub_import.data_types import BeancountTransaction
 from beanhub_import.data_types import ChangeSet
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
-from beanhub_import.data_types import ImportedTransaction
 from beanhub_import.post_processor import apply_change_set
 from beanhub_import.post_processor import compute_changes
-from beanhub_import.post_processor import extract_imported_transactions
+from beanhub_import.post_processor import extract_existing_transactions
 
 
-def strip_txn_for_compare(base_path: pathlib.Path, txn: ImportedTransaction):
+def strip_txn_for_compare(base_path: pathlib.Path, txn: BeancountTransaction):
     result = dataclasses.asdict(txn)
     result["file"] = str(result["file"].relative_to(base_path).as_posix())
     return result
@@ -55,7 +55,7 @@ def test_extract_imported_transactions(
         list(
             map(
                 functools.partial(strip_txn_for_compare, folder_path),
-                extract_imported_transactions(
+                extract_existing_transactions(
                     parser=parser, bean_file=folder_path / "main.bean"
                 ),
             )
@@ -110,7 +110,7 @@ def test_extract_imported_transactions(
                 )
             ],
             [
-                ImportedTransaction(
+                BeancountTransaction(
                     file=pathlib.Path("other.bean"), lineno=0, id="MOCK_ID"
                 )
             ],
@@ -133,7 +133,7 @@ def test_extract_imported_transactions(
                     add=[],
                     update={},
                     remove=[
-                        ImportedTransaction(
+                        BeancountTransaction(
                             file=pathlib.Path("other.bean"), lineno=0, id="MOCK_ID"
                         )
                     ],
@@ -153,7 +153,7 @@ def test_extract_imported_transactions(
                 )
             ],
             [
-                ImportedTransaction(
+                BeancountTransaction(
                     file=pathlib.Path("main.bean"), lineno=0, id="MOCK_ID"
                 )
             ],
@@ -203,8 +203,12 @@ def test_extract_imported_transactions(
                 ),
             ],
             [
-                ImportedTransaction(file=pathlib.Path("main.bean"), lineno=0, id="id0"),
-                ImportedTransaction(file=pathlib.Path("main.bean"), lineno=1, id="id1"),
+                BeancountTransaction(
+                    file=pathlib.Path("main.bean"), lineno=0, id="id0"
+                ),
+                BeancountTransaction(
+                    file=pathlib.Path("main.bean"), lineno=1, id="id1"
+                ),
             ],
             {
                 pathlib.Path("main.bean"): ChangeSet(
@@ -220,7 +224,7 @@ def test_extract_imported_transactions(
                         ),
                     },
                     remove=[
-                        ImportedTransaction(
+                        BeancountTransaction(
                             file=pathlib.Path("main.bean"), lineno=1, id="id1"
                         ),
                     ],
@@ -255,11 +259,11 @@ def test_extract_imported_transactions(
 def test_compute_changes(
     tmp_path: pathlib.Path,
     gen_txns: list[GeneratedTransaction],
-    import_txns: list[ImportedTransaction],
+    import_txns: list[BeancountTransaction],
     expected: dict[str, ChangeSet],
 ):
     import_txns = [
-        ImportedTransaction(
+        BeancountTransaction(
             **(dataclasses.asdict(txn) | dict(file=tmp_path / txn.file))
         )
         for txn in import_txns
@@ -268,7 +272,7 @@ def test_compute_changes(
     def strip_imported_txn(change_set: ChangeSet) -> ChangeSet:
         kwargs = dataclasses.asdict(change_set)
         kwargs["remove"] = [
-            ImportedTransaction(
+            BeancountTransaction(
                 **(dataclasses.asdict(txn) | dict(file=txn.file.relative_to(tmp_path)))
             )
             for txn in change_set.remove
@@ -329,7 +333,7 @@ def test_compute_changes(
                     ),
                 },
                 remove=[
-                    ImportedTransaction(
+                    BeancountTransaction(
                         file=pathlib.Path("main.bean"), lineno=29, id="id3"
                     )
                 ],

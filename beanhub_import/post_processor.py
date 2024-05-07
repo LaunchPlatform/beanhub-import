@@ -14,15 +14,15 @@ from lark import Lark
 from lark import Tree
 
 from . import constants
+from .data_types import BeancountTransaction
 from .data_types import ChangeSet
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
-from .data_types import ImportedTransaction
 
 
-def extract_imported_transactions(
+def extract_existing_transactions(
     parser: Lark, bean_file: pathlib.Path, import_id_key: str = constants.IMPORT_ID_KEY
-) -> typing.Generator[ImportedTransaction, None, None]:
+) -> typing.Generator[BeancountTransaction, None, None]:
     last_txn = None
     for bean_path, tree in traverse(parser=parser, bean_file=bean_file):
         if tree.data != "start":
@@ -48,7 +48,7 @@ def extract_imported_transactions(
                     metadata_key == import_id_key
                     and metadata_value.type == "ESCAPED_STRING"
                 ):
-                    yield ImportedTransaction(
+                    yield BeancountTransaction(
                         file=bean_path,
                         lineno=last_txn.meta.line,
                         id=json.loads(metadata_value.value),
@@ -57,7 +57,7 @@ def extract_imported_transactions(
 
 def compute_changes(
     generated_txns: list[GeneratedTransaction],
-    imported_txns: list[ImportedTransaction],
+    imported_txns: list[BeancountTransaction],
     work_dir: pathlib.Path,
 ) -> dict[pathlib.Path, ChangeSet]:
     generated_id_txns = {txn.id: txn for txn in generated_txns}

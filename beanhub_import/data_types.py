@@ -149,7 +149,7 @@ class ImportDoc(ImportBaseModel):
 
 
 @dataclasses.dataclass(frozen=True)
-class ImportedTransaction:
+class BeancountTransaction:
     file: pathlib.Path
     lineno: int
     id: str
@@ -157,8 +157,8 @@ class ImportedTransaction:
 
 @dataclasses.dataclass(frozen=True)
 class ChangeSet:
-    # list of imported transaction to remove
-    remove: list[ImportedTransaction]
+    # list of existing beancount transaction to remove
+    remove: list[BeancountTransaction]
     # map from
     update: dict[int, GeneratedTransaction]
     # list of generated transaction to add

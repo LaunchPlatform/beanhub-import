@@ -92,10 +92,11 @@ def process_transaction(
     import_rules: list[ImportRule],
     txn: Transaction,
     default_import_id: str | None = None,
-) -> typing.Generator[GeneratedTransaction, None, None]:
+) -> typing.Generator[GeneratedTransaction, None, bool]:
     logger = logging.getLogger(__name__)
     txn_ctx = dataclasses.asdict(txn)
     default_txn = input_config.default_txn
+    processed = False
 
     def render_str(value: str | None) -> str | None:
         if value is None:
@@ -170,27 +171,30 @@ def process_transaction(
                 raise ValueError(
                     f"Output file not defined when generating transaction with rule {import_rule}"
                 )
+            processed = True
             yield GeneratedTransaction(
                 file=render_str(output_file),
                 postings=generated_postings,
                 **{key: render_str(value) for key, value in template_values.items()},
             )
+            # TODO: make it possible to generate multiple transaction by changing rule config if there's
+            #       a valid use case
         break
     logger.debug(
         "No match found for transaction %s at %s:%s", txn, txn.file, txn.lineno
     )
+    return processed
 
 
 def process_imports(
     import_doc: ImportDoc,
     input_dir: pathlib.Path,
-) -> typing.Generator[GeneratedTransaction, None, None]:
+) -> typing.Generator[GeneratedTransaction | Transaction, None, None]:
     logger = logging.getLogger(__name__)
     template_env = SandboxedEnvironment()
     if import_doc.context is not None:
         template_env.globals.update(import_doc.context)
     for filepath in walk_dir_files(input_dir):
-        processed = False
         for input_config in import_doc.inputs:
             if not match_file(input_config.match, filepath):
                 continue
@@ -215,15 +219,14 @@ def process_imports(
                 extractor = extractor_cls(fo)
                 for transaction in extractor():
                     txn = strip_txn_base_path(input_dir, transaction)
-                    for generated_txn in process_transaction(
+                    txn_generator = process_transaction(
                         template_env=template_env,
                         input_config=input_config.config,
                         import_rules=import_doc.imports,
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
-                    ):
-                        yield generated_txn
-            processed = True
+                    )
+                    txn_processed = yield from txn_generator
+                    if not txn_processed:
+                        yield txn
             break
-        if processed:
-            continue

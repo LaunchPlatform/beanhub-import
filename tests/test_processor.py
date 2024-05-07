@@ -4,6 +4,7 @@ import pathlib
 import typing
 
 import pytest
+import pytz
 import yaml
 from beanhub_extract.data_types import Transaction
 from jinja2.sandbox import SandboxedEnvironment
@@ -168,7 +169,7 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
 
 
 @pytest.mark.parametrize(
-    "txn, input_config, import_rules, expected",
+    "txn, input_config, import_rules, expected, expected_processed",
     [
         pytest.param(
             Transaction(
@@ -256,6 +257,7 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                     ],
                 )
             ],
+            True,
             id="generic",
         ),
         pytest.param(
@@ -317,7 +319,51 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                     ],
                 )
             ],
+            True,
             id="default-values",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            InputConfigDetails(
+                prepend_postings=[
+                    PostingTemplate(
+                        account="Expenses:Food",
+                        amount=AmountTemplate(
+                            number="{{ -(amount - 5) }}",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+                appending_postings=[
+                    PostingTemplate(
+                        account="Expenses:Fees",
+                        amount=AmountTemplate(
+                            number="-5",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+            ),
+            [
+                ImportRule(
+                    match=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="OTHER_MOCK_EXTRACTOR")
+                    ),
+                    actions=[],
+                )
+            ],
+            [],
+            False,
+            id="no-match",
         ),
     ],
 )
@@ -327,18 +373,21 @@ def test_process_transaction(
     import_rules: list[ImportRule],
     txn: Transaction,
     expected: list[GeneratedTransaction],
+    expected_processed: bool,
 ):
-    assert (
-        list(
-            process_transaction(
-                template_env=template_env,
-                input_config=input_config,
-                import_rules=import_rules,
-                txn=txn,
-            )
+    processed = None
+
+    def get_result():
+        nonlocal processed
+        processed = yield from process_transaction(
+            template_env=template_env,
+            input_config=input_config,
+            import_rules=import_rules,
+            txn=txn,
         )
-        == expected
-    )
+
+    assert list(get_result()) == expected
+    assert processed == expected_processed
 
 
 @pytest.mark.parametrize(
@@ -347,6 +396,27 @@ def test_process_transaction(
         (
             "simple-mercury",
             [
+                Transaction(
+                    extractor="mercury",
+                    file="mercury.csv",
+                    lineno=1,
+                    reversed_lineno=-4,
+                    date=datetime.date(2024, 4, 17),
+                    post_date=None,
+                    timestamp=datetime.datetime(
+                        2024, 4, 17, 21, 30, 40, tzinfo=pytz.UTC
+                    ),
+                    timezone="UTC",
+                    desc="GUSTO",
+                    bank_desc="GUSTO; FEE 111111; Launch Platform LLC",
+                    amount=decimal.Decimal("-46.00"),
+                    currency="",
+                    category="",
+                    status="Sent",
+                    source_account="Mercury Checking xx12",
+                    note="",
+                    reference="",
+                ),
                 GeneratedTransaction(
                     file="output.bean",
                     id="mercury.csv:-3",
@@ -367,6 +437,50 @@ def test_process_transaction(
                             amount=Amount(number="353.63", currency="USD"),
                         ),
                     ],
+                ),
+                Transaction(
+                    extractor="mercury",
+                    file="mercury.csv",
+                    lineno=3,
+                    reversed_lineno=-2,
+                    date=datetime.date(2024, 4, 16),
+                    post_date=None,
+                    timestamp=datetime.datetime(
+                        2024, 4, 16, 3, 24, 57, tzinfo=pytz.UTC
+                    ),
+                    timezone="UTC",
+                    desc="Adobe",
+                    bank_desc="ADOBE  *ADOBE",
+                    amount=decimal.Decimal("-54.99"),
+                    currency="USD",
+                    category="Software",
+                    status="Sent",
+                    type=None,
+                    source_account="Mercury Credit",
+                    dest_account=None,
+                    note="",
+                    reference="",
+                    payee=None,
+                ),
+                Transaction(
+                    extractor="mercury",
+                    file="mercury.csv",
+                    lineno=4,
+                    reversed_lineno=-1,
+                    date=datetime.date(2024, 4, 15),
+                    timestamp=datetime.datetime(
+                        2024, 4, 15, 14, 35, 37, tzinfo=pytz.UTC
+                    ),
+                    timezone="UTC",
+                    desc="Jane Doe",
+                    bank_desc="Send Money transaction initiated on Mercury",
+                    amount=decimal.Decimal("-1500.00"),
+                    currency="",
+                    category="",
+                    status="Sent",
+                    source_account="Mercury Checking xx1234",
+                    note="",
+                    reference="Profit distribution",
                 ),
             ],
         )
