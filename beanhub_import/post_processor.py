@@ -70,7 +70,7 @@ def compute_changes(
     to_remove = collections.defaultdict(list)
     for txn in imported_txns:
         generated_txn = generated_id_txns.get(txn.id)
-        generated_file = (work_dir / txn.file).resolve()
+        generated_file = (work_dir / generated_txn.file).resolve()
         if generated_txn is not None and txn.file.resolve() != generated_file:
             # it appears that the generated txn's file is different from the old one, let's remove it
             to_remove[txn.file].append(txn)
