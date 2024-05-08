@@ -85,6 +85,11 @@ class PostingTemplate(ImportBaseModel):
     cost: str | None = None
 
 
+class MetadataItemTemplate(ImportBaseModel):
+    name: str
+    value: str
+
+
 class TransactionTemplate(ImportBaseModel):
     # the import-id for de-duplication
     id: str | None = None
@@ -94,6 +99,7 @@ class TransactionTemplate(ImportBaseModel):
     payee: str | None = None
     tags: list[str] | None = None
     links: list[str] | None = None
+    metadata: list[MetadataItemTemplate] | None = None
     postings: list[PostingTemplate] | None = None
 
 
@@ -109,6 +115,11 @@ class GeneratedPosting(ImportBaseModel):
     cost: str | None = None
 
 
+class MetadataItem(ImportBaseModel):
+    name: str
+    value: str
+
+
 class GeneratedTransaction(ImportBaseModel):
     file: str
     # the `import-id` metadata field for de-duplication
@@ -121,6 +132,7 @@ class GeneratedTransaction(ImportBaseModel):
     payee: str | None = None
     tags: list[str] | None = None
     links: list[str] | None = None
+    metadata: list[MetadataItem] | None = None
     postings: list[GeneratedPosting]
 
 

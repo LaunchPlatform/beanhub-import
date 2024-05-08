@@ -134,6 +134,17 @@ def txn_to_text(
     import_src = None
     if txn.sources is not None:
         import_src = ":".join(txn.sources)
+    extra_metadata = []
+    if txn.metadata is not None:
+        for item in txn.metadata:
+            if item.name in frozenset(
+                [constants.IMPORT_ID_KEY, constants.IMPORT_SRC_KEY]
+            ):
+                raise ValueError(
+                    f"Metadata item name {item.name} is reserved for beanhub-import usage"
+                )
+            extra_metadata.append(f"  {item.name}: {json.dumps(item.value)}")
+
     return "\n".join(
         [
             line,
@@ -143,6 +154,7 @@ def txn_to_text(
                 if import_src is not None
                 else ()
             ),
+            *extra_metadata,
             *(map(posting_to_text, txn.postings)),
         ]
     )
