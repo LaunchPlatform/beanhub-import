@@ -175,7 +175,21 @@ def apply_change_set(
         )
 
     new_children = []
-    for entry in itertools.chain(entries, entries_to_add):
+
+    def _expand_entry(entry: Entry):
+        new_children.append(entry.statement)
+        for metadata in entry.metadata:
+            new_children.extend(metadata.comments)
+            new_children.append(metadata.statement)
+        for posting in entry.postings:
+            new_children.extend(posting.comments)
+            new_children.append(posting.statement)
+            for metadata in posting.metadata:
+                new_children.extend(metadata.comments)
+                new_children.append(metadata.statement)
+
+    # Expand existing entries and look up update replacements if there's one
+    for entry in entries:
         if entry.type == EntryType.COMMENTS:
             new_children.extend(entry.comments)
             continue
@@ -185,16 +199,15 @@ def apply_change_set(
         actual_entry = line_to_entries.get(entry.statement.meta.line, entry)
         # use comments from existing entry regardless
         new_children.extend(entry.comments)
-        new_children.append(actual_entry.statement)
-        for metadata in actual_entry.metadata:
-            new_children.extend(metadata.comments)
-            new_children.append(metadata.statement)
-        for posting in actual_entry.postings:
-            new_children.extend(posting.comments)
-            new_children.append(posting.statement)
-            for metadata in posting.metadata:
-                new_children.extend(metadata.comments)
-                new_children.append(metadata.statement)
+        _expand_entry(actual_entry)
+
+    # Add new entries
+    for entry in entries_to_add:
+        if entry.type == EntryType.COMMENTS:
+            new_children.extend(entry.comments)
+            continue
+        new_children.extend(entry.comments)
+        _expand_entry(entry)
 
     if tailing_comments_entry is not None:
         new_children.extend(tailing_comments_entry.comments)
