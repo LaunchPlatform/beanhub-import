@@ -17,6 +17,7 @@ from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
 from .data_types import ImportRule
 from .data_types import InputConfigDetails
+from .data_types import MetadataItem
 from .data_types import PostingTemplate
 from .data_types import SimpleFileMatch
 from .data_types import SimpleTxnMatchRule
@@ -106,6 +107,14 @@ def process_transaction(
             return None
         return template_env.from_string(value).render(**txn_ctx)
 
+    def process_links_or_tags(links_or_tags: list[str] | None) -> list[str] | None:
+        if links_or_tags is None:
+            return
+        result = list(filter(lambda x: x, [render_str(item) for item in links_or_tags]))
+        if not result:
+            return
+        return result
+
     for import_rule in import_rules:
         if not match_transaction(txn, import_rule.match):
             continue
@@ -139,25 +148,19 @@ def process_transaction(
             if input_config.appending_postings is not None:
                 posting_templates.extend(input_config.appending_postings)
 
-            generated_tags = []
-            if action.txn.tags is not None:
-                for tag in action.txn.tags:
-                    rendered_tag = render_str(tag)
-                    if not rendered_tag:
-                        continue
-                    generated_tags.append(rendered_tag)
-            if not generated_tags:
-                generated_tags = None
+            generated_tags = process_links_or_tags(action.txn.tags)
+            generated_links = process_links_or_tags(action.txn.links)
 
-            generated_links = []
-            if action.txn.links is not None:
-                for link in action.txn.links:
-                    rendered_link = render_str(link)
-                    if not rendered_link:
+            generated_metadata = []
+            if action.txn.metadata is not None:
+                for item in action.txn.metadata:
+                    name = render_str(item)
+                    value = render_str(item)
+                    if not name or not value:
                         continue
-                    generated_links.append(rendered_link)
-            if not generated_links:
-                generated_links = None
+                    generated_metadata.append(MetadataItem(name=name, value=value))
+            if not generated_metadata:
+                generated_metadata = None
 
             generated_postings = []
             for posting_template in posting_templates:
@@ -204,6 +207,7 @@ def process_transaction(
                 file=render_str(output_file),
                 tags=generated_tags,
                 links=generated_links,
+                metadata=generated_metadata,
                 postings=generated_postings,
                 **{key: render_str(value) for key, value in template_values.items()},
             )
