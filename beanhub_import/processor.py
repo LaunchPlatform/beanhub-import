@@ -139,6 +139,26 @@ def process_transaction(
             if input_config.appending_postings is not None:
                 posting_templates.extend(input_config.appending_postings)
 
+            generated_tags = []
+            if action.txn.tags is not None:
+                for tag in action.txn.tags:
+                    rendered_tag = render_str(tag)
+                    if not rendered_tag:
+                        continue
+                    generated_tags.append(rendered_tag)
+            if not generated_tags:
+                generated_tags = None
+
+            generated_links = []
+            if action.txn.links is not None:
+                for link in action.txn.links:
+                    rendered_link = render_str(link)
+                    if not rendered_link:
+                        continue
+                    generated_links.append(rendered_link)
+            if not generated_links:
+                generated_links = None
+
             generated_postings = []
             for posting_template in posting_templates:
                 amount = None
@@ -174,6 +194,7 @@ def process_transaction(
                 raise ValueError(
                     f"Output file not defined when generating transaction with rule {import_rule}"
                 )
+
             processed = True
             yield GeneratedTransaction(
                 # We don't add line number here because sources it is going to be added as `import-src` metadata field.
@@ -181,6 +202,8 @@ def process_transaction(
                 # there are new transactions added since then.
                 sources=[txn.file],
                 file=render_str(output_file),
+                tags=generated_tags,
+                links=generated_links,
                 postings=generated_postings,
                 **{key: render_str(value) for key, value in template_values.items()},
             )

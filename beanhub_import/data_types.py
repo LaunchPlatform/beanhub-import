@@ -92,6 +92,8 @@ class TransactionTemplate(ImportBaseModel):
     flag: str | None = None
     narration: str | None = None
     payee: str | None = None
+    tags: list[str] | None = None
+    links: list[str] | None = None
     postings: list[PostingTemplate] | None = None
 
 
@@ -117,6 +119,8 @@ class GeneratedTransaction(ImportBaseModel):
     flag: str
     narration: str
     payee: str | None = None
+    tags: list[str] | None = None
+    links: list[str] | None = None
     postings: list[GeneratedPosting]
 
 
@@ -150,6 +154,8 @@ class OutputConfig(ImportBaseModel):
 
 
 class ImportRule(ImportBaseModel):
+    # Name of import rule, for users to read only
+    name: str | None = None
     match: TxnMatchRule
     actions: list[Action]
 

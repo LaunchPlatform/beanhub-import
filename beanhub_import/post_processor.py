@@ -126,6 +126,10 @@ def txn_to_text(
         *((json.dumps(txn.payee),) if txn.payee is not None else ()),
         json.dumps(txn.narration),
     ]
+    if txn.tags is not None:
+        columns.extend(map(lambda t: "#" + t, txn.tags))
+    if txn.links is not None:
+        columns.extend(map(lambda t: "^" + t, txn.links))
     line = " ".join(columns)
     import_src = None
     if txn.sources is not None:
