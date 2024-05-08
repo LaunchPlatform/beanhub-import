@@ -154,8 +154,8 @@ def process_transaction(
             generated_metadata = []
             if action.txn.metadata is not None:
                 for item in action.txn.metadata:
-                    name = render_str(item)
-                    value = render_str(item)
+                    name = render_str(item.name)
+                    value = render_str(item.value)
                     if not name or not value:
                         continue
                     generated_metadata.append(MetadataItem(name=name, value=value))
