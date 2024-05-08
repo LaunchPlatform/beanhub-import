@@ -119,6 +119,9 @@ def process_transaction(
         if not match_transaction(txn, import_rule.match):
             continue
         for action in import_rule.actions:
+            if action.type == ActionType.ignore:
+                logger.debug("Ignored transaction %s:%s", txn.file, txn.lineno)
+                return True
             if action.type != ActionType.add_txn:
                 # we only support add txn for now
                 raise ValueError(f"Unsupported action type {action.type}")
@@ -228,6 +231,7 @@ def process_imports(
     template_env = SandboxedEnvironment()
     if import_doc.context is not None:
         template_env.globals.update(import_doc.context)
+    template_env.filters["as_posix_path"] = lambda p: pathlib.Path(p).as_posix()
     for filepath in walk_dir_files(input_dir):
         for input_config in import_doc.inputs:
             if not match_file(input_config.match, filepath):

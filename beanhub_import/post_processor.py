@@ -1,6 +1,5 @@
 import collections
 import copy
-import itertools
 import json
 import pathlib
 import typing

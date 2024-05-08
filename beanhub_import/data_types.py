@@ -70,6 +70,7 @@ TxnMatchRule = SimpleTxnMatchRule
 @enum.unique
 class ActionType(str, enum.Enum):
     add_txn = "add_txn"
+    ignore = "ignore"
 
 
 class AmountTemplate(ImportBaseModel):
@@ -142,7 +143,11 @@ class ActionAddTxn(ImportBaseModel):
     txn: TransactionTemplate
 
 
-Action = ActionAddTxn
+class ActionIgnore(ImportBaseModel):
+    type: typing.Literal[ActionType.ignore] = pydantic.Field(ActionType.ignore)
+
+
+Action = ActionAddTxn | ActionIgnore
 
 
 SimpleFileMatch = str | StrExactMatch | StrRegexMatch
