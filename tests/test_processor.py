@@ -228,6 +228,7 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
             [
                 GeneratedTransaction(
                     id="mock.csv:123",
+                    sources=["mock.csv"],
                     date="2024-05-05",
                     file="MOCK_EXTRACTOR.bean",
                     flag="*",
@@ -304,6 +305,7 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
             [
                 GeneratedTransaction(
                     id="my-mock.csv:123",
+                    sources=["mock.csv"],
                     date="2024-01-01",
                     file="MOCK_EXTRACTOR.bean",
                     flag="!",
@@ -419,6 +421,7 @@ def test_process_transaction(
                 ),
                 GeneratedTransaction(
                     file="output.bean",
+                    sources=["mercury.csv"],
                     id="mercury.csv:-3",
                     date="2024-04-16",
                     flag="*",
