@@ -23,6 +23,7 @@ from .data_types import SimpleTxnMatchRule
 from .data_types import StrContainsMatch
 from .data_types import StrExactMatch
 from .data_types import StrMatch
+from .data_types import StrOneOfMatch
 from .data_types import StrPrefixMatch
 from .data_types import StrRegexMatch
 from .data_types import StrSuffixMatch
@@ -70,6 +71,8 @@ def match_str(pattern: StrMatch, value: str | None) -> bool:
         return value.endswith(pattern.suffix)
     elif isinstance(pattern, StrContainsMatch):
         return pattern.contains in value
+    elif isinstance(pattern, StrOneOfMatch):
+        return value in pattern.one_of
     else:
         raise ValueError(f"Unexpected str match type {type(pattern)}")
 

@@ -19,6 +19,10 @@ class StrExactMatch(ImportBaseModel):
     equals: str
 
 
+class StrOneOfMatch(ImportBaseModel):
+    one_of: list[str]
+
+
 class StrPrefixMatch(ImportBaseModel):
     prefix: str
 
@@ -31,7 +35,14 @@ class StrContainsMatch(ImportBaseModel):
     contains: str
 
 
-StrMatch = str | StrPrefixMatch | StrSuffixMatch | StrExactMatch | StrContainsMatch
+StrMatch = (
+    str
+    | StrPrefixMatch
+    | StrSuffixMatch
+    | StrExactMatch
+    | StrContainsMatch
+    | StrOneOfMatch
+)
 
 
 class SimpleTxnMatchRule(ImportBaseModel):
