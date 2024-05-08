@@ -21,10 +21,14 @@ from .data_types import GeneratedTransaction
 
 
 def extract_existing_transactions(
-    parser: Lark, bean_file: pathlib.Path, import_id_key: str = constants.IMPORT_ID_KEY
+    parser: Lark,
+    bean_file: pathlib.Path,
+    root_dir: pathlib.Path | None = None,
 ) -> typing.Generator[BeancountTransaction, None, None]:
     last_txn = None
-    for bean_path, tree in traverse(parser=parser, bean_file=bean_file):
+    for bean_path, tree in traverse(
+        parser=parser, bean_file=bean_file, root_dir=root_dir
+    ):
         if tree.data != "start":
             raise ValueError("Expected start")
         for child in tree.children:
@@ -45,7 +49,7 @@ def extract_existing_transactions(
                 metadata_key = first_child.children[0].value
                 metadata_value = first_child.children[1]
                 if (
-                    metadata_key == import_id_key
+                    metadata_key == constants.IMPORT_ID_KEY
                     and metadata_value.type == "ESCAPED_STRING"
                 ):
                     yield BeancountTransaction(
@@ -66,9 +70,8 @@ def compute_changes(
     to_remove = collections.defaultdict(list)
     for txn in imported_txns:
         generated_txn = generated_id_txns.get(txn.id)
-        if generated_txn is not None and txn.file.resolve() != (
-            work_dir / generated_txn.file
-        ):
+        generated_file = (work_dir / txn.file).resolve()
+        if generated_txn is not None and txn.file.resolve() != generated_file:
             # it appears that the generated txn's file is different from the old one, let's remove it
             to_remove[txn.file].append(txn)
 
