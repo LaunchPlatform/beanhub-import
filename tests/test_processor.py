@@ -17,6 +17,7 @@ from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
 from beanhub_import.data_types import ImportRule
 from beanhub_import.data_types import InputConfigDetails
+from beanhub_import.data_types import MetadataItem
 from beanhub_import.data_types import PostingTemplate
 from beanhub_import.data_types import SimpleFileMatch
 from beanhub_import.data_types import SimpleTxnMatchRule
@@ -427,6 +428,9 @@ def test_process_transaction(
                     flag="*",
                     narration="Amazon Web Services",
                     payee=None,
+                    tags=["MyTag"],
+                    links=["MyLink"],
+                    metadata=[MetadataItem(name="meta-name", value="meta-value")],
                     postings=[
                         GeneratedPosting(
                             account="Assets:Bank:US:Mercury",

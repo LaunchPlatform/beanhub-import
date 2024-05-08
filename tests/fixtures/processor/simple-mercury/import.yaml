@@ -3,6 +3,10 @@ context:
     a: 123
     b: "yolo"
     account: "Expenses:FooBar"
+    tag: MyTag
+    link: MyLink
+    meta_name: meta-name
+    meta_value: meta-value
 
 inputs:
 - match: "*.csv"
@@ -24,6 +28,19 @@ imports:
         file: "output.bean"
         txn:
           narration: "{{ desc }}"
+          tags:
+          - "{{ myvar.tag }}"
+          - "{{ '' }}"
+          links:
+            - "{{ myvar.link }}"
+            - "{{ '' }}"
+          metadata:
+            - name: "{{ myvar.meta_name }}"
+              value: "{{ myvar.meta_value }}"
+            - name: Ignored
+              value: ""
+            - name: ""
+              value: "Ignored"
           postings:
             - account: "{{ myvar.account }}"
               amount:
