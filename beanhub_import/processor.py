@@ -173,6 +173,10 @@ def process_transaction(
                 )
             processed = True
             yield GeneratedTransaction(
+                # We don't add line number here because sources it is going to be added as `import-src` metadata field.
+                # Otherwise provided CSV's lineno may change every time we run import if the date order is desc and
+                # there are new transactions added since then.
+                sources=[txn.file],
                 file=render_str(output_file),
                 postings=generated_postings,
                 **{key: render_str(value) for key, value in template_values.items()},

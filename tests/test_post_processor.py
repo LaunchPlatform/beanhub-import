@@ -72,6 +72,7 @@ def test_extract_imported_transactions(
             [
                 GeneratedTransaction(
                     id="MOCK_ID",
+                    sources=["import-data/mock.csv"],
                     date="2024-05-05",
                     flag="*",
                     narration="MOCK_DESC",
@@ -85,6 +86,7 @@ def test_extract_imported_transactions(
                     add=[
                         GeneratedTransaction(
                             id="MOCK_ID",
+                            sources=["import-data/mock.csv"],
                             date="2024-05-05",
                             flag="*",
                             narration="MOCK_DESC",
@@ -296,6 +298,7 @@ def test_compute_changes(
                 add=[
                     GeneratedTransaction(
                         id="id99",
+                        sources=["import-data/mock.csv"],
                         date="2024-05-05",
                         flag="*",
                         narration="MOCK_DESC",

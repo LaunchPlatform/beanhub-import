@@ -27,5 +27,6 @@
 
 2024-05-05 * "MOCK_DESC"
   import-id: "id99"
+  import-src: "import-data/mock.csv"
   Assets:Cash                                           123.45 USD
   Expenses:Food                                        -123.45 USD

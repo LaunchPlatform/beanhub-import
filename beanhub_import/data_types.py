@@ -98,8 +98,10 @@ class GeneratedPosting(ImportBaseModel):
 
 class GeneratedTransaction(ImportBaseModel):
     file: str
-    # the import-id for de-duplication
+    # the `import-id` metadata field for de-duplication
     id: str
+    # the `import-src` metadata field for annotating the source file(s)
+    sources: list[str] | None = None
     date: str
     flag: str
     narration: str

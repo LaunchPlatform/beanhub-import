@@ -115,7 +115,7 @@ def posting_to_text(posting: GeneratedPosting) -> str:
 
 
 def txn_to_text(
-    txn: GeneratedTransaction, import_id_key: str = constants.IMPORT_ID_KEY
+    txn: GeneratedTransaction,
 ) -> str:
     columns = [
         txn.date,
@@ -124,17 +124,26 @@ def txn_to_text(
         json.dumps(txn.narration),
     ]
     line = " ".join(columns)
+    import_src = None
+    if txn.sources is not None:
+        import_src = ":".join(txn.sources)
     return "\n".join(
         [
             line,
-            f"  {import_id_key}: {json.dumps(txn.id)}",
+            f"  {constants.IMPORT_ID_KEY}: {json.dumps(txn.id)}",
+            *(
+                (f"  {constants.IMPORT_SRC_KEY}: {json.dumps(import_src)}",)
+                if import_src is not None
+                else ()
+            ),
             *(map(posting_to_text, txn.postings)),
         ]
     )
 
 
 def apply_change_set(
-    tree: Lark, change_set: ChangeSet, import_id_key: str = constants.IMPORT_ID_KEY
+    tree: Lark,
+    change_set: ChangeSet,
 ) -> Lark:
     if tree.data != "start":
         raise ValueError("expected start as the root rule")
@@ -146,8 +155,7 @@ def apply_change_set(
         for lineno, txn in change_set.update.items()
     }
     entries_to_add = [
-        to_parser_entry(parser, txn_to_text(txn, import_id_key=import_id_key))
-        for txn in change_set.add
+        to_parser_entry(parser, txn_to_text(txn)) for txn in change_set.add
     ]
 
     new_tree = copy.deepcopy(tree)
