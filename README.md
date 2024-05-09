@@ -139,7 +139,7 @@ imports:
 ## Usage
 
 This project is a library and not meant for end-users.
-If you simply want to import transactions from CSV into their beancount files, please checkout [beanhub-cli](https://github.com/LaunchPlatform/beanhub-cli).
+If you simply want to import transactions from CSV into their beancount files, please checkout the `import` command of [beanhub-cli](https://github.com/LaunchPlatform/beanhub-cli).
 
 ## Scheme definition
 
@@ -147,9 +147,9 @@ If you simply want to import transactions from CSV into their beancount files, p
 
 The import file should be located at `.beanhub/imports.yaml`. It has the following keys:
 
-- `context`: a dictionary for global variable definitions to be referenced in all Jinja2 template rendering and transaction generation, as described in the Context Definition section.
-- `inputs`: Define which CSV files to import and their corresponding configurations, as described in the Input Definition section
-- `imports`: Define rules for which raw transactions to match and what to do with them. As described in the Import Definition section, new transactions will usually be generated based on the provided templates.
+- `context`: a dictionary for global variable definitions to be referenced in all Jinja2 template rendering and transaction generation, as described in the [Context Definition](#context-definition) section.
+- `inputs`: Define which CSV files to import and their corresponding configurations, as described in the [Input Definition](#input-definition) section
+- `imports`: Define rules for which raw transactions to match and what to do with them. As described in the [Import Definition](#import-config-definition) section, new transactions will usually be generated based on the provided templates.
 - `outputs`: Define configurations for output files, currently not implemented yet
 
 ### Context Definition
