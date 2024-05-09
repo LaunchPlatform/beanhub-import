@@ -191,7 +191,7 @@ With that, we can define the import ID for Mercury CSV files like this:
 
 
 <p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/assets/beanhub-import-flow.svg?raw=true" alt="BeanHub import flow diagram" />
+  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/beanhub-import-flow.svg?raw=true" alt="BeanHub import flow diagram" />
 </p>
 
 TODO:
