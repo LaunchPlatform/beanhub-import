@@ -40,11 +40,11 @@ context:
     Netlify:
       account: Expenses:Engineering:ServiceSubscription
     Mailchimp:
-      account: Expenses:Engineering:ServiceSubscription
+      account: Expenses:Marketing:ServiceSubscription
     Circleci:
       account: Expenses:Engineering:ServiceSubscription
     Adobe:
-      account: Expenses:Engineering:ServiceSubscription
+      account: Expenses:Design:ServiceSubscription
     Digital Ocean:
       account: Expenses:Engineering:ServiceSubscription
     Microsoft:
