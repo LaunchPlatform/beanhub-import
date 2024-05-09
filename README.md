@@ -227,7 +227,7 @@ inputs:
 
 First, we must find all the matched CSV files based on the rule.
 
-#### Step 2. Match input CSV files
+#### Step 2. Extract transactions from the CSV files
 
 Now that we know which CSV files to extract transactions from, the next step is to use [beanhub-extract](https://github.com/LaunchPlatform/beanhub-extract) to do so.
 
