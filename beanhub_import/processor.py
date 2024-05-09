@@ -10,6 +10,7 @@ from beanhub_extract.extractors import ALL_EXTRACTORS
 from beanhub_extract.utils import strip_txn_base_path
 from jinja2.sandbox import SandboxedEnvironment
 
+from . import constants
 from .data_types import ActionType
 from .data_types import Amount
 from .data_types import GeneratedPosting
@@ -28,14 +29,6 @@ from .data_types import StrOneOfMatch
 from .data_types import StrPrefixMatch
 from .data_types import StrRegexMatch
 from .data_types import StrSuffixMatch
-
-
-DEFAULT_TXN_TEMPLATE = dict(
-    id="{{ file }}:{{ lineno }}",
-    date="{{ date }}",
-    flag="*",
-    narration="{{ desc | default(bank_desc, true) }}",
-)
 
 
 def walk_dir_files(
@@ -130,7 +123,7 @@ def process_transaction(
                 key: first_non_none(
                     getattr(action.txn, key),
                     getattr(default_txn, key) if default_txn is not None else None,
-                    DEFAULT_TXN_TEMPLATE.get(key),
+                    constants.DEFAULT_TXN_TEMPLATE.get(key),
                 )
                 for key in ("date", "flag", "narration", "payee")
             }
@@ -138,7 +131,7 @@ def process_transaction(
                 getattr(action.txn, "id"),
                 getattr(default_txn, "id") if default_txn is not None else None,
                 default_import_id,
-                DEFAULT_TXN_TEMPLATE["id"],
+                constants.DEFAULT_TXN_TEMPLATE["id"],
             )
 
             posting_templates: list[PostingTemplate] = []
