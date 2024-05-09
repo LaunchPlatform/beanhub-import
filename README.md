@@ -8,7 +8,7 @@ It generates Beancount transactions based on predefined rules.
 - **No code** - you only need to know a little bit about YAML and Jinja2 template syntax.
 - **Simple declarative rules** - A single import file for all imports
 - **Idempotent** - As long as the input data and rules are the same, the Beancount files will be the same.
-- **Auto-update** existing transactions - When you update the rules or data, corresponding Beancount transactions will be updated automatically. 
+- **Auto-update existing transactions** - When you update the rules or data, corresponding Beancount transactions will be updated automatically. 
 - **Auto-move transactions to a different file** - When you change the rules to output the transactions to a different file, it will automatically remove the old ones and add the new ones for you
 - **Merge data from multiple files (coming soon)** - You can define rules to match transactions from multiple sources for generating your transactions
 
