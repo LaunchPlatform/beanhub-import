@@ -3,6 +3,8 @@
 Beanhub-import is a simple, smart, and easy-to-use library for importing extracted transactions from beanhub-extract.
 It generates Beancount transactions based on predefined rules.
 
+**Note**: This project is still in early stage, still subject to rapid major changes
+
 ## Features
 
 - **Easy-to-use** - you only need to know a little bit about YAML and Jinja2 template syntax.
