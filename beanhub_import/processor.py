@@ -29,6 +29,7 @@ from .data_types import StrOneOfMatch
 from .data_types import StrPrefixMatch
 from .data_types import StrRegexMatch
 from .data_types import StrSuffixMatch
+from .templates import make_environment
 
 
 def walk_dir_files(
@@ -221,10 +222,9 @@ def process_imports(
     input_dir: pathlib.Path,
 ) -> typing.Generator[GeneratedTransaction | Transaction, None, None]:
     logger = logging.getLogger(__name__)
-    template_env = SandboxedEnvironment()
+    template_env = make_environment()
     if import_doc.context is not None:
         template_env.globals.update(import_doc.context)
-    template_env.filters["as_posix_path"] = lambda p: pathlib.Path(p).as_posix()
     for filepath in walk_dir_files(input_dir):
         for input_config in import_doc.inputs:
             if not match_file(input_config.match, filepath):

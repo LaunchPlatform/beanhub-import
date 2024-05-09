@@ -33,11 +33,12 @@ from beanhub_import.processor import match_transaction
 from beanhub_import.processor import process_imports
 from beanhub_import.processor import process_transaction
 from beanhub_import.processor import walk_dir_files
+from beanhub_import.templates import make_environment
 
 
 @pytest.fixture
 def template_env() -> SandboxedEnvironment:
-    return SandboxedEnvironment()
+    return make_environment()
 
 
 @pytest.mark.parametrize(
