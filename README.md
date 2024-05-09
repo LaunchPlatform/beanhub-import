@@ -569,6 +569,6 @@ Now, with the generated transactions from the import rules and the existing Bean
 
 #### Step 7. Apply changes
 
-Finally, with the change sets generated from the previous step, we use our beancount-parser to parse the existing Beancount files as syntax trees, transform them accordingly, and then write them back with our [beancount-black](https://github.com/LaunchPlatform/beancount-black) formatter.
+Finally, with the change sets generated from the previous step, we use our [beancount-parser](https://github.com/LaunchPlatform/beancount-parser) to parse the existing Beancount files as syntax trees, transform them accordingly, and then write them back with our [beancount-black](https://github.com/LaunchPlatform/beancount-black) formatter.
 
 And that's it! Now, all the imported transactions are up-to-date.
