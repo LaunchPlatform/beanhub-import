@@ -187,7 +187,7 @@ Like this:
 The line number of older transactions from the same CSV file with the same export time range and filter settings should remain the same. The file name and line number serve as a decent default unique identifier for the transactions from CSV files.
 
 Although this approach works for most CSV files sorted by date in ascending order, it won't work for files in descending order.
-For example, CSV files exported from Mercury came in descending order.
+For example, CSV files exported from [Mercury](https://mercury.com/) came in descending order.
 Obviously, any new transactions added to the export file will change the line number for all previously imported transactions.
 To overcome the problem, we also provide `reverse_lineno` attribute in the extracted transaction.
 It's the `lineno - total_row_count` value. As you may have noticed, we intentionally made the number negative.
@@ -199,7 +199,7 @@ With that, we can define the import ID for Mercury CSV files like this:
 {{ file }}:{{ reversed_lineno }}
 ```
 
-Since each CSV file may have its own unique best way to reliably identify a transaction, we add an optional default importer ID value to extractors in the beanhub-extract library as `DEFAULT_IMPORT_ID`.
+Since each CSV file may have its own unique best way to reliably identify a transaction, we add an optional default importer ID value to extractors in the [beanhub-extract](https://github.com/LaunchPlatform/beanhub-extract) library as `DEFAULT_IMPORT_ID`.
 Please note that these values are just default ones. Users can still override the default import ID Jinja2 template by setting the `id` value for their `add_txn` action in the import rule.
 
 ### The flow of beanhub-import
