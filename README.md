@@ -139,4 +139,18 @@ imports:
 This project is a library and not meant for end-users.
 If you simply want to import transactions from CSV into their beancount files, please checkout [beanhub-cli](https://github.com/LaunchPlatform/beanhub-cli).
 
+## Import file schema
 
+TODO:
+
+## Sponsor
+
+<p align="center">
+  <a href="https://beanhub.io"><img src="https://github.com/LaunchPlatform/beanhub-extract/raw/master/assets/beanhub.svg?raw=true" alt="BeanHub logo" /></a>
+</p>
+
+A modern accounting book service based on the most popular open source version control system [Git](https://git-scm.com/) and text-based double entry accounting book software [Beancount](https://beancount.github.io/docs/index.html).
+
+## How it works
+
+TODO:
