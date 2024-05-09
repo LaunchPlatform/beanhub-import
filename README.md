@@ -365,6 +365,24 @@ The structure of the posting template object looks like this.
 - `price`: the optional amount object with `number` and `currency` keys
 - `cost`: the optional template of cost spec
 
+
+##### Ignore Action
+
+Sometimes, we are not interested in some transactions, but if we don't process them, you will still see them appear in the "unprocessed transactions" section of the report provided by our command line tool. To mark one transaction as processed, you can simply use the `ignore` action like this:
+
+```YAML
+- name: Ignore unused entries
+  match:
+    extractor:
+      equals: "mercury"
+    desc:
+      one_of:
+      - Mercury Credit
+      - Mercury Checking xx1462
+  actions:
+    - type: ignore
+```
+
 ## Sponsor
 
 <p align="center">
