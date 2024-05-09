@@ -62,6 +62,9 @@ class SimpleTxnMatchRule(ImportBaseModel):
     note: StrMatch | None = None
     reference: StrMatch | None = None
     payee: StrMatch | None = None
+    gl_code: StrMatch | None = None
+    name_on_card: StrMatch | None = None
+    last_four_digits: StrMatch | None = None
 
 
 TxnMatchRule = SimpleTxnMatchRule
