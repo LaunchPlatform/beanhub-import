@@ -202,7 +202,6 @@ Currently, we support three different modes of matching a CSV file. The first on
 ```YAML
 inputs:
   - match: "import-data/mercury/*.csv"
-     # ...
 ```
 
 You can also do an exact match like this:
@@ -211,7 +210,6 @@ You can also do an exact match like this:
 inputs:
 - match:
     equals: "import-data/mercury/2024.csv"
-    # ...
 ```
 
 Or, if you prefer regular expression:
@@ -220,7 +218,6 @@ Or, if you prefer regular expression:
 inputs:
 - match:
     regex: "import-data/mercury/2([0-9]+).csv"
-    # ...
 ```
 
 #### Input Config Definition
@@ -237,9 +234,9 @@ The following keys are available for the input configuration:
 
 The following keys are available for the import configuration:
 
--`name`: An optional name for the user to comment on this matching rule. Currently, it has no functional purpose.
--`match`: The rule for matching raw transactions extracted from the input CSV files. As described in the Import Match Rule Definition
--`actions`: Decide what to do with the matched raw transactions, as the Import Action Definition describes.
+- `name`: An optional name for the user to comment on this matching rule. Currently, it has no functional purpose.
+- `match`: The rule for matching raw transactions extracted from the input CSV files. As described in the Import Match Rule Definition
+- `actions`: Decide what to do with the matched raw transactions, as the Import Action Definition describes.
 
 #### Import Match Rule Definition
 
