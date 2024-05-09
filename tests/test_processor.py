@@ -420,6 +420,10 @@ def test_process_transaction(
                     source_account="Mercury Checking xx12",
                     note="",
                     reference="",
+                    gl_code="",
+                    name_on_card="",
+                    last_four_digits="",
+                    extra=None,
                 ),
                 GeneratedTransaction(
                     file="output.bean",
@@ -469,6 +473,10 @@ def test_process_transaction(
                     note="",
                     reference="",
                     payee=None,
+                    gl_code="",
+                    name_on_card="Fang-Pen Lin",
+                    last_four_digits="5678",
+                    extra=None,
                 ),
                 Transaction(
                     extractor="mercury",
@@ -489,6 +497,10 @@ def test_process_transaction(
                     source_account="Mercury Checking xx1234",
                     note="",
                     reference="Profit distribution",
+                    gl_code="",
+                    name_on_card="",
+                    last_four_digits="",
+                    extra=None,
                 ),
             ],
         )
