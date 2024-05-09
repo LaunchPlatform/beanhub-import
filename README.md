@@ -246,7 +246,7 @@ merges:
   - name: chase
     extractor:
       equals: "chase"
-    desc: "Thank you for credit card"
+    desc: "Payment late fee"
     merge_key: "{{ post_date }}:{{ amount }}"
   actions:
     - txn:
@@ -255,6 +255,10 @@ merges:
           - account: Expenses:CreditCardPayment
             amount:
               number: "{{ -mercury.amount }}"
+              currency: "{{ mercury.currency | default('USD', true) }}"
+          - account: Expenses:LateFee
+            amount:
+              number: "{{ -chase.amount }}"
               currency: "{{ chase.currency | default('USD', true) }}"
 ```
 
