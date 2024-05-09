@@ -192,8 +192,8 @@ Then, in the transaction template, we look up the dictionary to find out what na
 
 Input definition comes with two keys:
 
-`match`: Rule for matching CSV files. Currently, only the Simple File Match rule is supported. Please see the Simple File Match Definition section for more details.
-`config`: The configuration of the matched input CSV files. Please see the Input Config Definition section.
+- `match`: Rule for matching CSV files. Currently, only the Simple File Match rule is supported. Please see the Simple File Match Definition section for more details.
+- `config`: The configuration of the matched input CSV files. Please see the Input Config Definition section.
 
 #### Simple File Match Definition
 
