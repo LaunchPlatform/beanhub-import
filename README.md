@@ -1,6 +1,6 @@
 # beanhub-import [![CircleCI](https://dl.circleci.com/status-badge/img/gh/LaunchPlatform/beanhub-import/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/LaunchPlatform/beanhub-import/tree/master)
 
-Beanhub-import is a simple, smart, declarative, and easy-to-use library for importing extracted transactions from beanhub-extract.
+Beanhub-import is a simple, declarative, smart, and easy-to-use library for importing extracted transactions from beanhub-extract.
 It generates Beancount transactions based on predefined rules.
 
 **Note**: This project is still in early stage, still subject to rapid major changes
@@ -13,6 +13,37 @@ It generates Beancount transactions based on predefined rules.
 - **Auto-update existing transactions** - When you update the rules or data, corresponding Beancount transactions will be updated automatically. 
 - **Auto-move transactions to a different file** - When you change the rules to output the transactions to a different file, it will automatically remove the old ones and add the new ones for you
 - **Merge data from multiple files (coming soon)** - You can define rules to match transactions from multiple sources for generating your transactions
+
+For example, change the import rules like this to output transactions to files grouped by quarter instead of year:
+
+<p align="center">
+  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/quater-output-file.png?raw=true" alt="Git diff screenshot showing default_file changed to output quater file names instead of just year" />
+</p>
+
+Then run the import again, and you will get this:
+
+<p align="center">
+  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/auto-txn-migration.png?raw=true" alt="Git diff screenshot showing Beancount transactions removed from the books/2024.bean file and new quater beancount files added" />
+</p>
+
+Another example is when you want to add new tags to the generated transactions, so you change the rules with new tags like this:
+
+<p align="center">
+  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/new-tags.png?raw=true" alt="Git diff screenshot showing new line" />
+</p>
+
+When you run import again, you will get this:
+
+<p align="center">
+  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/new-tags-result.png?raw=true" alt="Git diff screenshot showing new tags added to all imported Beancount transactions" />
+</p>
+
+Please check out our demonstration repository [beanhub-import-demo](https://github.com/LaunchPlatform/beanhub-import-demo) to try it yourself.
+
+It's all declarative and idempotent. With beanhub-import, you say goodbye to manually importing and maintaining transactions!
+We hope you like this tool. It's still in the early stage of development.
+We are also working on making generating transactions from multiple sources possible.
+Please feel free to open issues in the repository if you have any feedback 🙌
 
 ## Why?
 
