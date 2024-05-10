@@ -1,6 +1,6 @@
 # beanhub-import [![CircleCI](https://dl.circleci.com/status-badge/img/gh/LaunchPlatform/beanhub-import/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/LaunchPlatform/beanhub-import/tree/master)
 
-Beanhub-import is a simple, declarative, smart, and easy-to-use library for importing extracted transactions from beanhub-extract.
+Beanhub-import is a simple, declarative, smart, and easy-to-use library for importing extracted transactions from [beanhub-extract](https://github.com/LaunchPlatform/beanhub-extract).
 It generates Beancount transactions based on predefined rules.
 
 **Note**: This project is still in early stage, still subject to rapid major changes
