@@ -409,7 +409,7 @@ Sometimes, we are not interested in some transactions, but if we don't process t
     desc:
       one_of:
       - Mercury Credit
-      - Mercury Checking xx1462
+      - Mercury Checking xx1234
   actions:
     - type: ignore
 ```
