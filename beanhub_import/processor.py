@@ -7,6 +7,7 @@ import typing
 
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
+from beanhub_extract.extractors import detect_extractor
 from beanhub_extract.utils import strip_txn_base_path
 from jinja2.sandbox import SandboxedEnvironment
 
@@ -232,8 +233,12 @@ def process_imports(
             rel_filepath = filepath.relative_to(input_dir)
             extractor_name = input_config.config.extractor
             if extractor_name is None:
-                # TODO: identify input file automatically
-                pass
+                with filepath.open("rt") as fo:
+                    extractor_cls = detect_extractor(fo)
+                if extractor_cls is None:
+                    raise ValueError(
+                        f"Extractor not specified for {rel_filepath} and the extractor type cannot be automatically detected"
+                    )
             else:
                 extractor_cls = ALL_EXTRACTORS.get(extractor_name)
                 if extractor_cls is None:

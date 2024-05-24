@@ -2,13 +2,13 @@
 
 [[package]]
 name = "annotated-types"
-version = "0.6.0"
+version = "0.7.0"
 description = "Reusable constraint types to use with typing.Annotated"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "annotated_types-0.6.0-py3-none-any.whl", hash = "sha256:0641064de18ba7a25dee8f96403ebc39113d0cb953a01429249d5c7564666a43"},
-    {file = "annotated_types-0.6.0.tar.gz", hash = "sha256:563339e807e53ffd9c267e99fc6d9ea23eb8443c08f112651963e24e22f84a5d"},
+    {file = "annotated_types-0.7.0-py3-none-any.whl", hash = "sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53"},
+    {file = "annotated_types-0.7.0.tar.gz", hash = "sha256:aff07c09a53a08bc8cfccb9c85b05f1aa9a2a6f23728d790723543408344ce89"},
 ]
 
 [[package]]
@@ -42,17 +42,17 @@ lark = ">=1.1.2,<2.0.0"
 
 [[package]]
 name = "beanhub-extract"
-version = "0.0.7"
+version = "0.1.0"
 description = "The simple library for extracting all kind of bank account transaction export files, mostly for beanhub-import to inject and generate transactions"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "beanhub_extract-0.0.7-py3-none-any.whl", hash = "sha256:2f6f5c4cde100fa979d9695283cc8d6b7844289e2b1e51f68bba1959d900ae09"},
-    {file = "beanhub_extract-0.0.7.tar.gz", hash = "sha256:303d438e2fee56b00a43346e88b40ad516d503f0957d0bdfbcd7c093c2fa8941"},
+    {file = "beanhub_extract-0.1.0-py3-none-any.whl", hash = "sha256:2f1650a5fa408d017bd940c8bed7a6aee6f445da2ccfaff145145f6d18857ee2"},
+    {file = "beanhub_extract-0.1.0.tar.gz", hash = "sha256:900e18fe08b40d7429f709514aff2a9e2b51effa8c69c9bb6e7869272bed4a9e"},
 ]
 
 [package.dependencies]
-pytz = ">=2024.1,<2025.0"
+pytz = ">=2023.1,<2025"
 
 [[package]]
 name = "click"
@@ -466,16 +466,16 @@ files = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.11.0"
+version = "4.12.0"
 description = "Backported and Experimental Type Hints for Python 3.8+"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "typing_extensions-4.11.0-py3-none-any.whl", hash = "sha256:c1f94d72897edaf4ce775bb7558d5b79d8126906a14ea5ed1635921406c0387a"},
-    {file = "typing_extensions-4.11.0.tar.gz", hash = "sha256:83f085bd5ca59c80295fc2a82ab5dac679cbe02b9f33f7d83af68e241bea51b0"},
+    {file = "typing_extensions-4.12.0-py3-none-any.whl", hash = "sha256:b349c66bea9016ac22978d800cfff206d5f9816951f12a7d0ec5578b0a819594"},
+    {file = "typing_extensions-4.12.0.tar.gz", hash = "sha256:8cbcdc8606ebcb0d95453ad7dc5065e6237b6aa230a31e81d0f440c30fed5fd8"},
 ]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "e7831c0037605ccc925f56c95f54a2f0d4cdf402ba40e53474c074f8ec62e30a"
+content-hash = "743dd45d37941fef7b1af1b8a24722d1b21b3df2928f3830eeb6b834d2d8fe42"

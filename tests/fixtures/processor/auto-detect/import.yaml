@@ -1,0 +1,22 @@
+inputs:
+- match: "*.csv"
+  config:
+    prepend_postings:
+      - account: Assets:Bank:US:Mercury
+        amount:
+          number: "{{ amount }}"
+          currency: "{{ currency | default('USD', true) }}"
+
+imports:
+  - match:
+      extractor:
+        equals: "mercury"
+    actions:
+      - type: add_txn
+        file: "output.bean"
+        txn:
+          postings:
+            - account: "Expenses"
+              amount:
+                number: "{{ -amount }}"
+                currency: "{{ currency | default('USD', true) }}"
