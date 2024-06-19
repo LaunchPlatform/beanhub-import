@@ -18,6 +18,7 @@ from beanhub_import.data_types import ImportDoc
 from beanhub_import.data_types import ImportRule
 from beanhub_import.data_types import InputConfigDetails
 from beanhub_import.data_types import MetadataItem
+from beanhub_import.data_types import MetadataItemTemplate
 from beanhub_import.data_types import PostingTemplate
 from beanhub_import.data_types import SimpleFileMatch
 from beanhub_import.data_types import SimpleTxnMatchRule
@@ -357,6 +358,112 @@ def test_match_transaction_with_vars(
             ],
             True,
             id="generic",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            InputConfigDetails(
+                prepend_postings=[
+                    PostingTemplate(
+                        account="Expenses:Food",
+                        amount=AmountTemplate(
+                            number="{{ -(amount - 5) }}",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+                appending_postings=[
+                    PostingTemplate(
+                        account="Expenses:Fees",
+                        amount=AmountTemplate(
+                            number="-5",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+            ),
+            [
+                ImportRule(
+                    common_cond=SimpleTxnMatchRule(
+                        source_account=StrExactMatch(equals="Foobar")
+                    ),
+                    match=[
+                        TxnMatchVars(
+                            cond=SimpleTxnMatchRule(
+                                extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                            ),
+                            vars=dict(foo="bar"),
+                        )
+                    ],
+                    actions=[
+                        ActionAddTxn(
+                            file="{{ extractor }}.bean",
+                            txn=TransactionTemplate(
+                                metadata=[
+                                    MetadataItemTemplate(
+                                        name="var_value", value="{{ foo }}"
+                                    )
+                                ],
+                                postings=[
+                                    PostingTemplate(
+                                        account="Assets:Bank:{{ source_account }}",
+                                        amount=AmountTemplate(
+                                            number="{{ amount }}",
+                                            currency="{{ currency }}",
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        )
+                    ],
+                )
+            ],
+            [
+                GeneratedTransaction(
+                    id="mock.csv:123",
+                    sources=["mock.csv"],
+                    date="2024-05-05",
+                    file="MOCK_EXTRACTOR.bean",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    metadata=[
+                        MetadataItem(name="var_value", value="bar"),
+                    ],
+                    postings=[
+                        GeneratedPosting(
+                            account="Expenses:Food",
+                            amount=Amount(
+                                number="-118.45",
+                                currency="BTC",
+                            ),
+                        ),
+                        GeneratedPosting(
+                            account="Assets:Bank:Foobar",
+                            amount=Amount(
+                                number="123.45",
+                                currency="BTC",
+                            ),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:Fees",
+                            amount=Amount(
+                                number="-5",
+                                currency="BTC",
+                            ),
+                        ),
+                    ],
+                )
+            ],
+            True,
+            id="match-with-vars",
         ),
         pytest.param(
             Transaction(

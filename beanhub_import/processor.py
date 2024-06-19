@@ -112,11 +112,16 @@ def process_transaction(
     txn_ctx = dataclasses.asdict(txn)
     default_txn = input_config.default_txn
     processed = False
+    matched_vars: dict | None = None
 
     def render_str(value: str | None) -> str | None:
+        nonlocal matched_vars
         if value is None:
             return None
-        return template_env.from_string(value).render(**txn_ctx)
+        template_ctx = txn_ctx
+        if matched_vars is not None:
+            template_ctx |= matched_vars
+        return template_env.from_string(value).render(**template_ctx)
 
     def process_links_or_tags(links_or_tags: list[str] | None) -> list[str] | None:
         if links_or_tags is None:
@@ -127,16 +132,16 @@ def process_transaction(
         return result
 
     for import_rule in import_rules:
+        matched_vars = None
         if isinstance(import_rule.match, list):
-            if not match_transaction_with_vars(
+            matched = match_transaction_with_vars(
                 txn, import_rule.match, common_condition=import_rule.common_cond
-            ):
+            )
+            if matched is None:
                 continue
+            matched_vars = matched.vars
         else:
-            if not match_transaction(txn, import_rule.match) or (
-                import_rule.common_cond is not None
-                and not match_transaction(txn, import_rule.common_cond)
-            ):
+            if not match_transaction(txn, import_rule.match):
                 continue
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
