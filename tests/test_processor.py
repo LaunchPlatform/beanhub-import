@@ -400,7 +400,7 @@ def test_match_transaction_with_vars(
                             cond=SimpleTxnMatchRule(
                                 extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
                             ),
-                            vars=dict(foo="bar"),
+                            vars=dict(foo="bar{{ 123 }}"),
                         )
                     ],
                     actions=[
@@ -435,7 +435,7 @@ def test_match_transaction_with_vars(
                     flag="*",
                     narration="MOCK_DESC",
                     metadata=[
-                        MetadataItem(name="var_value", value="bar"),
+                        MetadataItem(name="var_value", value="bar123"),
                     ],
                     postings=[
                         GeneratedPosting(

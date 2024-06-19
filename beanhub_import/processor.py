@@ -139,7 +139,12 @@ def process_transaction(
             )
             if matched is None:
                 continue
-            matched_vars = matched.vars
+            matched_vars = {
+                key: template_env.from_string(value).render(**txn_ctx)
+                if isinstance(value, str)
+                else value
+                for key, value in matched.vars.items()
+            }
         else:
             if not match_transaction(txn, import_rule.match):
                 continue
