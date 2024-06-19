@@ -18,6 +18,7 @@ from beanhub_import.data_types import ImportDoc
 from beanhub_import.data_types import ImportRule
 from beanhub_import.data_types import InputConfigDetails
 from beanhub_import.data_types import MetadataItem
+from beanhub_import.data_types import MetadataItemTemplate
 from beanhub_import.data_types import PostingTemplate
 from beanhub_import.data_types import SimpleFileMatch
 from beanhub_import.data_types import SimpleTxnMatchRule
@@ -27,9 +28,11 @@ from beanhub_import.data_types import StrPrefixMatch
 from beanhub_import.data_types import StrRegexMatch
 from beanhub_import.data_types import StrSuffixMatch
 from beanhub_import.data_types import TransactionTemplate
+from beanhub_import.data_types import TxnMatchVars
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
+from beanhub_import.processor import match_transaction_with_vars
 from beanhub_import.processor import process_imports
 from beanhub_import.processor import process_transaction
 from beanhub_import.processor import walk_dir_files
@@ -171,6 +174,99 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
 
 
 @pytest.mark.parametrize(
+    "txn, rules, common_cond, expected",
+    [
+        (
+            Transaction(extractor="MOCK_EXTRACTOR"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            None,
+            TxnMatchVars(
+                cond=SimpleTxnMatchRule(
+                    extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                ),
+                vars=dict(foo="bar"),
+            ),
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
+            None,
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
+            TxnMatchVars(
+                cond=SimpleTxnMatchRule(
+                    extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                ),
+                vars=dict(foo="bar"),
+            ),
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="NOPE")),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            None,
+            None,
+        ),
+    ],
+)
+def test_match_transaction_with_vars(
+    txn: Transaction,
+    rules: list[TxnMatchVars],
+    common_cond: SimpleTxnMatchRule | None,
+    expected: TxnMatchVars,
+):
+    assert (
+        match_transaction_with_vars(txn, rules, common_condition=common_cond)
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
     "txn, input_config, import_rules, expected, expected_processed",
     [
         pytest.param(
@@ -262,6 +358,112 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
             ],
             True,
             id="generic",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            InputConfigDetails(
+                prepend_postings=[
+                    PostingTemplate(
+                        account="Expenses:Food",
+                        amount=AmountTemplate(
+                            number="{{ -(amount - 5) }}",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+                appending_postings=[
+                    PostingTemplate(
+                        account="Expenses:Fees",
+                        amount=AmountTemplate(
+                            number="-5",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+            ),
+            [
+                ImportRule(
+                    common_cond=SimpleTxnMatchRule(
+                        source_account=StrExactMatch(equals="Foobar")
+                    ),
+                    match=[
+                        TxnMatchVars(
+                            cond=SimpleTxnMatchRule(
+                                extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                            ),
+                            vars=dict(foo="bar{{ 123 }}"),
+                        )
+                    ],
+                    actions=[
+                        ActionAddTxn(
+                            file="{{ extractor }}.bean",
+                            txn=TransactionTemplate(
+                                metadata=[
+                                    MetadataItemTemplate(
+                                        name="var_value", value="{{ foo }}"
+                                    )
+                                ],
+                                postings=[
+                                    PostingTemplate(
+                                        account="Assets:Bank:{{ source_account }}",
+                                        amount=AmountTemplate(
+                                            number="{{ amount }}",
+                                            currency="{{ currency }}",
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        )
+                    ],
+                )
+            ],
+            [
+                GeneratedTransaction(
+                    id="mock.csv:123",
+                    sources=["mock.csv"],
+                    date="2024-05-05",
+                    file="MOCK_EXTRACTOR.bean",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    metadata=[
+                        MetadataItem(name="var_value", value="bar123"),
+                    ],
+                    postings=[
+                        GeneratedPosting(
+                            account="Expenses:Food",
+                            amount=Amount(
+                                number="-118.45",
+                                currency="BTC",
+                            ),
+                        ),
+                        GeneratedPosting(
+                            account="Assets:Bank:Foobar",
+                            amount=Amount(
+                                number="123.45",
+                                currency="BTC",
+                            ),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:Fees",
+                            amount=Amount(
+                                number="-5",
+                                currency="BTC",
+                            ),
+                        ),
+                    ],
+                )
+            ],
+            True,
+            id="match-with-vars",
         ),
         pytest.param(
             Transaction(

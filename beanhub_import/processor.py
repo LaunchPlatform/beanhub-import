@@ -30,6 +30,7 @@ from .data_types import StrOneOfMatch
 from .data_types import StrPrefixMatch
 from .data_types import StrRegexMatch
 from .data_types import StrSuffixMatch
+from .data_types import TxnMatchVars
 from .templates import make_environment
 
 
@@ -73,12 +74,27 @@ def match_str(pattern: StrMatch, value: str | None) -> bool:
         raise ValueError(f"Unexpected str match type {type(pattern)}")
 
 
-def match_transaction(txn: Transaction, rule: SimpleTxnMatchRule) -> bool:
+def match_transaction(
+    txn: Transaction,
+    rule: SimpleTxnMatchRule,
+) -> bool:
     return all(
         match_str(getattr(rule, key), getattr(txn, key))
         for key, pattern in rule.dict().items()
         if pattern is not None
     )
+
+
+def match_transaction_with_vars(
+    txn: Transaction,
+    rules: list[TxnMatchVars],
+    common_condition: SimpleTxnMatchRule | None = None,
+) -> TxnMatchVars | None:
+    for rule in rules:
+        if match_transaction(txn, rule.cond) and (
+            common_condition is None or match_transaction(txn, common_condition)
+        ):
+            return rule
 
 
 def first_non_none(*values):
@@ -96,11 +112,16 @@ def process_transaction(
     txn_ctx = dataclasses.asdict(txn)
     default_txn = input_config.default_txn
     processed = False
+    matched_vars: dict | None = None
 
     def render_str(value: str | None) -> str | None:
+        nonlocal matched_vars
         if value is None:
             return None
-        return template_env.from_string(value).render(**txn_ctx)
+        template_ctx = txn_ctx
+        if matched_vars is not None:
+            template_ctx |= matched_vars
+        return template_env.from_string(value).render(**template_ctx)
 
     def process_links_or_tags(links_or_tags: list[str] | None) -> list[str] | None:
         if links_or_tags is None:
@@ -111,8 +132,22 @@ def process_transaction(
         return result
 
     for import_rule in import_rules:
-        if not match_transaction(txn, import_rule.match):
-            continue
+        matched_vars = None
+        if isinstance(import_rule.match, list):
+            matched = match_transaction_with_vars(
+                txn, import_rule.match, common_condition=import_rule.common_cond
+            )
+            if matched is None:
+                continue
+            matched_vars = {
+                key: template_env.from_string(value).render(**txn_ctx)
+                if isinstance(value, str)
+                else value
+                for key, value in matched.vars.items()
+            }
+        else:
+            if not match_transaction(txn, import_rule.match):
+                continue
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
                 logger.debug("Ignored transaction %s:%s", txn.file, txn.lineno)
