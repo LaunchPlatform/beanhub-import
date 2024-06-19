@@ -55,6 +55,7 @@ class SimpleTxnMatchRule(ImportBaseModel):
     bank_desc: StrMatch = None
     currency: StrMatch | None = None
     category: StrMatch | None = None
+    subcategory: StrMatch | None = None
     status: StrMatch | None = None
     type: StrMatch | None = None
     source_account: StrMatch | None = None
@@ -65,6 +66,7 @@ class SimpleTxnMatchRule(ImportBaseModel):
     gl_code: StrMatch | None = None
     name_on_card: StrMatch | None = None
     last_four_digits: StrMatch | None = None
+    transaction_id: StrMatch | None = None
 
 
 TxnMatchRule = SimpleTxnMatchRule
