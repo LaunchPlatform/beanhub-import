@@ -22,7 +22,6 @@ from .data_types import InputConfigDetails
 from .data_types import MetadataItem
 from .data_types import PostingTemplate
 from .data_types import SimpleFileMatch
-from .data_types import SimpleTxnMatchRule
 from .data_types import StrContainsMatch
 from .data_types import StrExactMatch
 from .data_types import StrMatch
@@ -30,6 +29,8 @@ from .data_types import StrOneOfMatch
 from .data_types import StrPrefixMatch
 from .data_types import StrRegexMatch
 from .data_types import StrSuffixMatch
+from .data_types import TxnMatchRule
+from .data_types import TxnMatchVars
 from .templates import make_environment
 
 
@@ -73,12 +74,22 @@ def match_str(pattern: StrMatch, value: str | None) -> bool:
         raise ValueError(f"Unexpected str match type {type(pattern)}")
 
 
-def match_transaction(txn: Transaction, rule: SimpleTxnMatchRule) -> bool:
+def match_transaction(
+    txn: Transaction, rule: TxnMatchRule | list[TxnMatchVars]
+) -> bool:
     return all(
         match_str(getattr(rule, key), getattr(txn, key))
         for key, pattern in rule.dict().items()
         if pattern is not None
     )
+
+
+def match_transaction_with_vars(
+    txn: Transaction, rules: list[TxnMatchVars]
+) -> TxnMatchVars | None:
+    for rule in rules:
+        if match_transaction(txn, rule.cond):
+            return rule
 
 
 def first_non_none(*values):

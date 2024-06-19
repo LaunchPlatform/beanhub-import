@@ -27,9 +27,11 @@ from beanhub_import.data_types import StrPrefixMatch
 from beanhub_import.data_types import StrRegexMatch
 from beanhub_import.data_types import StrSuffixMatch
 from beanhub_import.data_types import TransactionTemplate
+from beanhub_import.data_types import TxnMatchVars
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
+from beanhub_import.processor import match_transaction_with_vars
 from beanhub_import.processor import process_imports
 from beanhub_import.processor import process_transaction
 from beanhub_import.processor import walk_dir_files
@@ -168,6 +170,52 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
 )
 def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected: bool):
     assert match_transaction(txn, rule) == expected
+
+
+@pytest.mark.parametrize(
+    "txn, rules, expected",
+    [
+        (
+            Transaction(extractor="MOCK_EXTRACTOR"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            TxnMatchVars(
+                cond=SimpleTxnMatchRule(
+                    extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                ),
+                vars=dict(foo="bar"),
+            ),
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="NOPE")),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            None,
+        ),
+    ],
+)
+def test_match_transaction_with_vars(
+    txn: Transaction, rules: list[TxnMatchVars], expected: TxnMatchVars
+):
+    assert match_transaction_with_vars(txn, rules) == expected
 
 
 @pytest.mark.parametrize(

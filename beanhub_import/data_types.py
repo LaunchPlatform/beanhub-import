@@ -72,9 +72,9 @@ class SimpleTxnMatchRule(ImportBaseModel):
 TxnMatchRule = SimpleTxnMatchRule
 
 
-class TxnMatchVars:
+class TxnMatchVars(ImportBaseModel):
     cond: TxnMatchRule
-    vars: dict
+    vars: dict[str, str | int | None]
 
 
 @enum.unique
