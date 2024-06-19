@@ -22,6 +22,7 @@ from .data_types import InputConfigDetails
 from .data_types import MetadataItem
 from .data_types import PostingTemplate
 from .data_types import SimpleFileMatch
+from .data_types import SimpleTxnMatchRule
 from .data_types import StrContainsMatch
 from .data_types import StrExactMatch
 from .data_types import StrMatch
@@ -29,7 +30,6 @@ from .data_types import StrOneOfMatch
 from .data_types import StrPrefixMatch
 from .data_types import StrRegexMatch
 from .data_types import StrSuffixMatch
-from .data_types import TxnMatchRule
 from .data_types import TxnMatchVars
 from .templates import make_environment
 
@@ -75,7 +75,8 @@ def match_str(pattern: StrMatch, value: str | None) -> bool:
 
 
 def match_transaction(
-    txn: Transaction, rule: TxnMatchRule | list[TxnMatchVars]
+    txn: Transaction,
+    rule: SimpleTxnMatchRule,
 ) -> bool:
     return all(
         match_str(getattr(rule, key), getattr(txn, key))
@@ -85,10 +86,14 @@ def match_transaction(
 
 
 def match_transaction_with_vars(
-    txn: Transaction, rules: list[TxnMatchVars]
+    txn: Transaction,
+    rules: list[TxnMatchVars],
+    common_condition: SimpleTxnMatchRule | None = None,
 ) -> TxnMatchVars | None:
     for rule in rules:
-        if match_transaction(txn, rule.cond):
+        if match_transaction(txn, rule.cond) and (
+            common_condition is None or match_transaction(txn, common_condition)
+        ):
             return rule
 
 
@@ -122,8 +127,17 @@ def process_transaction(
         return result
 
     for import_rule in import_rules:
-        if not match_transaction(txn, import_rule.match):
-            continue
+        if isinstance(import_rule.match, list):
+            if not match_transaction_with_vars(
+                txn, import_rule.match, common_condition=import_rule.common_cond
+            ):
+                continue
+        else:
+            if not match_transaction(txn, import_rule.match) or (
+                import_rule.common_cond is not None
+                and not match_transaction(txn, import_rule.common_cond)
+            ):
+                continue
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
                 logger.debug("Ignored transaction %s:%s", txn.file, txn.lineno)

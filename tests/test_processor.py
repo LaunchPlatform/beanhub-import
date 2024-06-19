@@ -173,7 +173,7 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
 
 
 @pytest.mark.parametrize(
-    "txn, rules, expected",
+    "txn, rules, common_cond, expected",
     [
         (
             Transaction(extractor="MOCK_EXTRACTOR"),
@@ -189,6 +189,46 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                     vars=dict(foo="bar"),
                 ),
             ],
+            None,
+            TxnMatchVars(
+                cond=SimpleTxnMatchRule(
+                    extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                ),
+                vars=dict(foo="bar"),
+            ),
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
+            None,
+        ),
+        (
+            Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             TxnMatchVars(
                 cond=SimpleTxnMatchRule(
                     extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
@@ -209,13 +249,20 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                 ),
             ],
             None,
+            None,
         ),
     ],
 )
 def test_match_transaction_with_vars(
-    txn: Transaction, rules: list[TxnMatchVars], expected: TxnMatchVars
+    txn: Transaction,
+    rules: list[TxnMatchVars],
+    common_cond: SimpleTxnMatchRule | None,
+    expected: TxnMatchVars,
 ):
-    assert match_transaction_with_vars(txn, rules) == expected
+    assert (
+        match_transaction_with_vars(txn, rules, common_condition=common_cond)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(

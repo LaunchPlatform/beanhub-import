@@ -183,6 +183,8 @@ class OutputConfig(ImportBaseModel):
 class ImportRule(ImportBaseModel):
     # Name of import rule, for users to read only
     name: str | None = None
+    # common condition to meet on top of the match rules
+    common_cond: TxnMatchRule | None = None
     match: TxnMatchRule | list[TxnMatchVars]
     actions: list[Action]
 
