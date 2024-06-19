@@ -72,6 +72,11 @@ class SimpleTxnMatchRule(ImportBaseModel):
 TxnMatchRule = SimpleTxnMatchRule
 
 
+class TxnMatchVars:
+    cond: TxnMatchRule
+    vars: dict
+
+
 @enum.unique
 class ActionType(str, enum.Enum):
     add_txn = "add_txn"
@@ -178,7 +183,7 @@ class OutputConfig(ImportBaseModel):
 class ImportRule(ImportBaseModel):
     # Name of import rule, for users to read only
     name: str | None = None
-    match: TxnMatchRule
+    match: TxnMatchRule | list[TxnMatchVars]
     actions: list[Action]
 
 
