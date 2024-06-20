@@ -74,7 +74,7 @@ TxnMatchRule = SimpleTxnMatchRule
 
 class TxnMatchVars(ImportBaseModel):
     cond: TxnMatchRule
-    vars: dict[str, str | int | None]
+    vars: dict[str, str | int | None] | None = None
 
 
 @enum.unique

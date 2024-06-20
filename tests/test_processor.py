@@ -184,7 +184,6 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
             [
                 TxnMatchVars(
                     cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
-                    vars=dict(eggs="spam"),
                 ),
                 TxnMatchVars(
                     cond=SimpleTxnMatchRule(
