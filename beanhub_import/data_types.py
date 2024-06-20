@@ -80,6 +80,7 @@ class TxnMatchVars(ImportBaseModel):
 @enum.unique
 class ActionType(str, enum.Enum):
     add_txn = "add_txn"
+    del_txn = "del_txn"
     ignore = "ignore"
 
 
@@ -112,6 +113,11 @@ class TransactionTemplate(ImportBaseModel):
     links: list[str] | None = None
     metadata: list[MetadataItemTemplate] | None = None
     postings: list[PostingTemplate] | None = None
+
+
+class DeleteTransactionTemplate(ImportBaseModel):
+    # the import-id for deleting
+    id: str | None = None
 
 
 class Amount(ImportBaseModel):
@@ -147,17 +153,26 @@ class GeneratedTransaction(ImportBaseModel):
     postings: list[GeneratedPosting]
 
 
+class DeletedTransaction(ImportBaseModel):
+    id: str
+
+
 class ActionAddTxn(ImportBaseModel):
     type: typing.Literal[ActionType.add_txn] = pydantic.Field(ActionType.add_txn)
     file: str | None = None
     txn: TransactionTemplate
 
 
+class ActionDelTxn(ImportBaseModel):
+    type: typing.Literal[ActionType.del_txn] = pydantic.Field(ActionType.del_txn)
+    txn: DeleteTransactionTemplate
+
+
 class ActionIgnore(ImportBaseModel):
     type: typing.Literal[ActionType.ignore] = pydantic.Field(ActionType.ignore)
 
 
-Action = ActionAddTxn | ActionIgnore
+Action = ActionAddTxn | ActionDelTxn | ActionIgnore
 
 
 SimpleFileMatch = str | StrExactMatch | StrRegexMatch

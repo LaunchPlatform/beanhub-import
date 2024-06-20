@@ -15,6 +15,7 @@ from jinja2.sandbox import SandboxedEnvironment
 from . import constants
 from .data_types import ActionType
 from .data_types import Amount
+from .data_types import DeletedTransaction
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
@@ -109,7 +110,7 @@ def process_transaction(
     txn: Transaction,
     omit_token: str | None = None,
     default_import_id: str | None = None,
-) -> typing.Generator[GeneratedTransaction, None, bool]:
+) -> typing.Generator[GeneratedTransaction | DeletedTransaction, None, bool]:
     logger = logging.getLogger(__name__)
     txn_ctx = dataclasses.asdict(txn)
     if omit_token is None:
@@ -160,6 +161,17 @@ def process_transaction(
             if action.type == ActionType.ignore:
                 logger.debug("Ignored transaction %s:%s", txn.file, txn.lineno)
                 return True
+
+            txn_id = first_non_none(
+                getattr(action.txn, "id"),
+                getattr(default_txn, "id") if default_txn is not None else None,
+                default_import_id,
+                constants.DEFAULT_TXN_TEMPLATE["id"],
+            )
+            if action.type == ActionType.del_txn:
+                yield DeletedTransaction(id=render_str(txn_id))
+                processed = True
+                continue
             if action.type != ActionType.add_txn:
                 # we only support add txn for now
                 raise ValueError(f"Unsupported action type {action.type}")
@@ -172,12 +184,7 @@ def process_transaction(
                 )
                 for key in ("date", "flag", "narration", "payee")
             }
-            template_values["id"] = first_non_none(
-                getattr(action.txn, "id"),
-                getattr(default_txn, "id") if default_txn is not None else None,
-                default_import_id,
-                constants.DEFAULT_TXN_TEMPLATE["id"],
-            )
+            template_values["id"] = txn_id
 
             posting_templates: list[PostingTemplate] = []
             if input_config.prepend_postings is not None:
@@ -264,7 +271,9 @@ def process_transaction(
 def process_imports(
     import_doc: ImportDoc,
     input_dir: pathlib.Path,
-) -> typing.Generator[GeneratedTransaction | Transaction, None, None]:
+) -> typing.Generator[
+    GeneratedTransaction | DeletedTransaction | Transaction, None, None
+]:
     logger = logging.getLogger(__name__)
     template_env = make_environment()
     omit_token = uuid.uuid4().hex
