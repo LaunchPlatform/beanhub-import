@@ -539,6 +539,64 @@ def test_match_transaction_with_vars(
                 currency="BTC",
                 amount=decimal.Decimal("123.45"),
             ),
+            InputConfigDetails(),
+            [
+                ImportRule(
+                    match=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    actions=[
+                        ActionAddTxn(
+                            file="{{ extractor }}.bean",
+                            txn=TransactionTemplate(
+                                payee="{{ omit }}",
+                                postings=[
+                                    PostingTemplate(
+                                        account="Assets:Bank:Foobar",
+                                        amount=AmountTemplate(
+                                            number="{{ amount }}",
+                                            currency="{{ currency }}",
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        )
+                    ],
+                )
+            ],
+            [
+                GeneratedTransaction(
+                    id="mock.csv:123",
+                    sources=["mock.csv"],
+                    date="2024-05-05",
+                    file="MOCK_EXTRACTOR.bean",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:Foobar",
+                            amount=Amount(
+                                number="123.45",
+                                currency="BTC",
+                            ),
+                        ),
+                    ],
+                )
+            ],
+            True,
+            id="omit-token",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
             InputConfigDetails(
                 prepend_postings=[
                     PostingTemplate(

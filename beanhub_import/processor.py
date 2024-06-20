@@ -1,9 +1,11 @@
+import base64
 import dataclasses
 import logging
 import os
 import pathlib
 import re
 import typing
+import uuid
 
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
@@ -106,10 +108,14 @@ def process_transaction(
     input_config: InputConfigDetails,
     import_rules: list[ImportRule],
     txn: Transaction,
+    omit_token: str | None = None,
     default_import_id: str | None = None,
 ) -> typing.Generator[GeneratedTransaction, None, bool]:
     logger = logging.getLogger(__name__)
     txn_ctx = dataclasses.asdict(txn)
+    if omit_token is None:
+        omit_token = uuid.uuid4().hex
+    txn_ctx["omit"] = omit_token
     default_txn = input_config.default_txn
     processed = False
     matched_vars: dict | None = None
@@ -121,7 +127,10 @@ def process_transaction(
         template_ctx = txn_ctx
         if matched_vars is not None:
             template_ctx |= matched_vars
-        return template_env.from_string(value).render(**template_ctx)
+        result_value = template_env.from_string(value).render(**template_ctx)
+        if omit_token is not None and result_value == omit_token:
+            return None
+        return result_value
 
     def process_links_or_tags(links_or_tags: list[str] | None) -> list[str] | None:
         if links_or_tags is None:
@@ -259,6 +268,7 @@ def process_imports(
 ) -> typing.Generator[GeneratedTransaction | Transaction, None, None]:
     logger = logging.getLogger(__name__)
     template_env = make_environment()
+    omit_token = uuid.uuid4().hex
     if import_doc.context is not None:
         template_env.globals.update(import_doc.context)
     for filepath in walk_dir_files(input_dir):
@@ -294,6 +304,7 @@ def process_imports(
                         template_env=template_env,
                         input_config=input_config.config,
                         import_rules=import_doc.imports,
+                        omit_token=omit_token,
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
                     )
