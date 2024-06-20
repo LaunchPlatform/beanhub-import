@@ -158,6 +158,7 @@ imports:
       # generate a transaction into the beancount file
       - file: "books/{{ date.year }}.bean"
         txn:
+          payee: "{{ payee | default(omit, true) }}"
           narration: "{{ narration | default(desc, true) | default(bank_desc, true) }}"
           postings:
             - account: "{{ account }}"
