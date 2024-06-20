@@ -1,4 +1,3 @@
-import base64
 import dataclasses
 import logging
 import os
