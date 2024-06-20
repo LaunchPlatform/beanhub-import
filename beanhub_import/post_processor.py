@@ -1,6 +1,7 @@
 import collections
 import copy
 import json
+import logging
 import pathlib
 import typing
 
@@ -15,6 +16,7 @@ from lark import Tree
 from . import constants
 from .data_types import BeancountTransaction
 from .data_types import ChangeSet
+from .data_types import DeletedTransaction
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
 
@@ -62,12 +64,17 @@ def compute_changes(
     generated_txns: list[GeneratedTransaction],
     imported_txns: list[BeancountTransaction],
     work_dir: pathlib.Path,
+    deleted_txns: list[DeletedTransaction] | None = None,
 ) -> dict[pathlib.Path, ChangeSet]:
     generated_id_txns = {txn.id: txn for txn in generated_txns}
     imported_id_txns = {txn.id: txn for txn in imported_txns}
+    deleted_txn_ids = set(txn.id for txn in (deleted_txns or ()))
 
     to_remove = collections.defaultdict(list)
     for txn in imported_txns:
+        if txn.id in deleted_txn_ids:
+            to_remove[txn.file].append(txn)
+            continue
         generated_txn = generated_id_txns.get(txn.id)
         if (
             generated_txn is not None
@@ -79,6 +86,8 @@ def compute_changes(
     to_add = collections.defaultdict(list)
     to_update = collections.defaultdict(dict)
     for txn in generated_txns:
+        if txn.id in deleted_txn_ids:
+            continue
         imported_txn = imported_id_txns.get(txn.id)
         generated_file = (work_dir / txn.file).resolve()
         if imported_txn is not None and imported_txn.file.resolve() == generated_file:

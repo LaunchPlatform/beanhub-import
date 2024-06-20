@@ -10,8 +10,11 @@ from beanhub_extract.data_types import Transaction
 from jinja2.sandbox import SandboxedEnvironment
 
 from beanhub_import.data_types import ActionAddTxn
+from beanhub_import.data_types import ActionDelTxn
 from beanhub_import.data_types import Amount
 from beanhub_import.data_types import AmountTemplate
+from beanhub_import.data_types import DeletedTransaction
+from beanhub_import.data_types import DeleteTransactionTemplate
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
@@ -628,6 +631,38 @@ def test_match_transaction_with_vars(
             [],
             False,
             id="no-match",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            InputConfigDetails(),
+            [
+                ImportRule(
+                    match=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    actions=[
+                        ActionDelTxn(
+                            txn=DeleteTransactionTemplate(
+                                id="id-{{ file }}:{{ lineno }}"
+                            )
+                        )
+                    ],
+                )
+            ],
+            [
+                DeletedTransaction(id="id-mock.csv:123"),
+            ],
+            True,
+            id="delete",
         ),
     ],
 )

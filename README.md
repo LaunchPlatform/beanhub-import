@@ -504,9 +504,10 @@ As a result, if the `payee` value is not present, the payee field will be absent
 
 #### Import Action Definition
 
-Currently, there are two types of action for matched raw transactions:
+Currently, there are three types of action for matched raw transactions:
 
 - `add_txn`: Add a transaction to Beancount files
+- `del_txn`: Ensure a transaction is deleted from Beancount files
 - `ignore`: Mark the transaction as processed and ignore it
 
 The `type` value determines which type of action to use.
@@ -539,6 +540,15 @@ The structure of the posting template object looks like this.
 - `price`: the optional amount object with `number` and `currency` keys
 - `cost`: the optional template of cost spec
 
+##### Delete Transaction Action
+
+The following keys are available for the delete transaction action:
+
+- `txn`: the template of the transaction to insert
+ 
+A deleting transaction template is an object that contains the following keys:
+
+- `id`: the `import-id` value for ensuring transactions to be deleted. By default, `{{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
 
 ##### Ignore Action
 

@@ -11,6 +11,7 @@ from lark import Lark
 from beanhub_import.data_types import Amount
 from beanhub_import.data_types import BeancountTransaction
 from beanhub_import.data_types import ChangeSet
+from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.post_processor import apply_change_set
@@ -65,9 +66,9 @@ def test_extract_imported_transactions(
 
 
 @pytest.mark.parametrize(
-    "gen_txns, import_txns, expected",
+    "gen_txns, import_txns, del_txns, expected",
     [
-        pytest.param([], [], {}, id="empty"),
+        pytest.param([], [], [], {}, id="empty"),
         pytest.param(
             [
                 GeneratedTransaction(
@@ -80,6 +81,7 @@ def test_extract_imported_transactions(
                     postings=[],
                 )
             ],
+            [],
             [],
             {
                 pathlib.Path("main.bean"): ChangeSet(
@@ -116,6 +118,7 @@ def test_extract_imported_transactions(
                     file=pathlib.Path("other.bean"), lineno=0, id="MOCK_ID"
                 )
             ],
+            [],
             {
                 pathlib.Path("main.bean"): ChangeSet(
                     add=[
@@ -159,6 +162,7 @@ def test_extract_imported_transactions(
                     file=pathlib.Path("main.bean"), lineno=0, id="MOCK_ID"
                 )
             ],
+            [],
             {
                 pathlib.Path("main.bean"): ChangeSet(
                     add=[],
@@ -176,6 +180,37 @@ def test_extract_imported_transactions(
                 ),
             },
             id="single-update",
+        ),
+        pytest.param(
+            [
+                GeneratedTransaction(
+                    id="MOCK_ID",
+                    sources=["import-data/mock.csv"],
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="main.bean",
+                    postings=[],
+                )
+            ],
+            [
+                BeancountTransaction(
+                    file=pathlib.Path("main.bean"), lineno=0, id="MOCK_ID"
+                )
+            ],
+            [DeletedTransaction(id="MOCK_ID")],
+            {
+                pathlib.Path("main.bean"): ChangeSet(
+                    add=[],
+                    update={},
+                    remove=[
+                        BeancountTransaction(
+                            file=pathlib.Path("main.bean"), lineno=0, id="MOCK_ID"
+                        )
+                    ],
+                )
+            },
+            id="single-delete",
         ),
         pytest.param(
             [
@@ -212,6 +247,7 @@ def test_extract_imported_transactions(
                     file=pathlib.Path("main.bean"), lineno=1, id="id1"
                 ),
             ],
+            [],
             {
                 pathlib.Path("main.bean"): ChangeSet(
                     add=[],
@@ -262,6 +298,7 @@ def test_compute_changes(
     tmp_path: pathlib.Path,
     gen_txns: list[GeneratedTransaction],
     import_txns: list[BeancountTransaction],
+    del_txns: list[DeletedTransaction],
     expected: dict[str, ChangeSet],
 ):
     import_txns = [
@@ -284,7 +321,10 @@ def test_compute_changes(
     assert {
         key.relative_to(tmp_path): strip_imported_txn(value)
         for key, value in compute_changes(
-            gen_txns, import_txns, work_dir=tmp_path
+            gen_txns,
+            import_txns,
+            deleted_txns=del_txns,
+            work_dir=tmp_path,
         ).items()
     } == expected
 
