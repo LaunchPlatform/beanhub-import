@@ -82,7 +82,7 @@ def match_transaction(
 ) -> bool:
     return all(
         match_str(getattr(rule, key), getattr(txn, key))
-        for key, pattern in rule.dict().items()
+        for key, pattern in rule.model_dump().items()
         if pattern is not None
     )
 
