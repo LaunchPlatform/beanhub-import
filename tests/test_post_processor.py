@@ -53,13 +53,16 @@ def test_extract_imported_transactions(
 ):
     folder_path = fixtures_folder / "post_processor" / folder
     assert (
-        list(
-            map(
-                functools.partial(strip_txn_for_compare, folder_path),
-                extract_existing_transactions(
-                    parser=parser, bean_file=folder_path / "main.bean"
-                ),
-            )
+        sorted(
+            list(
+                map(
+                    functools.partial(strip_txn_for_compare, folder_path),
+                    extract_existing_transactions(
+                        parser=parser, bean_file=folder_path / "main.bean"
+                    ),
+                )
+            ),
+            key=lambda item: (item["file"], item["lineno"], item["id"]),
         )
         == expected
     )
