@@ -183,14 +183,14 @@ def txn_to_text(
 def apply_change_set(
     tree: Lark,
     change_set: ChangeSet,
-    remove_danging: bool = False,
+    remove_dangling: bool = False,
 ) -> Lark:
     if tree.data != "start":
         raise ValueError("expected start as the root rule")
     parser = make_parser()
 
     txns_to_remove = change_set.remove
-    if remove_danging and change_set.dangling is not None:
+    if remove_dangling and change_set.dangling is not None:
         txns_to_remove += change_set.dangling
     lines_to_remove = [txn.lineno for txn in txns_to_remove]
     line_to_entries = {

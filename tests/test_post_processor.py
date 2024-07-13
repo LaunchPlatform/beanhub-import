@@ -549,7 +549,7 @@ def test_apply_change_sets(
         fixtures_folder / "post_processor" / "apply-changes" / expected_file
     )
     tree = parser.parse(bean_file_path.read_text())
-    new_tree = apply_change_set(tree, change_set, remove_danging=remove_dangling)
+    new_tree = apply_change_set(tree, change_set, remove_dangling=remove_dangling)
     output_str = io.StringIO()
     formatter.format(new_tree, output_str)
     assert output_str.getvalue() == expected_file_path.read_text()
