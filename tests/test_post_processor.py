@@ -406,6 +406,12 @@ def test_compute_changes(
             )
             for txn in change_set.remove
         ]
+        kwargs["dangling"] = [
+            BeancountTransaction(
+                **(dataclasses.asdict(txn) | dict(file=txn.file.relative_to(tmp_path)))
+            )
+            for txn in change_set.dangling
+        ]
         return ChangeSet(**kwargs)
 
     assert {
