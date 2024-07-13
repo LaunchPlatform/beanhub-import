@@ -101,6 +101,7 @@ def test_extract_imported_transactions(
                     ],
                     update={},
                     remove=[],
+                    dangling=[],
                 )
             },
             id="single-add",
@@ -136,6 +137,7 @@ def test_extract_imported_transactions(
                     ],
                     update={},
                     remove=[],
+                    dangling=[],
                 ),
                 pathlib.Path("other.bean"): ChangeSet(
                     add=[],
@@ -145,6 +147,7 @@ def test_extract_imported_transactions(
                             file=pathlib.Path("other.bean"), lineno=0, id="MOCK_ID"
                         )
                     ],
+                    dangling=[],
                 ),
             },
             id="single-remove-add",
@@ -180,6 +183,7 @@ def test_extract_imported_transactions(
                         )
                     },
                     remove=[],
+                    dangling=[],
                 ),
             },
             id="single-update",
@@ -211,9 +215,83 @@ def test_extract_imported_transactions(
                             file=pathlib.Path("main.bean"), lineno=0, id="MOCK_ID"
                         )
                     ],
+                    dangling=[],
                 )
             },
             id="single-delete",
+        ),
+        pytest.param(
+            [
+                GeneratedTransaction(
+                    id="id0",
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="main.bean",
+                    postings=[],
+                ),
+                GeneratedTransaction(
+                    id="id2",
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="other.bean",
+                    postings=[],
+                ),
+            ],
+            [
+                BeancountTransaction(
+                    file=pathlib.Path("main.bean"), lineno=0, id="id0"
+                ),
+                BeancountTransaction(
+                    file=pathlib.Path("main.bean"), lineno=1, id="id1"
+                ),
+                BeancountTransaction(
+                    file=pathlib.Path("other.bean"), lineno=2, id="id3"
+                ),
+            ],
+            [],
+            {
+                pathlib.Path("main.bean"): ChangeSet(
+                    add=[],
+                    update={
+                        0: GeneratedTransaction(
+                            id="id0",
+                            date="2024-05-05",
+                            flag="*",
+                            narration="MOCK_DESC",
+                            file="main.bean",
+                            postings=[],
+                        ),
+                    },
+                    remove=[],
+                    dangling=[
+                        BeancountTransaction(
+                            file=pathlib.Path("main.bean"), lineno=1, id="id1"
+                        ),
+                    ],
+                ),
+                pathlib.Path("other.bean"): ChangeSet(
+                    add=[
+                        GeneratedTransaction(
+                            id="id2",
+                            date="2024-05-05",
+                            flag="*",
+                            narration="MOCK_DESC",
+                            file="other.bean",
+                            postings=[],
+                        ),
+                    ],
+                    update={},
+                    remove=[],
+                    dangling=[
+                        BeancountTransaction(
+                            file=pathlib.Path("other.bean"), lineno=2, id="id3"
+                        ),
+                    ],
+                ),
+            },
+            id="dangling",
         ),
         pytest.param(
             [
@@ -249,6 +327,9 @@ def test_extract_imported_transactions(
                 BeancountTransaction(
                     file=pathlib.Path("main.bean"), lineno=1, id="id1"
                 ),
+                BeancountTransaction(
+                    file=pathlib.Path("main.bean"), lineno=2, id="id-dangling"
+                ),
             ],
             [],
             {
@@ -267,6 +348,11 @@ def test_extract_imported_transactions(
                     remove=[
                         BeancountTransaction(
                             file=pathlib.Path("main.bean"), lineno=1, id="id1"
+                        ),
+                    ],
+                    dangling=[
+                        BeancountTransaction(
+                            file=pathlib.Path("main.bean"), lineno=2, id="id-dangling"
                         ),
                     ],
                 ),
@@ -291,6 +377,7 @@ def test_extract_imported_transactions(
                     ],
                     update={},
                     remove=[],
+                    dangling=[],
                 ),
             },
             id="complex",
