@@ -226,3 +226,5 @@ class ChangeSet:
     update: dict[int, GeneratedTransaction]
     # list of generated transaction to add
     add: list[GeneratedTransaction]
+    # list of existing beancount transaction with no corresponding generated transactions (dangling)
+    dangling: list[BeancountTransaction] | None = None

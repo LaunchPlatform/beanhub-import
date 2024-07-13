@@ -71,6 +71,7 @@ def compute_changes(
     deleted_txn_ids = set(txn.id for txn in (deleted_txns or ()))
 
     to_remove = collections.defaultdict(list)
+    dangling_txns = collections.defaultdict(list)
     for txn in imported_txns:
         if txn.id in deleted_txn_ids:
             to_remove[txn.file].append(txn)
@@ -82,6 +83,9 @@ def compute_changes(
         ):
             # it appears that the generated txn's file is different from the old one, let's remove it
             to_remove[txn.file].append(txn)
+        elif generated_txn is None:
+            # we have existing imported txn but has no corresponding generated txn, let's add it to danging txns
+            dangling_txns[txn.file].append(txn)
 
     to_add = collections.defaultdict(list)
     to_update = collections.defaultdict(dict)
@@ -95,12 +99,18 @@ def compute_changes(
         else:
             to_add[generated_file].append(txn)
 
-    all_files = frozenset(to_remove.keys()).union(to_add.keys()).union(to_update.keys())
+    all_files = (
+        frozenset(to_remove.keys())
+        .union(to_add.keys())
+        .union(to_update.keys())
+        .union(dangling_txns)
+    )
     return {
         file_path: ChangeSet(
             remove=to_remove[file_path],
             add=to_add[file_path],
             update=to_update[file_path],
+            dangling=dangling_txns[file_path],
         )
         for file_path in all_files
     }
@@ -173,12 +183,16 @@ def txn_to_text(
 def apply_change_set(
     tree: Lark,
     change_set: ChangeSet,
+    remove_danging: bool = False,
 ) -> Lark:
     if tree.data != "start":
         raise ValueError("expected start as the root rule")
     parser = make_parser()
 
-    lines_to_remove = [txn.lineno for txn in change_set.remove]
+    txns_to_remove = change_set.remove
+    if remove_danging and change_set.dangling is not None:
+        txns_to_remove += change_set.dangling
+    lines_to_remove = [txn.lineno for txn in txns_to_remove]
     line_to_entries = {
         lineno: to_parser_entry(parser, txn_to_text(txn))
         for lineno, txn in change_set.update.items()
