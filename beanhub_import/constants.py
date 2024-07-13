@@ -6,3 +6,4 @@ DEFAULT_TXN_TEMPLATE = dict(
     flag="*",
     narration="{{ desc | default(bank_desc, true) }}",
 )
+ADD_ENTRY_LINENO_OFFSET = 100000

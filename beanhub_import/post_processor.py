@@ -116,12 +116,15 @@ def compute_changes(
     }
 
 
-def to_parser_entry(parser: Lark, text: str) -> Entry:
+def to_parser_entry(parser: Lark, text: str, lineno: int | None = None) -> Entry:
     tree = parser.parse(text.strip())
     entries, _ = collect_entries(tree)
     if len(entries) != 1:
         raise ValueError("Expected exactly only one entry")
-    return entries[0]
+    entry = entries[0]
+    if lineno is not None:
+        entry.statement.meta.line = lineno
+    return entry
 
 
 def posting_to_text(posting: GeneratedPosting) -> str:
@@ -194,11 +197,16 @@ def apply_change_set(
         txns_to_remove += change_set.dangling
     lines_to_remove = [txn.lineno for txn in txns_to_remove]
     line_to_entries = {
-        lineno: to_parser_entry(parser, txn_to_text(txn))
+        lineno: to_parser_entry(parser, txn_to_text(txn), lineno=lineno)
         for lineno, txn in change_set.update.items()
     }
     entries_to_add = [
-        to_parser_entry(parser, txn_to_text(txn)) for txn in change_set.add
+        # Set a super huge lineno to the new entry statement as beancount-black sorts entries based on (date, lineno).
+        # if we simply add without a proper lineno, it will make sorting unstable.
+        to_parser_entry(
+            parser, txn_to_text(txn), lineno=constants.ADD_ENTRY_LINENO_OFFSET + i
+        )
+        for i, txn in enumerate(change_set.add)
     ]
 
     new_tree = copy.deepcopy(tree)
