@@ -426,7 +426,7 @@ def test_compute_changes(
 
 
 @pytest.mark.parametrize(
-    "bean_file, change_set, expected_file",
+    "bean_file, change_set, remove_dangling, expected_file",
     [
         (
             "simple.bean",
@@ -477,8 +477,62 @@ def test_compute_changes(
                     )
                 ],
             ),
+            False,
             "simple-expected.bean",
-        )
+        ),
+        (
+            "simple.bean",
+            ChangeSet(
+                add=[
+                    GeneratedTransaction(
+                        id="id99",
+                        sources=["import-data/mock.csv"],
+                        date="2024-05-05",
+                        flag="*",
+                        narration="MOCK_DESC",
+                        file="main.bean",
+                        postings=[
+                            GeneratedPosting(
+                                account="Assets:Cash",
+                                amount=Amount(number="123.45", currency="USD"),
+                            ),
+                            GeneratedPosting(
+                                account="Expenses:Food",
+                                amount=Amount(number="-123.45", currency="USD"),
+                            ),
+                        ],
+                    ),
+                ],
+                update={
+                    13: GeneratedTransaction(
+                        id="id1",
+                        date="2024-03-05",
+                        flag="!",
+                        payee="Uber Eats",
+                        narration="Buy lunch",
+                        file="main.bean",
+                        postings=[
+                            GeneratedPosting(
+                                account="Assets:Cash",
+                                amount=Amount(number="111.45", currency="USD"),
+                            ),
+                            GeneratedPosting(
+                                account="Expenses:Food",
+                                amount=Amount(number="-111.45", currency="USD"),
+                            ),
+                        ],
+                    ),
+                },
+                remove=[],
+                dangling=[
+                    BeancountTransaction(
+                        file=pathlib.Path("main.bean"), lineno=29, id="id3"
+                    )
+                ],
+            ),
+            True,
+            "simple-expected.bean",
+        ),
     ],
 )
 def test_apply_change_sets(
@@ -487,6 +541,7 @@ def test_apply_change_sets(
     fixtures_folder: pathlib.Path,
     bean_file: str,
     change_set: ChangeSet,
+    remove_dangling: bool,
     expected_file: str,
 ):
     bean_file_path = fixtures_folder / "post_processor" / "apply-changes" / bean_file
@@ -494,7 +549,7 @@ def test_apply_change_sets(
         fixtures_folder / "post_processor" / "apply-changes" / expected_file
     )
     tree = parser.parse(bean_file_path.read_text())
-    new_tree = apply_change_set(tree, change_set)
+    new_tree = apply_change_set(tree, change_set, remove_danging=remove_dangling)
     output_str = io.StringIO()
     formatter.format(new_tree, output_str)
     assert output_str.getvalue() == expected_file_path.read_text()
