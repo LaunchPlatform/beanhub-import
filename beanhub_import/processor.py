@@ -33,6 +33,7 @@ from .data_types import StrPrefixMatch
 from .data_types import StrRegexMatch
 from .data_types import StrSuffixMatch
 from .data_types import TxnMatchVars
+from .data_types import UnprocessedTransaction
 from .templates import make_environment
 
 
@@ -110,7 +111,9 @@ def process_transaction(
     txn: Transaction,
     omit_token: str | None = None,
     default_import_id: str | None = None,
-) -> typing.Generator[GeneratedTransaction | DeletedTransaction, None, bool]:
+) -> typing.Generator[
+    GeneratedTransaction | DeletedTransaction, None, UnprocessedTransaction | None
+]:
     logger = logging.getLogger(__name__)
     txn_ctx = dataclasses.asdict(txn)
     if omit_token is None:
@@ -265,7 +268,13 @@ def process_transaction(
     logger.debug(
         "No match found for transaction %s at %s:%s", txn, txn.file, txn.lineno
     )
-    return processed
+    if not processed:
+        txn_id = first_non_none(
+            getattr(default_txn, "id") if default_txn is not None else None,
+            default_import_id,
+            constants.DEFAULT_TXN_TEMPLATE["id"],
+        )
+        return UnprocessedTransaction(txn=txn, import_id=render_str(txn_id))
 
 
 def process_imports(
@@ -316,7 +325,7 @@ def process_imports(
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
                     )
-                    txn_processed = yield from txn_generator
-                    if not txn_processed:
-                        yield txn
+                    unprocessed_txn = yield from txn_generator
+                    if unprocessed_txn is not None:
+                        yield unprocessed_txn
             break

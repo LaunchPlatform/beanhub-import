@@ -4,6 +4,7 @@ import pathlib
 import typing
 
 import pydantic
+from beanhub_extract.data_types import Transaction
 from pydantic import BaseModel
 
 
@@ -228,3 +229,9 @@ class ChangeSet:
     add: list[GeneratedTransaction]
     # list of existing beancount transaction with no corresponding generated transactions (dangling)
     dangling: list[BeancountTransaction] | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class UnprocessedTransaction:
+    import_id: str
+    txn: Transaction
