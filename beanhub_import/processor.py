@@ -325,7 +325,7 @@ def process_imports(
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
                     )
-                    txn_processed = yield from txn_generator
-                    if not txn_processed:
-                        yield txn
+                    unprocessed_txn = yield from txn_generator
+                    if unprocessed_txn is not None:
+                        yield unprocessed_txn
             break
