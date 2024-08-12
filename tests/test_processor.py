@@ -32,6 +32,7 @@ from beanhub_import.data_types import StrRegexMatch
 from beanhub_import.data_types import StrSuffixMatch
 from beanhub_import.data_types import TransactionTemplate
 from beanhub_import.data_types import TxnMatchVars
+from beanhub_import.data_types import UnprocessedTransaction
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
@@ -269,7 +270,7 @@ def test_match_transaction_with_vars(
 
 
 @pytest.mark.parametrize(
-    "txn, input_config, import_rules, expected, expected_processed",
+    "txn, input_config, import_rules, expected, expected_result",
     [
         pytest.param(
             Transaction(
@@ -358,7 +359,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
-            True,
+            None,
             id="generic",
         ),
         pytest.param(
@@ -464,7 +465,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
-            True,
+            None,
             id="match-with-vars",
         ),
         pytest.param(
@@ -527,7 +528,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
-            True,
+            None,
             id="default-values",
         ),
         pytest.param(
@@ -585,7 +586,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
-            True,
+            None,
             id="omit-token",
         ),
         pytest.param(
@@ -593,6 +594,7 @@ def test_match_transaction_with_vars(
                 extractor="MOCK_EXTRACTOR",
                 file="mock.csv",
                 lineno=123,
+                reversed_lineno=-1,
                 desc="MOCK_DESC",
                 source_account="Foobar",
                 date=datetime.date(2024, 5, 5),
@@ -628,7 +630,20 @@ def test_match_transaction_with_vars(
                 )
             ],
             [],
-            False,
+            UnprocessedTransaction(
+                txn=Transaction(
+                    extractor="MOCK_EXTRACTOR",
+                    file="mock.csv",
+                    lineno=123,
+                    reversed_lineno=-1,
+                    desc="MOCK_DESC",
+                    source_account="Foobar",
+                    date=datetime.date(2024, 5, 5),
+                    currency="BTC",
+                    amount=decimal.Decimal("123.45"),
+                ),
+                import_id="mock.csv:-1",
+            ),
             id="no-match",
         ),
         pytest.param(
@@ -660,7 +675,7 @@ def test_match_transaction_with_vars(
             [
                 DeletedTransaction(id="id-mock.csv:123"),
             ],
-            True,
+            None,
             id="delete",
         ),
     ],
@@ -671,13 +686,13 @@ def test_process_transaction(
     import_rules: list[ImportRule],
     txn: Transaction,
     expected: list[GeneratedTransaction],
-    expected_processed: bool,
+    expected_result: UnprocessedTransaction | None,
 ):
-    processed = None
+    result = None
 
     def get_result():
-        nonlocal processed
-        processed = yield from process_transaction(
+        nonlocal result
+        result = yield from process_transaction(
             template_env=template_env,
             input_config=input_config,
             import_rules=import_rules,
@@ -685,7 +700,7 @@ def test_process_transaction(
         )
 
     assert list(get_result()) == expected
-    assert processed == expected_processed
+    assert result == expected_result
 
 
 @pytest.mark.parametrize(
