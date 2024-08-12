@@ -11,6 +11,7 @@ from jinja2.sandbox import SandboxedEnvironment
 
 from beanhub_import.data_types import ActionAddTxn
 from beanhub_import.data_types import ActionDelTxn
+from beanhub_import.data_types import ActionIgnore
 from beanhub_import.data_types import Amount
 from beanhub_import.data_types import AmountTemplate
 from beanhub_import.data_types import DeletedTransaction
@@ -675,6 +676,30 @@ def test_match_transaction_with_vars(
             ],
             None,
             id="delete",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            InputConfigDetails(),
+            [
+                ImportRule(
+                    match=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    actions=[ActionIgnore()],
+                )
+            ],
+            [],
+            None,
+            id="ignore",
         ),
     ],
 )

@@ -163,7 +163,7 @@ def process_transaction(
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
                 logger.debug("Ignored transaction %s:%s", txn.file, txn.lineno)
-                return True
+                return None
 
             txn_id = first_non_none(
                 getattr(action.txn, "id"),
