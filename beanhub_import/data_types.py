@@ -235,3 +235,5 @@ class ChangeSet:
 class UnprocessedTransaction:
     import_id: str
     txn: Transaction
+    # The generated output filename if available
+    output_file: str | None = None

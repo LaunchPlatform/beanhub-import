@@ -274,7 +274,11 @@ def process_transaction(
             default_import_id,
             constants.DEFAULT_TXN_TEMPLATE["id"],
         )
-        return UnprocessedTransaction(txn=txn, import_id=render_str(txn_id))
+        return UnprocessedTransaction(
+            txn=txn,
+            import_id=render_str(txn_id),
+            output_file=render_str(input_config.default_file),
+        )
 
 
 def process_imports(
