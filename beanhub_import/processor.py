@@ -256,10 +256,22 @@ def process_transaction(
             default_import_id,
             constants.DEFAULT_TXN_TEMPLATE["id"],
         )
+        prepending_postings = None
+        if input_config.prepend_postings is not None:
+            prepending_postings = generate_postings(
+                input_config.prepend_postings, render_str
+            )
+        appending_postings = None
+        if input_config.append_postings is not None:
+            appending_postings = generate_postings(
+                input_config.prepend_postings, render_str
+            )
         return UnprocessedTransaction(
             txn=txn,
             import_id=render_str(txn_id),
             output_file=render_str(input_config.default_file),
+            prepending_postings=prepending_postings,
+            appending_postings=appending_postings,
         )
 
 
