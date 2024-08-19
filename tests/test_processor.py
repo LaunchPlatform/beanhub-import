@@ -294,7 +294,7 @@ def test_match_transaction_with_vars(
                         ),
                     ),
                 ],
-                appending_postings=[
+                append_postings=[
                     PostingTemplate(
                         account="Expenses:Fees",
                         amount=AmountTemplate(
@@ -384,7 +384,7 @@ def test_match_transaction_with_vars(
                         ),
                     ),
                 ],
-                appending_postings=[
+                append_postings=[
                     PostingTemplate(
                         account="Expenses:Fees",
                         amount=AmountTemplate(
@@ -611,7 +611,7 @@ def test_match_transaction_with_vars(
                         ),
                     ),
                 ],
-                appending_postings=[
+                append_postings=[
                     PostingTemplate(
                         account="Expenses:Fees",
                         amount=AmountTemplate(

@@ -5,6 +5,7 @@ import pathlib
 import re
 import typing
 import uuid
+import warnings
 
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
@@ -197,7 +198,13 @@ def process_transaction(
             elif default_txn is not None and default_txn.postings is not None:
                 posting_templates.extend(default_txn.postings)
             if input_config.appending_postings is not None:
+                warnings.warn(
+                    'The "appending_postings" field is deprecated, please use "append_postings" instead',
+                    DeprecationWarning,
+                )
                 posting_templates.extend(input_config.appending_postings)
+            elif input_config.append_postings is not None:
+                posting_templates.extend(input_config.append_postings)
 
             generated_tags = process_links_or_tags(action.txn.tags)
             generated_links = process_links_or_tags(action.txn.links)
@@ -213,32 +220,7 @@ def process_transaction(
             if not generated_metadata:
                 generated_metadata = None
 
-            generated_postings = []
-            for posting_template in posting_templates:
-                amount = None
-                if posting_template.amount is not None:
-                    amount = Amount(
-                        number=render_str(posting_template.amount.number),
-                        currency=render_str(posting_template.amount.currency),
-                    )
-                price = None
-                if posting_template.price is not None:
-                    price = Amount(
-                        number=render_str(posting_template.price.number),
-                        currency=render_str(posting_template.price.currency),
-                    )
-                cost = None
-                if posting_template.cost is not None:
-                    cost = render_str(posting_template.cost)
-                generated_postings.append(
-                    GeneratedPosting(
-                        account=render_str(posting_template.account),
-                        amount=amount,
-                        price=price,
-                        cost=cost,
-                    )
-                )
-
+            generated_postings = generate_postings(posting_templates, render_str)
             output_file = first_non_none(action.file, input_config.default_file)
             if output_file is None:
                 logger.error(
@@ -279,6 +261,37 @@ def process_transaction(
             import_id=render_str(txn_id),
             output_file=render_str(input_config.default_file),
         )
+
+
+def generate_postings(
+    posting_templates: list[PostingTemplate], render_str: typing.Callable
+) -> list[GeneratedPosting]:
+    generated_postings = []
+    for posting_template in posting_templates:
+        amount = None
+        if posting_template.amount is not None:
+            amount = Amount(
+                number=render_str(posting_template.amount.number),
+                currency=render_str(posting_template.amount.currency),
+            )
+        price = None
+        if posting_template.price is not None:
+            price = Amount(
+                number=render_str(posting_template.price.number),
+                currency=render_str(posting_template.price.currency),
+            )
+        cost = None
+        if posting_template.cost is not None:
+            cost = render_str(posting_template.cost)
+        generated_postings.append(
+            GeneratedPosting(
+                account=render_str(posting_template.account),
+                amount=amount,
+                price=price,
+                cost=cost,
+            )
+        )
+    return generated_postings
 
 
 def process_imports(
