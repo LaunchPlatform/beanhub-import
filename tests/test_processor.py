@@ -642,6 +642,22 @@ def test_match_transaction_with_vars(
                     amount=decimal.Decimal("123.45"),
                 ),
                 import_id="mock.csv:123",
+                prepending_postings=[
+                    GeneratedPosting(
+                        account="Expenses:Food",
+                        amount=Amount(number="-118.45", currency="BTC"),
+                        price=None,
+                        cost=None,
+                    ),
+                ],
+                appending_postings=[
+                    GeneratedPosting(
+                        account="Expenses:Food",
+                        amount=Amount(number="-118.45", currency="BTC"),
+                        price=None,
+                        cost=None,
+                    ),
+                ],
             ),
             id="no-match",
         ),
@@ -759,6 +775,14 @@ def test_process_transaction(
                         extra=None,
                     ),
                     import_id="mercury.csv:-4",
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-46.00", currency="USD"),
+                            price=None,
+                            cost=None,
+                        ),
+                    ],
                 ),
                 GeneratedTransaction(
                     file="output.bean",
@@ -815,6 +839,14 @@ def test_process_transaction(
                         extra=None,
                     ),
                     import_id="mercury.csv:-2",
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-54.99", currency="USD"),
+                            price=None,
+                            cost=None,
+                        ),
+                    ],
                 ),
                 UnprocessedTransaction(
                     txn=Transaction(
@@ -841,6 +873,14 @@ def test_process_transaction(
                         last_four_digits="",
                         extra=None,
                     ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-1500.00", currency="USD"),
+                            price=None,
+                            cost=None,
+                        ),
+                    ],
                     import_id="mercury.csv:-1",
                 ),
             ],
