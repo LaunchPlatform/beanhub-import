@@ -183,7 +183,9 @@ class InputConfigDetails(ImportBaseModel):
     extractor: str | None = None
     default_file: str | None = None
     prepend_postings: list[PostingTemplate] | None = None
+    # Deprecated, will be removed at some point, please use append_postings instead
     appending_postings: list[PostingTemplate] | None = None
+    append_postings: list[PostingTemplate] | None = None
     default_txn: TransactionTemplate | None = None
 
 
@@ -235,3 +237,7 @@ class ChangeSet:
 class UnprocessedTransaction:
     import_id: str
     txn: Transaction
+    # The generated output filename if available
+    output_file: str | None = None
+    prepending_postings: list[GeneratedPosting] | None = None
+    appending_postings: list[GeneratedPosting] | None = None
