@@ -7,35 +7,41 @@ import typing
 import uuid
 import warnings
 
-from beanhub_extract.data_types import Transaction
-from beanhub_extract.extractors import ALL_EXTRACTORS
-from beanhub_extract.extractors import detect_extractor
-from beanhub_extract.utils import strip_txn_base_path
 from jinja2.sandbox import SandboxedEnvironment
 
-from . import constants
-from .data_types import ActionType
-from .data_types import Amount
-from .data_types import DeletedTransaction
-from .data_types import GeneratedPosting
-from .data_types import GeneratedTransaction
-from .data_types import ImportDoc
-from .data_types import ImportRule
-from .data_types import InputConfigDetails
-from .data_types import MetadataItem
-from .data_types import PostingTemplate
-from .data_types import SimpleFileMatch
-from .data_types import SimpleTxnMatchRule
-from .data_types import StrContainsMatch
-from .data_types import StrExactMatch
-from .data_types import StrMatch
-from .data_types import StrOneOfMatch
-from .data_types import StrPrefixMatch
-from .data_types import StrRegexMatch
-from .data_types import StrSuffixMatch
-from .data_types import TxnMatchVars
-from .data_types import UnprocessedTransaction
-from .templates import make_environment
+from beancount_importer_rules import constants
+from beancount_importer_rules.data_types import (
+    ActionType,
+    Amount,
+    DeletedTransaction,
+    GeneratedPosting,
+    GeneratedTransaction,
+    ImportDoc,
+    ImportRule,
+    InputConfigDetails,
+    MetadataItem,
+    PostingTemplate,
+    SimpleFileMatch,
+    SimpleTxnMatchRule,
+    StrContainsMatch,
+    StrExactMatch,
+    StrMatch,
+    StrOneOfMatch,
+    StrPrefixMatch,
+    StrRegexMatch,
+    StrSuffixMatch,
+    Transaction,
+    TxnMatchVars,
+    UnprocessedTransaction,
+)
+from beancount_importer_rules.extractor import (
+    ExtractorClassNotFoundError,
+    ExtractorClassNotSubclassError,
+    ExtractorFactory,
+    ExtractorImportError,
+)
+from beancount_importer_rules.templates import make_environment
+from beancount_importer_rules.utils import strip_txn_base_path
 
 
 def walk_dir_files(
@@ -128,24 +134,52 @@ def process_transaction(
         nonlocal matched_vars
         if value is None:
             return None
+
         template_ctx = txn_ctx
         if matched_vars is not None:
             template_ctx |= matched_vars
+
         result_value = template_env.from_string(value).render(**template_ctx)
+
         if omit_token is not None and result_value == omit_token:
             return None
+
         return result_value
 
-    def process_links_or_tags(links_or_tags: list[str] | None) -> list[str] | None:
+    def process_links_or_tags(
+        links_or_tags: list[str] | None,
+    ) -> list[str]:
+        result: list[str] = []
+
         if links_or_tags is None:
-            return
-        result = list(filter(lambda x: x, [render_str(item) for item in links_or_tags]))
-        if not result:
-            return
+            return result
+
+        for item in links_or_tags:
+            if item is None:
+                continue
+            rendered = render_str(item)
+            if rendered is None:
+                continue
+            result.append(rendered)
+
         return result
+
+    def render_txn_id(txn_id: str | None) -> str:
+        rendered_txn_id = render_str(txn_id)
+
+        if rendered_txn_id is None:
+            logger.debug(
+                "Omitting transaction %s:%s because of omit token",
+                txn.file,
+                txn.lineno,
+            )
+            raise ValueError(f"Transaction id is emty after rendering {txn_id}")
+
+        return rendered_txn_id
 
     for import_rule in import_rules:
         matched_vars = None
+
         if isinstance(import_rule.match, list):
             matched = match_transaction_with_vars(
                 txn, import_rule.match, common_condition=import_rule.common_cond
@@ -158,9 +192,10 @@ def process_transaction(
                 else value
                 for key, value in (matched.vars or {}).items()
             }
-        else:
-            if not match_transaction(txn, import_rule.match):
-                continue
+
+        elif not match_transaction(txn, import_rule.match):
+            continue
+
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
                 logger.debug("Ignored transaction %s:%s", txn.file, txn.lineno)
@@ -172,10 +207,13 @@ def process_transaction(
                 default_import_id,
                 constants.DEFAULT_TXN_TEMPLATE["id"],
             )
+            rendered_txn_id = render_txn_id(txn_id)
+
             if action.type == ActionType.del_txn:
-                yield DeletedTransaction(id=render_str(txn_id))
+                yield DeletedTransaction(id=rendered_txn_id)
                 processed = True
                 continue
+
             if action.type != ActionType.add_txn:
                 # we only support add txn for now
                 raise ValueError(f"Unsupported action type {action.type}")
@@ -232,30 +270,47 @@ def process_transaction(
                 )
 
             processed = True
+            output = render_str(output_file) or ""
+            rest: typing.Dict[str, str] = {}
+            for key, value in template_values.items():
+                value = render_str(value)
+                if value is None:
+                    continue
+                rest[key] = value
+
+            sources = []
+            if txn.file is not None:
+                sources.append(txn.file)
+
             yield GeneratedTransaction(
                 # We don't add line number here because sources it is going to be added as `import-src` metadata field.
                 # Otherwise, the provided CSV's lineno may change every time we run import if the date order is desc and
                 # there are new transactions added since then.
-                sources=[txn.file],
-                file=render_str(output_file),
+                sources=sources,
+                file=output,
                 tags=generated_tags,
                 links=generated_links,
                 metadata=generated_metadata,
                 postings=generated_postings,
-                **{key: render_str(value) for key, value in template_values.items()},
+                **rest,
             )
             # TODO: make it possible to generate multiple transaction by changing rule config if there's
             #       a valid use case
         break
+
     logger.debug(
         "No match found for transaction %s at %s:%s", txn, txn.file, txn.lineno
     )
+
     if not processed:
         txn_id = first_non_none(
             getattr(default_txn, "id") if default_txn is not None else None,
             default_import_id,
             constants.DEFAULT_TXN_TEMPLATE["id"],
         )
+
+        rendered_txn_id = render_txn_id(txn_id)
+
         prepending_postings = None
         if input_config.prepend_postings is not None:
             prepending_postings = generate_postings(
@@ -264,11 +319,12 @@ def process_transaction(
         appending_postings = None
         if input_config.append_postings is not None:
             appending_postings = generate_postings(
-                input_config.prepend_postings, render_str
+                input_config.prepend_postings or [], render_str
             )
+
         return UnprocessedTransaction(
             txn=txn,
-            import_id=render_str(txn_id),
+            import_id=rendered_txn_id,
             output_file=render_str(input_config.default_file),
             prepending_postings=prepending_postings,
             appending_postings=appending_postings,
@@ -307,10 +363,11 @@ def generate_postings(
 
 
 def process_imports(
-    import_doc: ImportDoc,
-    input_dir: pathlib.Path,
+    import_doc: ImportDoc, input_dir: pathlib.Path, extractor_factory: ExtractorFactory
 ) -> typing.Generator[
-    GeneratedTransaction | DeletedTransaction | Transaction, None, None
+    UnprocessedTransaction | GeneratedTransaction | DeletedTransaction | Transaction,
+    None,
+    None,
 ]:
     logger = logging.getLogger(__name__)
     template_env = make_environment()
@@ -323,38 +380,55 @@ def process_imports(
                 continue
             rel_filepath = filepath.relative_to(input_dir)
             extractor_name = input_config.config.extractor
+
             if extractor_name is None:
-                with filepath.open("rt") as fo:
-                    extractor_cls = detect_extractor(fo)
-                if extractor_cls is None:
-                    raise ValueError(
-                        f"Extractor not specified for {rel_filepath} and the extractor type cannot be automatically detected"
-                    )
-            else:
-                extractor_cls = ALL_EXTRACTORS.get(extractor_name)
-                if extractor_cls is None:
-                    logger.warning(
-                        "Extractor %s not found for file %s, skip",
-                        extractor_name,
-                        rel_filepath,
-                    )
-                    continue
+                raise ValueError(
+                    f"Extractor not specified for {rel_filepath} and the extractor type cannot be automatically detected"
+                )
+
+            ExtractorKlass = None
+            try:
+                ExtractorKlass = extractor_factory(extractor_name)
+            except ExtractorClassNotFoundError:
+                logger.warning(
+                    "Extractor %s not found for file %s, skip",
+                    extractor_name,
+                    rel_filepath,
+                )
+                continue
+            except ExtractorImportError:
+                logger.warning(
+                    "Could not import module %s for file %s, skip",
+                    extractor_name,
+                    rel_filepath,
+                )
+                continue
+            except ExtractorClassNotSubclassError:
+                logger.warning(
+                    "Extractor %s found for file %s; But it does not correctly subclass ExtractorBase, skip",
+                    extractor_name,
+                    rel_filepath,
+                )
+                continue
+
             logger.info(
                 "Processing file %s with extractor %s", rel_filepath, extractor_name
             )
+
             with filepath.open("rt") as fo:
-                extractor = extractor_cls(fo)
-                for transaction in extractor():
+                extractor = ExtractorKlass(fo)
+                for transaction in extractor.process():
                     txn = strip_txn_base_path(input_dir, transaction)
                     txn_generator = process_transaction(
                         template_env=template_env,
                         input_config=input_config.config,
                         import_rules=import_doc.imports,
                         omit_token=omit_token,
-                        default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
+                        default_import_id=extractor.get_import_id_template(),
                         txn=txn,
                     )
                     unprocessed_txn = yield from txn_generator
+
                     if unprocessed_txn is not None:
                         yield unprocessed_txn
             break

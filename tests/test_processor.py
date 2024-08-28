@@ -6,42 +6,48 @@ import typing
 import pytest
 import pytz
 import yaml
-from beanhub_extract.data_types import Transaction
 from jinja2.sandbox import SandboxedEnvironment
 
-from beanhub_import.data_types import ActionAddTxn
-from beanhub_import.data_types import ActionDelTxn
-from beanhub_import.data_types import ActionIgnore
-from beanhub_import.data_types import Amount
-from beanhub_import.data_types import AmountTemplate
-from beanhub_import.data_types import DeletedTransaction
-from beanhub_import.data_types import DeleteTransactionTemplate
-from beanhub_import.data_types import GeneratedPosting
-from beanhub_import.data_types import GeneratedTransaction
-from beanhub_import.data_types import ImportDoc
-from beanhub_import.data_types import ImportRule
-from beanhub_import.data_types import InputConfigDetails
-from beanhub_import.data_types import MetadataItem
-from beanhub_import.data_types import MetadataItemTemplate
-from beanhub_import.data_types import PostingTemplate
-from beanhub_import.data_types import SimpleFileMatch
-from beanhub_import.data_types import SimpleTxnMatchRule
-from beanhub_import.data_types import StrContainsMatch
-from beanhub_import.data_types import StrExactMatch
-from beanhub_import.data_types import StrPrefixMatch
-from beanhub_import.data_types import StrRegexMatch
-from beanhub_import.data_types import StrSuffixMatch
-from beanhub_import.data_types import TransactionTemplate
-from beanhub_import.data_types import TxnMatchVars
-from beanhub_import.data_types import UnprocessedTransaction
-from beanhub_import.processor import match_file
-from beanhub_import.processor import match_str
-from beanhub_import.processor import match_transaction
-from beanhub_import.processor import match_transaction_with_vars
-from beanhub_import.processor import process_imports
-from beanhub_import.processor import process_transaction
-from beanhub_import.processor import walk_dir_files
-from beanhub_import.templates import make_environment
+from beancount_importer_rules.data_types import (
+    ActionAddTxn,
+    ActionDelTxn,
+    ActionIgnore,
+    ActionType,
+    Amount,
+    AmountTemplate,
+    DeletedTransaction,
+    DeleteTransactionTemplate,
+    GeneratedPosting,
+    GeneratedTransaction,
+    ImportDoc,
+    ImportRule,
+    InputConfigDetails,
+    MetadataItem,
+    MetadataItemTemplate,
+    PostingTemplate,
+    SimpleFileMatch,
+    SimpleTxnMatchRule,
+    StrContainsMatch,
+    StrExactMatch,
+    StrPrefixMatch,
+    StrRegexMatch,
+    StrSuffixMatch,
+    Transaction,
+    TransactionTemplate,
+    TxnMatchVars,
+    UnprocessedTransaction,
+)
+from beancount_importer_rules.extractor import create_extractor_factory
+from beancount_importer_rules.processor import (
+    match_file,
+    match_str,
+    match_transaction,
+    match_transaction_with_vars,
+    process_imports,
+    process_transaction,
+    walk_dir_files,
+)
+from beancount_importer_rules.templates import make_environment
 
 
 @pytest.fixture
@@ -131,7 +137,11 @@ def test_match_file(pattern: SimpleFileMatch, path: str, expected: bool):
         (StrContainsMatch(contains="Foo"), None, False),
     ],
 )
-def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
+def test_match_str(
+    pattern: str | StrPrefixMatch | StrSuffixMatch | StrContainsMatch,
+    value: str | None,
+    expected: bool,
+):
     assert match_str(pattern, value) == expected
 
 
@@ -311,6 +321,7 @@ def test_match_transaction_with_vars(
                     ),
                     actions=[
                         ActionAddTxn(
+                            type=ActionType.add_txn,
                             file="{{ extractor }}.bean",
                             txn=TransactionTemplate(
                                 postings=[
@@ -409,6 +420,7 @@ def test_match_transaction_with_vars(
                     ],
                     actions=[
                         ActionAddTxn(
+                            type=ActionType.add_txn,
                             file="{{ extractor }}.bean",
                             txn=TransactionTemplate(
                                 metadata=[
@@ -504,6 +516,7 @@ def test_match_transaction_with_vars(
                     ),
                     actions=[
                         ActionAddTxn(
+                            type=ActionType.add_txn,
                             file="{{ extractor }}.bean",
                             txn=TransactionTemplate(),
                         )
@@ -551,6 +564,7 @@ def test_match_transaction_with_vars(
                     ),
                     actions=[
                         ActionAddTxn(
+                            type=ActionType.add_txn,
                             file="{{ extractor }}.bean",
                             txn=TransactionTemplate(
                                 payee="{{ omit }}",
@@ -680,9 +694,10 @@ def test_match_transaction_with_vars(
                     ),
                     actions=[
                         ActionDelTxn(
+                            type=ActionType.del_txn,
                             txn=DeleteTransactionTemplate(
                                 id="id-{{ file }}:{{ lineno }}"
-                            )
+                            ),
                         )
                     ],
                 )
@@ -710,7 +725,11 @@ def test_match_transaction_with_vars(
                     match=SimpleTxnMatchRule(
                         extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
                     ),
-                    actions=[ActionIgnore()],
+                    actions=[
+                        ActionIgnore(
+                            type=ActionType.ignore,
+                        )
+                    ],
                 )
             ],
             [],
@@ -727,19 +746,31 @@ def test_process_transaction(
     expected: list[GeneratedTransaction],
     expected_result: UnprocessedTransaction | None,
 ):
-    result = None
+    # result = None
 
-    def get_result():
-        nonlocal result
-        result = yield from process_transaction(
+    # def get_result():
+    #     nonlocal result
+    #     result = yield from process_transaction(
+    #         template_env=template_env,
+    #         input_config=input_config,
+    #         import_rules=import_rules,
+    #         txn=txn,
+    #     )
+
+    # assert list(get_result()) == expected
+    # assert result == expected_result
+
+    result = [
+        item
+        for item in process_transaction(
             template_env=template_env,
             input_config=input_config,
             import_rules=import_rules,
             txn=txn,
         )
+    ]
 
-    assert list(get_result()) == expected
-    assert result == expected_result
+    assert result == expected
 
 
 @pytest.mark.parametrize(
@@ -914,7 +945,18 @@ def test_process_imports(
     fixtures_folder: pathlib.Path, folder: str, expected: list[GeneratedTransaction]
 ):
     folder_path = fixtures_folder / "processor" / folder
+    extractor_factory = create_extractor_factory()
+
     with open(folder_path / "import.yaml", "rt") as fo:
         payload = yaml.safe_load(fo)
     doc = ImportDoc.model_validate(payload)
-    assert list(process_imports(import_doc=doc, input_dir=folder_path)) == expected
+    assert (
+        list(
+            process_imports(
+                import_doc=doc,
+                input_dir=folder_path,
+                extractor_factory=extractor_factory,
+            )
+        )
+        == expected
+    )

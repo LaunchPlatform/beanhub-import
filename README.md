@@ -1,71 +1,111 @@
-# beanhub-import [![CircleCI](https://dl.circleci.com/status-badge/img/gh/LaunchPlatform/beanhub-import/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/LaunchPlatform/beanhub-import/tree/master)
+# beancount-import-rules
 
-Beanhub-import is a simple, declarative, smart, and easy-to-use library for importing extracted transactions from [beanhub-extract](https://github.com/LaunchPlatform/beanhub-extract).
+beancount-import-rules is a simple, declarative, smart, and easy-to-use library for importing extracted transactions.
+
 It generates Beancount transactions based on predefined rules.
 
-**Note**: This project is still in early stage, still subject to rapid major changes
 
-Please also checkout our blog posts about the BeanHub Import and BeanHub Connect features based on this tool:
-- [BeanHub Import - One small step closer to fully automating transaction importing](https://beanhub.io/blog/2024/05/27/introduction-of-beanhub-import/)
-- [BeanHub Connect - one giant leap with fully automatic bank transactions import from 12,000+ financial institutions in 17 countries for all Beancount users!](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/)
+## Install
 
-## Features
+```sh
+pip install beancount-import-rules
+```
 
-- **Easy-to-use** - you only need to know a little bit about YAML and Jinja2 template syntax.
-- **Simple declarative rules** - A single import file for all imports
-- **Idempotent** - As long as the input data and rules are the same, the Beancount files will be the same.
-- **Auto-update existing transactions** - When you update the rules or data, corresponding Beancount transactions will be updated automatically. 
-- **Auto-move transactions to a different file** - When you change the rules to output the transactions to a different file, it will automatically remove the old ones and add the new ones for you
-- **Merge data from multiple files (coming soon)** - You can define rules to match transactions from multiple sources for generating your transactions
+or
 
-For example, change the import rules like this to output transactions to files grouped by quarter instead of year:
+```sh
+pdm install beancount-import-rules
+```
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/quater-output-file.png?raw=true" alt="Git diff screenshot showing default_file changed to output quater file names instead of just year" />
-</p>
+or
 
-Then run the import again, and you will get this:
+```sh
+poetry add beancount-import-rules
+```
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/auto-txn-migration.png?raw=true" alt="Git diff screenshot showing Beancount transactions removed from the books/2024.bean file and new quater beancount files added" />
-</p>
+## Usage
 
-Another example is when you want to add new tags to the generated transactions, so you change the rules with new tags like this:
+1. create a `.beancount_import_rules.yml` file in the root of your beancount project
+   1. or you can point to a different file by setting the `BEANHUB_IMPORT_RULES_FILE` environment variable
+2. define your import rules in the file; see below for the schema
+   1. to the top of your rules file, add `# yaml-language-server: $schema=https://raw.github.com/zenobi-us/beancount-import-rules/master/beancount-import.schema.json` for schema hints.
+3. run `beancount-import import` to import transactions
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/new-tags.png?raw=true" alt="Git diff screenshot showing new line" />
-</p>
 
-When you run import again, you will get this:
+```sh
+[19:01:30] INFO     Loaded import doc from import.yaml                                                                                                 cli.py:110
+           INFO     Processing file imports/mercury.csv with extractor importer.agrimaster_csv:AgrimasterCsvExtractor                            processor.py:414
+           INFO     Generated transaction imports/mercury.csv:-9 to file output.bean                                                                   cli.py:129
+           INFO     Generated transaction imports/mercury.csv:-8 to file output.bean                                                                   cli.py:129
+           INFO     Generated transaction imports/mercury.csv:-7 to file output.bean                                                                   cli.py:129
+           INFO     Generated transaction imports/mercury.csv:-6 to file output.bean                                                                   cli.py:129
+           INFO     Generated transaction imports/mercury.csv:-5 to file output.bean                                                                   cli.py:129
+           INFO     Generated transaction imports/mercury.csv:-4 to file output.bean                                                                   cli.py:129
+           INFO     Generated transaction imports/mercury.csv:-3 to file output.bean                                                                   cli.py:129
+           INFO     Generated transaction imports/mercury.csv:-2 to file output.bean                                                                   cli.py:129
+           INFO     Generated transaction imports/mercury.csv:-1 to file output.bean                                                                   cli.py:129
+           INFO     Generated transaction imports/mercury.csv:0 to file output.bean                                                                    cli.py:129
+           INFO     Generated 10 transactions                                                                                                          cli.py:154
+           INFO     Deleted 0 transactions                                                                                                             cli.py:155
+           INFO     Skipped 0 transactions                                                                                                             cli.py:156
+           INFO     Collecting existing imported transactions from Beancount books ...                                                                 cli.py:167
+           INFO     Found 4 existing imported transactions in Beancount books                                                                          cli.py:178
+           INFO     Applying change sets (add=10, update=0, remove=0, dangling=0) with remove_dangling=False to                                        cli.py:203
+           INFO     Calculate column width                                                                                                       formatter.py:646
+           INFO     Collecting                                                                                                                   formatter.py:130
+           INFO     Applying change sets (add=0, update=0, remove=0, dangling=4) with remove_dangling=False to                                         cli.py:203
+           INFO     Calculate column width                                                                                                       formatter.py:646
+           INFO     Collecting                                                                                                                   formatter.py:130
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/new-tags-result.png?raw=true" alt="Git diff screenshot showing new tags added to all imported Beancount transactions" />
-</p>
+                                                                        Deleted transactions
 
-Please check out our demonstration repository [beanhub-import-demo](https://github.com/LaunchPlatform/beanhub-import-demo) to try it yourself.
+      File                                                                                          Id
+     ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-It's all declarative and idempotent. With beanhub-import, you say goodbye to manually importing and maintaining transactions!
-We hope you like this tool. It's still in the early stage of development.
-We are also working on making generating transactions from multiple sources possible.
-Please feel free to open issues in the repository if you have any feedback 🙌
 
-## Why?
+                                                                   Dangling Transactions (Ignored)
 
-There are countless Beancount importer projects out there, so why do we have to build a new one from the ground up?
-We are building a new one with a completely new design because we cannot find an importer that meets our requirements for [BeanHub](https://beanhub.io).
-There are a few critical problems we saw in the existing Beancount importers:
+      File                                                                                                                                                Id
+     ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      tests/fixtures/integration/simple.bean:5                                                                                                            id0
+      tests/fixtures/integration/simple.bean:13                                                                                                           id1
+      tests/fixtures/integration/simple.bean:18                                                                                                           id2
+      tests/fixtures/integration/simple.bean:29                                                                                                           id3
 
-- Need to write Python code to make it work
-- Doesn't handle duplication problem
-- Hard to reuse because extracting logic is coupled with generating logic
-- Hard to customize for our own needs
-- Can only handle a single source file
+
+                                                                       Generated transactions
+
+      File                   Id                                       Source                             Date                 Narration
+     ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      output.bean            imports/mercury.csv:-9                   imports/mercury.csv                2023-01-10           Transfer to savings
+      output.bean            imports/mercury.csv:-8                   imports/mercury.csv                2023-01-09           Purchase at store
+      output.bean            imports/mercury.csv:-7                   imports/mercury.csv                2023-01-08           Dividend payment
+      output.bean            imports/mercury.csv:-6                   imports/mercury.csv                2023-01-07           Loan repayment
+      output.bean            imports/mercury.csv:-5                   imports/mercury.csv                2023-01-06           Subscription fee
+      output.bean            imports/mercury.csv:-4                   imports/mercury.csv                2023-01-05           Utility bill
+      output.bean            imports/mercury.csv:-3                   imports/mercury.csv                2023-01-04           Salary payment
+      output.bean            imports/mercury.csv:-2                   imports/mercury.csv                2023-01-03           Refund for order
+      output.bean            imports/mercury.csv:-1                   imports/mercury.csv                2023-01-02           Invoice payment
+      output.bean            imports/mercury.csv:0                    imports/mercury.csv                2023-01-01           Payment for services
+
+
+                                                                      Unprocessed transactions
+
+      File          Line          Id        Extractor                Date          Desc          Bank Desc                         Amount   Currency
+     ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+           INFO     done
+```
+
+
 
 ## Example
 
-The rules of beanhub-import is defined in YAML format at `.beanhub/imports.yaml`. Here's an example
+`.beancount_import_rules.yaml`.
 
-```YAML
+```yml
+# yaml-language-server: $schema=https://raw.github.com/zenobi-us/beancount-import-rules/master/beancount-import.schema.json
+
 # the `context` defines global variables to be referenced in the Jinja2 template for
 # generating transactions
 context:
@@ -92,14 +132,14 @@ context:
       account: Expenses:Office
       narration: "Virtual mailing address service fee from WeWork"
 
-# the `inputs` defines which files to import, what type of beanhub-extract extractor to use,
+# the `inputs` defines which files to import, what type of extractor to use,
 # and other configurations, such as `prepend_postings` or default values for generating
 # a transaction
 inputs:
   - match: "import-data/mercury/*.csv"
     config:
       # use `mercury` extractor for extracting transactions from the input file
-      extractor: mercury
+      extractor: beanhub_extract.extractors.mercury:MercuryExtractor
       # the default output file to use
       default_file: "books/{{ date.year }}.bean"
       # postings to prepend for all transactions generated from this input file
@@ -203,25 +243,26 @@ imports:
 
 ```
 
-## Usage
-
-This project is a library and not meant for end-users.
-If you simply want to import transactions from CSV into their beancount files, please checkout the `import` command of [beanhub-cli](https://github.com/LaunchPlatform/beanhub-cli).
-
 ## Scheme definition
 
 ### Import Doc
 
 The import file should be located at `.beanhub/imports.yaml`. It has the following keys:
 
-- `context`: a dictionary for global variable definitions to be referenced in all Jinja2 template rendering and transaction generation, as described in the [Context Definition](#context-definition) section.
-- `inputs`: Define which CSV files to import and their corresponding configurations, as described in the [Input Definition](#input-definition) section
-- `imports`: Define rules for which raw transactions to match and what to do with them. As described in the [Import Definition](#import-config-definition) section, new transactions will usually be generated based on the provided templates.
+- `context`: a dictionary for global variable definitions to be referenced in all Jinja2
+      -      template rendering and transaction generation, as described in the
+      -      [Context Definition](#context-definition) section.
+- `inputs`: Define which CSV files to import and their corresponding configurations, as
+            described in the [Input Definition](#input-definition) section
+- `imports`: Define rules for which raw transactions to match and what to do with them.
+             As described in the [Import Definition](#import-config-definition) section,
+             new transactions will usually be generated based on the provided templates.
 - `outputs`: Define configurations for output files, currently not implemented yet
 
 ### Context Definition
 
-Context comes in handy when you need to define variables to be referenced in the template. As you can see in the example, we define a `routine_expenses` dictionary variable in the context. 
+Context comes in handy when you need to define variables to be referenced in the template.
+As you can see in the example, we define a `routine_expenses` dictionary variable in the context.
 
 ```YAML
 context:
@@ -259,12 +300,15 @@ Then, in the transaction template, we look up the dictionary to find out what na
 
 Input definition comes with two keys:
 
-- `match`: Rule for matching CSV files. Currently, only the Simple File Match rule is supported. Please see the [Simple File Match Definition](#simple-file-match-definition) section for more details.
-- `config`: The configuration of the matched input CSV files. Please see the [Input Config Definition](#input-config-definition) section.
+- `match`: Rule for matching CSV files. Currently, only the Simple File Match rule is supported.
+           Please see the [Simple File Match Definition](#simple-file-match-definition) section for more details.
+- `config`: The configuration of the matched input CSV files. Please see the
+            [Input Config Definition](#input-config-definition) section.
 
 #### Simple File Match Definition
 
-Currently, we support three different modes of matching a CSV file. The first one is the default one, glob. A simple string would make it use glob mode like this:
+Currently, we support three different modes of matching a CSV file. The first one is
+the default one, glob. A simple string would make it use glob mode like this:
 
 ```YAML
 inputs:
@@ -291,11 +335,19 @@ inputs:
 
 The following keys are available for the input configuration:
 
-- `extractor`: Which extractor from `beanhub-extract` should be used? Currently, only extractors from `beanhub-extract` are supported, and you always need to specify it explicitly. We will open up to support a third-party extractor, and we will also add an auto-detection feature so that it will guess which extractor to use for you.
-- `default_file`: The default output file for generated transactions from the matched file to use if not specified in the `add_txn` action.
-- `prepend_postings`: Postings are to be prepended for the generated transactions from the matched file. A list of posting templates as described in the [Add Transaction Action](#add-transaction-action) section.
-- `append_postings`: Postings are to be appended to the generated transactions from the matched file. A list of posting templates as described in the [Add Transaction Action](#add-transaction-action) section.
-- `default_txn`: The default transaction template values to use in the generated transactions from the matched file. Please see the [Add Transaction Action](#add-transaction-action) section.
+- `extractor`: A python import path to the extractor to use for extracting transactions from the matched file.
+               The format is `package.module:extractor_class`. For example, `beancount_import_rules.extractors.plaid:PlaidExtractor`.
+               Your Extractor Class should inherit from `beancount_import_rules.extractors.ExtractorBase` or
+               `beancount_import_rules.extractors.ExtractorCsvBase`.
+
+- `default_file`: The default output file for generated transactions from the matched file to use if not specified
+                  in the `add_txn` action.
+- `prepend_postings`: Postings are to be prepended for the generated transactions from the matched file. A
+                list of posting templates as described in the [Add Transaction Action](#add-transaction-action) section.
+- `append_postings`: Postings are to be appended to the generated transactions from the matched file.
+                     A list of posting templates as described in the [Add Transaction Action](#add-transaction-action) section.
+- `default_txn`: The default transaction template values to use in the generated transactions from the
+                 matched file. Please see the [Add Transaction Action](#add-transaction-action) section.
 
 ### Import Config Definition
 
@@ -307,7 +359,7 @@ The following keys are available for the import configuration:
 
 #### Import Match Rule Definition
 
-The raw transactions extracted by the beanhub extractor come with many attributes. Here we list only a few from it:
+The raw transactions extracted by the extractor come with many attributes. Here we list only a few from it:
 
 - `extractor`: Name of the extractor
 - `file`: The CSV file path
@@ -318,7 +370,8 @@ The raw transactions extracted by the beanhub extractor come with many attribute
 - `amount`: Transaction amount
 - `currency`: Currency of the transaction
 
-For the complete list of available raw transaction attributes, please read the [beanhub-extract source code](https://github.com/LaunchPlatform/beanhub-extract/blob/master/beanhub_extract/data_types.py) to learn more.
+For the complete list of available raw transaction attributes, please read the
+[beancount-importer-rules source code](https://github.com/zenobi-us/beancount-importer-rules/blob/master/beancount_importer_rules/data_types.py) to learn more.
 
 The `match` object should be a dictionary.
 The key is the transaction attribute to match, and the value is the regular expression of the target pattern to match.
@@ -397,8 +450,10 @@ imports:
 
 #### Match with variables
 
-From time to time, you may find yourself writing similar import-matching rules with similar transaction templates.
-To avoid repeating yourself, you can also write multiple match conditions with their corresponding variables to be used by the template in the same import statement.
+From time to time, you may find yourself writing similar import-matching rules with
+similar transaction templates.
+To avoid repeating yourself, you can also write multiple match conditions with their
+corresponding variables to be used by the template in the same import statement.
 For example, you can simply do the following two import statements:
 
 ```yaml
@@ -466,15 +521,21 @@ imports:
                 currency: "{{ currency | default('USD', true) }}"
 ```
 
-The `common_cond` is the condition to meet for all the matches. Instead of a map, you define the match with the `cond` field and the corresponding variables with the `vars` field.
-Please note that the `vars` can also be the Jinja2 template and will rendered before feeding into the transaction template.
-If there are any original variables from the transaction with the same name defined in the `vars` field, the variables from the `vars` field always override.
+The `common_cond` is the condition to meet for all the matches. Instead of a map, you define
+the match with the `cond` field and the corresponding variables with the `vars` field.
+Please note that the `vars` can also be the Jinja2 template and will rendered before
+feeding into the transaction template.
+If there are any original variables from the transaction with the same name defined in
+the `vars` field, the variables from the `vars` field always override.
 
 #### Omit field in the generated transaction
 
-Sometimes, you may want to omit a particular field in your transactions if the value is unavailable instead of leaving it as a blank string.
-For example, the `payee` field sometimes doesn't make sense for some transactions, and the value should not even be present.
-With a Jinja2 template, it looks like `{{ payee }}`, but without the `payee` value provided by the transaction, it will end up with an ugly empty string like this:
+Sometimes, you may want to omit a particular field in your transactions if the value
+is unavailable instead of leaving it as a blank string.
+For example, the `payee` field sometimes doesn't make sense for some transactions, and
+the value should not even be present.
+With a Jinja2 template, it looks like `{{ payee }}`, but without the `payee` value provided
+by the transaction, it will end up with an ugly empty string like this:
 
 ```beancount
 2024-02-26 * "" "Interest payment"
@@ -524,7 +585,7 @@ The following keys are available for the add transaction action:
 
 - `file`: output beancount file name to write the transaction to
 - `txn`: the template of the transaction to insert
- 
+
 A transaction template is an object that contains the following keys:
 
 - `id`: the optional `import-id` to overwrite the default one. By default, `{{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
@@ -549,14 +610,16 @@ The structure of the posting template object looks like this.
 The following keys are available for the delete transaction action:
 
 - `txn`: the template of the transaction to insert
- 
+
 A deleting transaction template is an object that contains the following keys:
 
 - `id`: the `import-id` value for ensuring transactions to be deleted. By default, `{{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
 
 ##### Ignore Action
 
-Sometimes, we are not interested in some transactions, but if we don't process them, you will still see them appear in the "unprocessed transactions" section of the report provided by our command line tool. To mark one transaction as processed, you can simply use the `ignore` action like this:
+Sometimes, we are not interested in some transactions, but if we don't process them, you will still see them
+appear in the "unprocessed transactions" section of the report provided by our command line tool.
+To mark one transaction as processed, you can simply use the `ignore` action like this:
 
 ```YAML
 - name: Ignore unused entries
@@ -570,54 +633,69 @@ Sometimes, we are not interested in some transactions, but if we don't process t
   actions:
     - type: ignore
 ```
-
-## Sponsor
-
-<p align="center">
-  <a href="https://beanhub.io"><img src="https://github.com/LaunchPlatform/beanhub-extract/raw/master/assets/beanhub.svg?raw=true" alt="BeanHub logo" /></a>
-</p>
-
-A modern accounting book service based on the most popular open source version control system [Git](https://git-scm.com/) and text-based double entry accounting book software [Beancount](https://beancount.github.io/docs/index.html).
-
 ## How it works
 
 ### Unique import id for transactions extracted from the CSV files
-The biggest challenge we face when designing this system is finding a way to deduplicate the imported transactions from CSV. Obviously, we need a way to tell which transactions were already imported into Beancount files so that we don't need to import them again. To make this happen, we introduce the concept of `import-id`. Each transaction extracted from CSV files should have a unique import ID for us to identify. In this way, we can process the existing Beancount files and find out which transactions have already been imported. We add a metadata item with the key `import-id` to the transaction. Here's an example.
+
+The biggest challenge we face when designing this system is finding a way to deduplicate the
+imported transactions from CSV.
+Obviously, we need a way to tell which transactions were already imported into Beancount
+files so that we don't need to import them again. To make this happen, we introduce the concept
+of `import-id`.
+Each transaction extracted from CSV files should have a unique import ID for us to identify.
+
+In this way, we can process the existing Beancount files and find out which transactions
+have already been imported.
+We add a metadata item with the key `import-id` to the transaction.
+
+Here's an example:
 
 ```
 2024-04-15 * "Circleci"
   import-id: "<unique import id>"
   Assets:Bank:US:MyBank                              -30.00 USD
-  Expenses:Engineering:ServiceSubscription            30.00 USD 
+  Expenses:Engineering:ServiceSubscription            30.00 USD
 ```
 
-The next question will then be: What should be the unique ID for identifying each transaction in the CSV files? If the CSV files come with an ID column that already has a unique value, we can surely use it. However, what if there's no such value in the file? As we observed, most CSV files exported from the bank come with rows ordered by date. The straightforward idea is to use `filename + lineno` as the id. The Jinja2 template would look like this.
+The next question will then be: What should be the unique ID for identifying each transaction
+in the CSV files?
+If the CSV files come with an ID column that already has a unique value, we can surely use it.
+However, what if there's no such value in the file? As we observed, most CSV files exported
+from the bank come with rows ordered by date.
+
+The straightforward idea is to use `filename + lineno` as the id. The Jinja2 template
+would look like this:
 
 ```jinja2
 {{ file }}:{{ lineno }}
 ```
 
-Then with a transaction from row 123 in the file `import-data/mybank/2024.csv` should have an import ID like this.
+Then with a transaction from row 123 in the file `import-data/mybank/2024.csv` should have
+an import ID like this:
 
 ```
 import-data/mybank/2024.csv:123
 ```
 
-As most of the bank transactions export CSV files have transactions come in sorted order by date, even if there are new transactions added and we export the CSV file for the same bank again and overwrite the existing file, there will only be new lines added at the bottom of the file.
-Like this:
+As most of the bank transactions export CSV files have transactions come in sorted order by
+date, even if there are new transactions added and we export the CSV file for the same
+bank again and overwrite the existing file, there will only be new lines added at the bottom of the file.
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/csv-file-diff.png?raw=true" alt="Diff of CSV file adding only new lines at the end" />
-</p>
 
-The line number of older transactions from the same CSV file with the same export time range and filter settings should remain the same. The file name and line number serve as a decent default unique identifier for the transactions from CSV files.
+The line number of older transactions from the same CSV file with the same export time range and
+filter settings should remain the same. The file name and line number serve as a decent default
+unique identifier for the transactions from CSV files.
 
-Although this approach works for most CSV files sorted by date in ascending order, it won't work for files in descending order.
+Although this approach works for most CSV files sorted by date in ascending order, it won't
+work for files in descending order.
 For example, CSV files exported from [Mercury](https://mercury.com/) came in descending order.
-Obviously, any new transactions added to the export file will change the line number for all previously imported transactions.
+Obviously, any new transactions added to the export file will change the line number for all
+previously imported transactions.
 To overcome the problem, we also provide `reverse_lineno` attribute in the extracted transaction.
-It's the `lineno - total_row_count` value. As you may have noticed, we intentionally made the number negative.
-It's trying to make it clear that this line (or row) number is in the reversed order, just like Python's negative index for accessing elements from the end.
+It's the `lineno - total_row_count` value. As you may have noticed, we intentionally made the
+number negative.
+It's trying to make it clear that this line (or row) number is in the reversed order, just
+like Python's negative index for accessing elements from the end.
 
 With that, we can define the import ID for Mercury CSV files like this:
 
@@ -625,16 +703,49 @@ With that, we can define the import ID for Mercury CSV files like this:
 {{ file }}:{{ reversed_lineno }}
 ```
 
-Since each CSV file may have its own unique best way to reliably identify a transaction, we add an optional default importer ID value to extractors in the [beanhub-extract](https://github.com/LaunchPlatform/beanhub-extract) library as `DEFAULT_IMPORT_ID`.
-Please note that these values are just default ones. Users can still override the default import ID Jinja2 template by setting the `id` value for their `add_txn` action in the import rule.
+Since each CSV file may have its own unique best way to reliably identify a transaction,each class of extractor can define its own default import ID template.
 
-### The flow of beanhub-import
+```
+class YourExtractor(ExtractorBase):
+
+    def get_import_id_template(self) -> str:
+        return "{{ file }}:{{ reversed_lineno }}"
+```
+
+
+### The flow of beancount-importer-rules
 
 Now, as you know, we can produce transactions and insert them into Beacount files with unique import IDs so that we can trace them. The next would be putting all the pieces together. Here's the flow diagram of how beanhub-import works:
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/beanhub-import-flow.svg?raw=true" alt="BeanHub import flow diagram" />
-</p>
+
+```mermaid
+graph LR
+    InputFileList --> CONFIG
+    subgraph CONFIG
+      direction TB
+      EachFile -- file --> ExtractorMatcher
+      ExtractorMatcher --> ExtractorFactory
+    end
+
+    CONFIG --> EXTRACTION
+
+    subgraph EXTRACTION
+      direction TB
+      InstantiateFactory -- transactions --> RunExtractor
+      RunExtractor -- transactions --> MergeAndGenerate
+      MergeAndGenerate -- generated transactions --> MatchAndGenerate
+      MatchAndGenerate -- generated transactions --> output
+    end
+
+    EXTRACTION --> MERGE
+    subgraph MERGE
+      transactions --> ComputeChangeset
+      ComputeChangeset --> ApplyChangeset
+      ApplyChangeset -- apply changes --> OutDir
+      OutDir --> CollectExistingTransactions
+      CollectExistingTransactions -- beancount transactions --> ComputeChangeset
+    end
+```
 
 #### Step 1. Match input CSV files
 
@@ -642,9 +753,9 @@ Input rules are defined as shown in this example:
 
 ```YAML
 inputs:
-  - match: "import-data/mercury/*.csv"
+  - match: "import-data/some-folder/*.csv"
     config:
-      extractor: mercury
+      extractor: some.valid.python.path:ExtractorClass
       default_file: "books/{{ date.year }}.bean"
       prepend_postings:
         - account: Assets:Bank:US:Mercury
@@ -657,7 +768,74 @@ First, we must find all the matched CSV files based on the rule.
 
 #### Step 2. Extract transactions from the CSV files
 
-Now that we know which CSV files to extract transactions from, the next step is to use [beanhub-extract](https://github.com/LaunchPlatform/beanhub-extract) to do so.
+Now that we know which CSV files to extract transactions from, the next step is to use import the
+extractor, instantiate it, and extract transactions from the CSV files.
+
+```YAML
+      extractor: some.valid.python.path:ExtractorClass
+```
+
+To extract transactions from the CSV files, we need to define an extractor class that inherits from
+`beancount_import_rules.extractors.ExtractorBase` or `beancount_import_rules.extractors.ExtractorCsvBase`.
+
+So if you created `extractors/your_extractor.py` with the following content:
+
+```python
+import decimal
+import typing
+
+from beancount_importer_rules.data_types import Transaction
+from beancount_importer_rules.extractor import ExtractorCsvBase
+
+
+class YourCustomCsvExtractor(ExtractorCsvBase):
+    name: str = "your-extractor-name"
+    fields: typing.List[str] = [
+        "Account",
+        "Date",
+        "SomeFieldWeDontCareAbout",
+        "Description",
+        "Amount",
+        "Balance"
+    ]
+    date_format: str = "%d/%m/%Y"
+    date_field: str = "Date"
+
+    def process_line(self, lineno: int, line: typing.Dict[str, str]) -> Transaction:
+        date = self.parse_date(line.pop("Date"))
+        description = line.pop("Description")
+        amount = decimal.Decimal(line.pop("Amount"))
+
+        return Transaction(
+            # The following fields are common to all extractors and required
+            extractor=self.name,
+            file=self.filename,
+            lineno=lineno + 1,
+            reversed_lineno=lineno - self.line_count,
+            extra=line,
+
+            # The following fields are unique to this extractor
+            date=date,
+            amount=amount,
+            desc=description,
+        )
+```
+
+You can then use it in the configuration like this:
+
+```YAML
+inputs:
+  - match: "import-data/some-folder/*.csv"
+    config:
+      extractor: extractors.your_extractor:YourCustomCsvExtractor
+      default_file: "books/{{ date.year }}.bean"
+      prepend_postings:
+        - account: Assets:Bank:US:Mercury
+          amount:
+            number: "{{ amount }}"
+            currency: "{{ currency | default('USD', true) }}"
+```
+
 
 #### Step 3. Merge & generate transactions
 
@@ -694,14 +872,15 @@ It will match multiple transactions from the CSV input files and generate Beanco
 
 #### Step 4. Match & generate transactions
 
-For CSV transactions not matched in the merge step, we will apply all the matching rules defined in the `imports` section like this:
+For CSV transactions not matched in the merge step, we will apply all the matching rules defined in the `imports` section. Note that the extractor matcher here is referring to the `fields` attribute on your
+extractor class.
 
 ```YAML
 imports:
 - name: Gusto fees
   match:
     extractor:
-      equals: "mercury"
+      equals: "your extractor name"
     desc: GUSTO
   actions:
     - txn:

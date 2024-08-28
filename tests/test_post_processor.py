@@ -8,15 +8,19 @@ from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
 from lark import Lark
 
-from beanhub_import.data_types import Amount
-from beanhub_import.data_types import BeancountTransaction
-from beanhub_import.data_types import ChangeSet
-from beanhub_import.data_types import DeletedTransaction
-from beanhub_import.data_types import GeneratedPosting
-from beanhub_import.data_types import GeneratedTransaction
-from beanhub_import.post_processor import apply_change_set
-from beanhub_import.post_processor import compute_changes
-from beanhub_import.post_processor import extract_existing_transactions
+from beancount_importer_rules.data_types import (
+    Amount,
+    BeancountTransaction,
+    ChangeSet,
+    DeletedTransaction,
+    GeneratedPosting,
+    GeneratedTransaction,
+)
+from beancount_importer_rules.post_processor import (
+    apply_change_set,
+    compute_changes,
+    extract_existing_transactions,
+)
 
 
 def strip_txn_for_compare(base_path: pathlib.Path, txn: BeancountTransaction):
@@ -410,7 +414,7 @@ def test_compute_changes(
             BeancountTransaction(
                 **(dataclasses.asdict(txn) | dict(file=txn.file.relative_to(tmp_path)))
             )
-            for txn in change_set.dangling
+            for txn in change_set.dangling or []
         ]
         return ChangeSet(**kwargs)
 
@@ -549,7 +553,7 @@ def test_apply_change_sets(
         fixtures_folder / "post_processor" / "apply-changes" / expected_file
     )
     tree = parser.parse(bean_file_path.read_text())
-    new_tree = apply_change_set(tree, change_set, remove_dangling=remove_dangling)
+    new_tree = apply_change_set(tree, change_set, remove_dangling=remove_dangling)  # type: ignore
     output_str = io.StringIO()
-    formatter.format(new_tree, output_str)
+    formatter.format(new_tree, output_str)  # type: ignore
     assert output_str.getvalue() == expected_file_path.read_text()

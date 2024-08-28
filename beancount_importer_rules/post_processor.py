@@ -4,20 +4,19 @@ import json
 import pathlib
 import typing
 
-from beancount_parser.data_types import Entry
-from beancount_parser.data_types import EntryType
+from beancount_parser.data_types import Entry, EntryType
 from beancount_parser.helpers import collect_entries
-from beancount_parser.parser import make_parser
-from beancount_parser.parser import traverse
-from lark import Lark
-from lark import Tree
+from beancount_parser.parser import make_parser, traverse
+from lark import Lark, Tree
 
-from . import constants
-from .data_types import BeancountTransaction
-from .data_types import ChangeSet
-from .data_types import DeletedTransaction
-from .data_types import GeneratedPosting
-from .data_types import GeneratedTransaction
+from beancount_importer_rules import constants
+from beancount_importer_rules.data_types import (
+    BeancountTransaction,
+    ChangeSet,
+    DeletedTransaction,
+    GeneratedPosting,
+    GeneratedTransaction,
+)
 
 
 def extract_existing_transactions(
@@ -31,31 +30,42 @@ def extract_existing_transactions(
     ):
         if tree.data != "start":
             raise ValueError("Expected start")
+
         for child in tree.children:
             if child is None:
                 continue
+
             if child.data != "statement":
                 raise ValueError("Expected statement")
+
             first_child = child.children[0]
             if not isinstance(first_child, Tree):
                 continue
+
+            first_child_item = first_child.children[0]
+
+            if (
+                first_child.data == "date_directive"
+                and not isinstance(first_child_item.data, str)
+                and first_child_item.data.value == "txn"
+            ):
+                continue
+
             if first_child.data == "date_directive":
-                date_directive = first_child.children[0]
-                directive_type = date_directive.data.value
-                if directive_type != "txn":
-                    continue
-                last_txn = date_directive
-            elif first_child.data == "metadata_item":
-                metadata_key = first_child.children[0].value
+                last_txn = first_child_item
+                continue
+
+            if first_child.data == "metadata_item":
+                metadata_key = first_child.children[0].value  # type: ignore
                 metadata_value = first_child.children[1]
                 if (
                     metadata_key == constants.IMPORT_ID_KEY
-                    and metadata_value.type == "ESCAPED_STRING"
+                    and metadata_value.type == "ESCAPED_STRING"  # type: ignore
                 ):
                     yield BeancountTransaction(
                         file=bean_path,
-                        lineno=last_txn.meta.line,
-                        id=json.loads(metadata_value.value),
+                        lineno=last_txn.meta.line,  # type: ignore
+                        id=json.loads(metadata_value.value),  # type: ignore
                     )
 
 
@@ -118,11 +128,15 @@ def compute_changes(
 def to_parser_entry(parser: Lark, text: str, lineno: int | None = None) -> Entry:
     tree = parser.parse(text.strip())
     entries, _ = collect_entries(tree)
+
     if len(entries) != 1:
         raise ValueError("Expected exactly only one entry")
+
     entry = entries[0]
-    if lineno is not None:
+
+    if lineno is not None and entry.statement is not None:
         entry.statement.meta.line = lineno
+
     return entry
 
 
@@ -187,8 +201,9 @@ def apply_change_set(
     change_set: ChangeSet,
     remove_dangling: bool = False,
 ) -> Lark:
-    if tree.data != "start":
+    if tree.data != "start":  # type: ignore
         raise ValueError("expected start as the root rule")
+
     parser = make_parser()
 
     txns_to_remove = change_set.remove
@@ -209,7 +224,7 @@ def apply_change_set(
     ]
 
     new_tree = copy.deepcopy(tree)
-    entries, tail_comments = collect_entries(new_tree)
+    entries, tail_comments = collect_entries(new_tree)  # type: ignore
 
     tailing_comments_entry: typing.Optional[Entry] = None
     if tail_comments:
@@ -240,10 +255,16 @@ def apply_change_set(
         if entry.type == EntryType.COMMENTS:
             new_children.extend(entry.comments)
             continue
+
+        if entry.statement is None:
+            continue
+
         if entry.statement.meta.line in lines_to_remove:
             # We also drop the comments
             continue
+
         actual_entry = line_to_entries.get(entry.statement.meta.line, entry)
+
         # use comments from existing entry regardless
         new_children.extend(entry.comments)
         _expand_entry(actual_entry)
@@ -259,5 +280,5 @@ def apply_change_set(
     if tailing_comments_entry is not None:
         new_children.extend(tailing_comments_entry.comments)
 
-    new_tree.children = new_children
+    new_tree.children = new_children  # type: ignore
     return new_tree

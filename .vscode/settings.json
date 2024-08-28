@@ -1,0 +1,36 @@
+{
+  "files.eol": "\n",
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "terminal.integrated.enablePersistentSessions": false,
+  "terminal.integrated.showExitAlert": false,
+  "git.autofetch": "all",
+  "editor.snippetSuggestions": "bottom",
+  "editor.suggest.localityBonus": true,
+  "editor.suggest.filterGraceful": true,
+  "editor.suggest.snippetsPreventQuickSuggestions": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always",
+    "source.fixAll.shellcheck": "explicit",
+    "source.fixAll": "always"
+  },
+  "testing.openTesting": "neverOpen",
+  "debug.showInStatusBar": "always",
+  "files.associations": {
+    "*.mdx": "markdown"
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[python]": {
+    "editor.codeActionsOnSave": {
+      "editor.defaultFormatter": "charliermarsh.ruff",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+}

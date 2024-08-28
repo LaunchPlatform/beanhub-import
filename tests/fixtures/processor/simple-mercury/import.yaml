@@ -1,3 +1,6 @@
+---
+# yaml-language-server: $schema=../../../../beancount-import.schema.json
+
 context:
   myvar:
     a: 123
@@ -9,19 +12,17 @@ context:
     meta_value: meta-value
 
 inputs:
-- match: "*.csv"
-  config:
-    extractor: mercury
-    prepend_postings:
-      - account: Assets:Bank:US:Mercury
-        amount:
-          number: "{{ amount }}"
-          currency: "{{ currency | default('USD', true) }}"
+  - match: "*.csv"
+    config:
+      extractor: tests.fixtures.importer.agrimaster_csv.Importer
+      prepend_postings:
+        - account: Assets:Bank:US:Mercury
+          amount:
+            number: "{{ amount }}"
+            currency: "{{ currency | default('USD', true) }}"
 
 imports:
   - match:
-      extractor:
-        equals: "mercury"
       desc: "^Amazon (.+)"
     actions:
       - type: add_txn
@@ -29,8 +30,8 @@ imports:
         txn:
           narration: "{{ desc }}"
           tags:
-          - "{{ myvar.tag }}"
-          - "{{ '' }}"
+            - "{{ myvar.tag }}"
+            - "{{ '' }}"
           links:
             - "{{ myvar.link }}"
             - "{{ '' }}"

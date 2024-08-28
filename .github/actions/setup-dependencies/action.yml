@@ -1,0 +1,36 @@
+---
+name: Install Python dependencies with PDM
+
+# https://pdm-project.org/en/latest/
+
+# poetry is assumed to be installed in the runner environment
+# in our case this is done by mise and .tool-versions
+
+description: installs dependancies
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Cache PDM
+      id: pdm-cache
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: ${{ runner.os }}-${{ hashFiles('.tool-versions') }}-pdm-${{ hashFiles('**/pdm.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ hashFiles('.tool-versions') }}-pdm-
+
+    # Install dependencies. `--no-root` means "install all dependencies but not the project
+    # itself", which is what you want to avoid caching _your_ code. The `if` statement
+    # ensures this only runs on a cache miss.
+    - run: pdm cache use
+      shell: bash
+      if: steps.pdm-cache.outputs.cache-hit != 'true'
+
+    # Now install _your_ project. This isn't necessary for many types of projects -- particularly
+    # things like Django apps don't need this. But it's a good idea since it fully-exercises the
+    # pyproject.toml and makes that if you add things like console-scripts at some point that
+    # they'll be installed and working.
+    - run: pdm install --frozen-lockfile
+      shell: bash
