@@ -12,19 +12,31 @@ runs:
   using: "composite"
 
   steps:
+    - name: Get Configured Cache Dir
+      shell: bash
+      id: get-cache-dir
+      run: |
+        echo "PdmCacheDir=$(pdm config cache_dir)" >> $GITHUB_OUTPUT
+
     - name: Cache PDM
       id: pdm-cache
       uses: actions/cache@v3
       with:
-        path: .venv
-        key: ${{ runner.os }}-${{ hashFiles('.tool-versions') }}-pdm-${{ hashFiles('**/pdm.lock') }}
+        paths: |
+          .venv
+          __pypackages__
+          ${{ steps.get-cache-dir.outputs.PdmCacheDir }}
+
+        key: pdm-cache-${{ runner.os }}-${{ runner.arch }}-python-${{ hashFiles('.tool-versions') }}-${{ hashFiles('**/pdm.lock') }}
         restore-keys: |
-          ${{ runner.os }}-${{ hashFiles('.tool-versions') }}-pdm-
+          pdm-cache-${{ runner.os }}-${{ runner.arch }}-python-${{ hashFiles('.tool-versions') }}-${{ hashFiles('**/pdm.lock') }}
+          pdm-cache-${{ runner.os }}-${{ runner.arch }}-python-${{ hashFiles('.tool-versions') }}-
+          pdm-cache-${{ runner.os }}-${{ runner.arch }}-python-
 
     # Install dependencies. `--no-root` means "install all dependencies but not the project
     # itself", which is what you want to avoid caching _your_ code. The `if` statement
     # ensures this only runs on a cache miss.
-    - run: pdm cache use
+    - run: pdm install
       shell: bash
       if: steps.pdm-cache.outputs.cache-hit != 'true'
 
