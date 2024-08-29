@@ -214,11 +214,23 @@ class ImportDoc(ImportBaseModel):
     outputs: list[OutputConfig] | None = None
 
 
+@enum.unique
+class ImportOverrideFlag(enum.Enum):
+    NONE = "none"
+    ALL = "all"
+    DATE = "date"
+    FLAG = "flag"
+    NARRATION = "narration"
+    PAYEE = "payee"
+    POSTINGS = "postings"
+
+
 @dataclasses.dataclass(frozen=True)
 class BeancountTransaction:
     file: pathlib.Path
     lineno: int
     id: str
+    override: frozenset[ImportOverrideFlag] | None = None
 
 
 @dataclasses.dataclass(frozen=True)

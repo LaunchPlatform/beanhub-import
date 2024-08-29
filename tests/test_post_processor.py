@@ -14,9 +14,11 @@ from beanhub_import.data_types import ChangeSet
 from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
+from beanhub_import.data_types import ImportOverrideFlag
 from beanhub_import.post_processor import apply_change_set
 from beanhub_import.post_processor import compute_changes
 from beanhub_import.post_processor import extract_existing_transactions
+from beanhub_import.post_processor import parse_override_flags
 
 
 def strip_txn_for_compare(base_path: pathlib.Path, txn: BeancountTransaction):
@@ -33,6 +35,53 @@ def parser() -> Lark:
 @pytest.fixture
 def formatter() -> Formatter:
     return Formatter()
+
+
+@pytest.mark.parametrize(
+    "override, expected",
+    [
+        (
+            "none",
+            frozenset([ImportOverrideFlag.NONE]),
+        ),
+        (
+            "all",
+            frozenset([ImportOverrideFlag.ALL]),
+        ),
+        (
+            "narration",
+            frozenset([ImportOverrideFlag.NARRATION]),
+        ),
+        (
+            "all,payee",
+            None,
+        ),
+        (
+            "all,none",
+            None,
+        ),
+        (
+            "none,payee",
+            None,
+        ),
+        (
+            "foo",
+            None,
+        ),
+        (
+            "",
+            None,
+        ),
+        (
+            ",,,",
+            None,
+        ),
+    ],
+)
+def test_parse_override_flags(
+    override: str, expected: frozenset[ImportOverrideFlag] | None
+):
+    assert parse_override_flags(override) == expected
 
 
 @pytest.mark.parametrize(

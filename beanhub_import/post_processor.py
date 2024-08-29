@@ -3,6 +3,7 @@ import copy
 import json
 import pathlib
 import typing
+import warnings
 
 from beancount_parser.data_types import Entry
 from beancount_parser.data_types import EntryType
@@ -18,6 +19,25 @@ from .data_types import ChangeSet
 from .data_types import DeletedTransaction
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
+from .data_types import ImportOverrideFlag
+
+
+def parse_override_flags(value: str) -> frozenset[ImportOverrideFlag] | None:
+    parts = value.split(",")
+    try:
+        flags = frozenset(map(ImportOverrideFlag, parts))
+    except ValueError:
+        warnings.warn(f"Invalid override flags: {value}", RuntimeWarning)
+        return
+    if (ImportOverrideFlag.ALL in flags or ImportOverrideFlag.NONE in flags) and len(
+        flags
+    ) > 1:
+        warnings.warn(
+            f"When NONE or ALL present in the override flags, there should be no other flags but we got {value}",
+            RuntimeWarning,
+        )
+        return
+    return flags
 
 
 def extract_existing_transactions(
@@ -26,6 +46,8 @@ def extract_existing_transactions(
     root_dir: pathlib.Path | None = None,
 ) -> typing.Generator[BeancountTransaction, None, None]:
     last_txn = None
+    import_id = None
+    import_override = None
     for bean_path, tree in traverse(
         parser=parser, bean_file=bean_file, root_dir=root_dir
     ):
@@ -44,19 +66,30 @@ def extract_existing_transactions(
                 directive_type = date_directive.data.value
                 if directive_type != "txn":
                     continue
+                if last_txn is not None:
+                    yield BeancountTransaction(
+                        file=bean_path,
+                        lineno=last_txn.meta.line,
+                        id=import_id,
+                        override=import_override,
+                    )
                 last_txn = date_directive
             elif first_child.data == "metadata_item":
                 metadata_key = first_child.children[0].value
                 metadata_value = first_child.children[1]
-                if (
-                    metadata_key == constants.IMPORT_ID_KEY
-                    and metadata_value.type == "ESCAPED_STRING"
-                ):
-                    yield BeancountTransaction(
-                        file=bean_path,
-                        lineno=last_txn.meta.line,
-                        id=json.loads(metadata_value.value),
-                    )
+                if metadata_value.type == "ESCAPED_STRING":
+                    metadata_value_str = json.loads(metadata_value.value)
+                    if metadata_key == constants.IMPORT_ID_KEY:
+                        import_id = metadata_value_str
+                    elif metadata_key == constants.IMPORT_OVERRIDE_KEY:
+                        import_override = parse_override_flags(metadata_value_str)
+        if last_txn is not None:
+            yield BeancountTransaction(
+                file=bean_path,
+                lineno=last_txn.meta.line,
+                id=import_id,
+                override=import_override,
+            )
 
 
 def compute_changes(
