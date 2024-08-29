@@ -28,7 +28,7 @@ poetry add beancount-import-rules
 1. create a `.beancount_import_rules.yml` file in the root of your beancount project
    1. or you can point to a different file by setting the `BEANHUB_IMPORT_RULES_FILE` environment variable
 2. define your import rules in the file; see below for the schema
-   1. to the top of your rules file, add `# yaml-language-server: $schema=https://raw.github.com/zenobi-us/beancount-import-rules/master/beancount-import.schema.json` for schema hints.
+   1. to the top of your rules file, add `# yaml-language-server: $schema=https://raw.githubusercontent.com/zenobi-us/beancount-importer-rules/master/beancount-import.schema.json` for schema hints.
 3. run `beancount-import import` to import transactions
 
 
@@ -104,7 +104,7 @@ poetry add beancount-import-rules
 `.beancount_import_rules.yaml`.
 
 ```yml
-# yaml-language-server: $schema=https://raw.github.com/zenobi-us/beancount-import-rules/master/beancount-import.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/zenobi-us/beancount-importer-rules/master/beancount-import.schema.json
 
 # the `context` defines global variables to be referenced in the Jinja2 template for
 # generating transactions
