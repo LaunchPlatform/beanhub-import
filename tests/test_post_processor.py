@@ -2,11 +2,18 @@ import dataclasses
 import functools
 import io
 import pathlib
+import textwrap
 
 import pytest
 from beancount_black.formatter import Formatter
+from beancount_parser.data_types import Entry
+from beancount_parser.data_types import EntryType
+from beancount_parser.data_types import Metadata
+from beancount_parser.data_types import Posting
 from beancount_parser.parser import make_parser
 from lark import Lark
+from lark import Token
+from lark import Tree
 
 from beanhub_import.data_types import Amount
 from beanhub_import.data_types import BeancountTransaction
@@ -19,6 +26,7 @@ from beanhub_import.post_processor import apply_change_set
 from beanhub_import.post_processor import compute_changes
 from beanhub_import.post_processor import extract_existing_transactions
 from beanhub_import.post_processor import parse_override_flags
+from beanhub_import.post_processor import to_parser_entry
 
 
 def strip_txn_for_compare(base_path: pathlib.Path, txn: BeancountTransaction):
@@ -82,6 +90,178 @@ def test_parse_override_flags(
     override: str, expected: frozenset[ImportOverrideFlag] | None
 ):
     assert parse_override_flags(override) == expected
+
+
+@pytest.mark.parametrize(
+    "text, lineno, expected",
+    [
+        (
+            textwrap.dedent(
+                """\
+        2024-08-29 ! "MOCK_PAYEE" "MOCK_NARRATIVE"
+            import-id: "MOCK_IMPORT_ID"
+            import-src: "mock.csv"
+            Assets:Cash    -100.00 USD
+            Expenses:Food   100.00 USD
+        """
+            ),
+            5,
+            Entry(
+                type=EntryType.TXN,
+                comments=[],
+                statement=Tree(
+                    Token("RULE", "statement"),
+                    [
+                        Tree(
+                            Token("RULE", "date_directive"),
+                            [
+                                Tree(
+                                    Token("RULE", "txn"),
+                                    [
+                                        Token("DATE", "2024-08-29"),
+                                        Token("FLAG", "!"),
+                                        Token("ESCAPED_STRING", '"MOCK_PAYEE"'),
+                                        Token("ESCAPED_STRING", '"MOCK_NARRATIVE"'),
+                                        None,
+                                    ],
+                                )
+                            ],
+                        ),
+                        None,
+                    ],
+                ),
+                metadata=[
+                    Metadata(
+                        comments=[],
+                        statement=Tree(
+                            Token("RULE", "statement"),
+                            [
+                                Tree(
+                                    Token("RULE", "metadata_item"),
+                                    [
+                                        Token("METADATA_KEY", "import-id"),
+                                        Token("ESCAPED_STRING", '"MOCK_IMPORT_ID"'),
+                                    ],
+                                ),
+                                None,
+                            ],
+                        ),
+                    ),
+                    Metadata(
+                        comments=[],
+                        statement=Tree(
+                            Token("RULE", "statement"),
+                            [
+                                Tree(
+                                    Token("RULE", "metadata_item"),
+                                    [
+                                        Token("METADATA_KEY", "import-src"),
+                                        Token("ESCAPED_STRING", '"mock.csv"'),
+                                    ],
+                                ),
+                                None,
+                            ],
+                        ),
+                    ),
+                ],
+                postings=[
+                    Posting(
+                        comments=[],
+                        statement=Tree(
+                            Token("RULE", "statement"),
+                            [
+                                Tree(
+                                    Token("RULE", "posting"),
+                                    [
+                                        Tree(
+                                            Token("RULE", "detailed_posting"),
+                                            [
+                                                None,
+                                                Token("ACCOUNT", "Assets:Cash"),
+                                                Tree(
+                                                    Token("RULE", "amount"),
+                                                    [
+                                                        Tree(
+                                                            Token(
+                                                                "RULE", "number_expr"
+                                                            ),
+                                                            [
+                                                                Tree(
+                                                                    Token(
+                                                                        "RULE",
+                                                                        "number_atom",
+                                                                    ),
+                                                                    [
+                                                                        Token(
+                                                                            "UNARY_OP",
+                                                                            "-",
+                                                                        ),
+                                                                        Token(
+                                                                            "NUMBER",
+                                                                            "100.00",
+                                                                        ),
+                                                                    ],
+                                                                )
+                                                            ],
+                                                        ),
+                                                        Token("CURRENCY", "USD"),
+                                                    ],
+                                                ),
+                                                None,
+                                                None,
+                                            ],
+                                        )
+                                    ],
+                                ),
+                                None,
+                            ],
+                        ),
+                        metadata=[],
+                    ),
+                    Posting(
+                        comments=[],
+                        statement=Tree(
+                            Token("RULE", "statement"),
+                            [
+                                Tree(
+                                    Token("RULE", "posting"),
+                                    [
+                                        Tree(
+                                            Token("RULE", "detailed_posting"),
+                                            [
+                                                None,
+                                                Token("ACCOUNT", "Expenses:Food"),
+                                                Tree(
+                                                    Token("RULE", "amount"),
+                                                    [
+                                                        Tree(
+                                                            Token(
+                                                                "RULE", "number_expr"
+                                                            ),
+                                                            [Token("NUMBER", "100.00")],
+                                                        ),
+                                                        Token("CURRENCY", "USD"),
+                                                    ],
+                                                ),
+                                                None,
+                                                None,
+                                            ],
+                                        )
+                                    ],
+                                ),
+                                None,
+                            ],
+                        ),
+                        metadata=[],
+                    ),
+                ],
+            ),
+        )
+    ],
+)
+def test_to_parser_entry(text: str, lineno: int, expected: Entry):
+    parser = make_parser()
+    assert to_parser_entry(parser=parser, text=text, lineno=lineno) == expected
 
 
 @pytest.mark.parametrize(

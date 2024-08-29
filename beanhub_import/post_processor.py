@@ -224,7 +224,21 @@ def txn_to_text(
 def update_transaction(
     entry: Entry, transaction_update: TransactionUpdate, lineno: int
 ) -> Entry:
-    pass
+    parser = make_parser()
+    new_entry = to_parser_entry(
+        parser, txn_to_text(transaction_update.txn), lineno=lineno
+    )
+    if (
+        transaction_update.override is None
+        or ImportOverrideFlag.ALL in transaction_update.override
+    ):
+        return new_entry
+    elif ImportOverrideFlag.NONE in transaction_update.override:
+        return entry
+    replacement = {}
+    if ImportOverrideFlag.POSTINGS in transaction_update.override:
+        replacement["postings"] = new_entry.postings
+    return entry._replace(**replacement)
 
 
 def apply_change_set(
