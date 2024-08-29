@@ -45,12 +45,12 @@ def extract_existing_transactions(
     bean_file: pathlib.Path,
     root_dir: pathlib.Path | None = None,
 ) -> typing.Generator[BeancountTransaction, None, None]:
-    last_txn = None
-    import_id = None
-    import_override = None
     for bean_path, tree in traverse(
         parser=parser, bean_file=bean_file, root_dir=root_dir
     ):
+        last_txn = None
+        import_id = None
+        import_override = None
         if tree.data != "start":
             raise ValueError("Expected start")
         for child in tree.children:
@@ -66,13 +66,15 @@ def extract_existing_transactions(
                 directive_type = date_directive.data.value
                 if directive_type != "txn":
                     continue
-                if last_txn is not None:
+                if last_txn is not None and import_id is not None:
                     yield BeancountTransaction(
                         file=bean_path,
                         lineno=last_txn.meta.line,
                         id=import_id,
                         override=import_override,
                     )
+                import_id = None
+                import_override = None
                 last_txn = date_directive
             elif first_child.data == "metadata_item":
                 metadata_key = first_child.children[0].value
@@ -83,7 +85,7 @@ def extract_existing_transactions(
                         import_id = metadata_value_str
                     elif metadata_key == constants.IMPORT_OVERRIDE_KEY:
                         import_override = parse_override_flags(metadata_value_str)
-        if last_txn is not None:
+        if last_txn is not None and import_id is not None:
             yield BeancountTransaction(
                 file=bean_path,
                 lineno=last_txn.meta.line,

@@ -90,9 +90,25 @@ def test_parse_override_flags(
         (
             "simple-transactions",
             [
-                dict(file="books/2024.bean", lineno=1, id="id0"),
-                dict(file="books/2024.bean", lineno=11, id="id1"),
-                dict(file="books/2025.bean", lineno=1, id="id2"),
+                dict(
+                    file="books/2024.bean",
+                    lineno=1,
+                    id="id0",
+                    override=frozenset(
+                        [
+                            ImportOverrideFlag.NARRATION,
+                            ImportOverrideFlag.PAYEE,
+                            ImportOverrideFlag.FLAG,
+                        ]
+                    ),
+                ),
+                dict(
+                    file="books/2024.bean",
+                    lineno=12,
+                    id="id1",
+                    override=frozenset([ImportOverrideFlag.NONE]),
+                ),
+                dict(file="books/2025.bean", lineno=1, id="id2", override=None),
             ],
         ),
     ],

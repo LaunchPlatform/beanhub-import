@@ -1,5 +1,6 @@
 2024-05-04 "*" "Buy dinner"
     import-id: "id0"
+    import-override: "narration,payee,flag"
     Assets:Cash   -8 USD
     Expenses:Food  8 USD
 
@@ -10,5 +11,6 @@
 
 2024-05-06 "*" "Travel"
     import-id: "id1"
+    import-override: "none"
     Assets:Cash   -50 USD
     Expenses:Travel 50 USD
