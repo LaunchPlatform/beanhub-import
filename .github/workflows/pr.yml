@@ -37,11 +37,7 @@ jobs:
           REPORT_OUTPUT: md_report.md
         shell: bash
         run: |
-          pdm run pytest -v \
-            --md-report \
-            --md-report-flavor gfm \
-            --md-report-exclude-outcomes passed skipped xpassed \
-            --md-report-output "${REPORT_OUTPUT}"
+          just citest "${REPORT_OUTPUT}"
           echo "REPORT_FILE=${REPORT_OUTPUT}" >> "$GITHUB_ENV"
 
       - name: Output reports to the job summary when tests fail

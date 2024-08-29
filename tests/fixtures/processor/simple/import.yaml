@@ -14,7 +14,7 @@ context:
 inputs:
   - match: "*.csv"
     config:
-      extractor: tests.fixtures.importer.agrimaster_csv.Importer
+      extractor: tests.fixtures.importer.mercury:MercuryCsvExtractor
       prepend_postings:
         - account: Assets:Bank:US:Mercury
           amount:

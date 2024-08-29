@@ -17,16 +17,29 @@ setup:
 lint:
     echo "Linting files..."
 
-    ruff check
+    pdm run ruff check
 
     @echo ""
     @echo "👍 Done"
     @echo ""
 
 test:
-    echo "Linting files..."
+    echo "Testing files..."
 
-    pytest
+    pdm run pytest --verbosity=0
+
+    @echo ""
+    @echo "👍 Done"
+    @echo ""
+
+citest REPORT_OUTPUT="/dev/tty":
+    echo "Running tests..."
+
+    pdm run pytest -v \
+        --md-report \
+        --md-report-flavor gfm \
+        --md-report-exclude-outcomes passed skipped xpassed \
+        --md-report-output "{{REPORT_OUTPUT}}"
 
     @echo ""
     @echo "👍 Done"
@@ -35,7 +48,7 @@ test:
 unittest:
     echo "Running unit tests..."
 
-    pytest
+    pdm run pytest
 
     @echo ""
     @echo "👍 Done"
@@ -65,8 +78,6 @@ build:
 docs:
     echo "Generating documentation..."
 
-    mkdocs build
-
     @echo ""
     @echo "👍 Done"
     @echo ""
@@ -74,11 +85,11 @@ docs:
 docs-serve:
     echo "Serving documentation..."
 
-    mkdocs serve
 
     @echo ""
     @echo "👍 Done"
     @echo ""
+
 publish TAG="next":
     echo "Publishing package..."
 

@@ -65,9 +65,10 @@ def match_file(
         raise ValueError(f"Unexpected file match type {type(pattern)}")
 
 
-def match_str(pattern: StrMatch, value: str | None) -> bool:
+def match_str(pattern: StrMatch | None, value: str | None) -> bool:
     if value is None:
         return False
+
     if isinstance(pattern, str):
         return re.match(pattern, value) is not None
     elif isinstance(pattern, StrExactMatch):
@@ -88,11 +89,23 @@ def match_transaction(
     txn: Transaction,
     rule: SimpleTxnMatchRule,
 ) -> bool:
-    return all(
-        match_str(getattr(rule, key), getattr(txn, key))
-        for key, pattern in rule.model_dump().items()
-        if pattern is not None
-    )
+    items = rule.model_dump().keys()
+    for key in items:
+        pattern = getattr(rule, key)
+        if pattern is None:
+            continue
+        value = getattr(txn, key)
+
+        if not match_str(pattern, value):
+            return False
+
+    return True
+
+    # return all(
+    #     match_str(getattr(rule, key), getattr(txn, key))
+    #     for key, pattern in rule.model_dump().items()
+    #     if pattern is not None
+    # )
 
 
 def match_transaction_with_vars(
