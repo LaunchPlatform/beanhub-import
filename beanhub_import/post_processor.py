@@ -20,6 +20,7 @@ from .data_types import DeletedTransaction
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
 from .data_types import ImportOverrideFlag
+from .data_types import TransactionUpdate
 
 
 def parse_override_flags(value: str) -> frozenset[ImportOverrideFlag] | None:
@@ -117,8 +118,9 @@ def compute_changes(
         ):
             # it appears that the generated txn's file is different from the old one, let's remove it
             to_remove[txn.file].append(txn)
-        elif generated_txn is None:
-            # we have existing imported txn but has no corresponding generated txn, let's add it to danging txns
+        elif generated_txn is None and txn.override is None:
+            # we have existing imported txn without override flags but has no corresponding generated txn,
+            # let's add it to danging txns
             dangling_txns[txn.file].append(txn)
 
     to_add = collections.defaultdict(list)
@@ -129,7 +131,9 @@ def compute_changes(
         imported_txn = imported_id_txns.get(txn.id)
         generated_file = (work_dir / txn.file).resolve()
         if imported_txn is not None and imported_txn.file.resolve() == generated_file:
-            to_update[generated_file][imported_txn.lineno] = txn
+            to_update[generated_file][imported_txn.lineno] = TransactionUpdate(
+                txn=txn, override=imported_txn.override
+            )
         else:
             to_add[generated_file].append(txn)
 
@@ -217,6 +221,12 @@ def txn_to_text(
     )
 
 
+def update_transaction(
+    entry: Entry, transaction_update: TransactionUpdate, lineno: int
+) -> Entry:
+    pass
+
+
 def apply_change_set(
     tree: Lark,
     change_set: ChangeSet,
@@ -230,9 +240,8 @@ def apply_change_set(
     if remove_dangling and change_set.dangling is not None:
         txns_to_remove += change_set.dangling
     lines_to_remove = [txn.lineno for txn in txns_to_remove]
-    line_to_entries = {
-        lineno: to_parser_entry(parser, txn_to_text(txn), lineno=lineno)
-        for lineno, txn in change_set.update.items()
+    line_to_updates = {
+        lineno: txn_update for lineno, txn_update in change_set.update.items()
     }
     entries_to_add = [
         # Set a super huge lineno to the new entry statement as beancount-black sorts entries based on (date, lineno).
@@ -278,7 +287,15 @@ def apply_change_set(
         if entry.statement.meta.line in lines_to_remove:
             # We also drop the comments
             continue
-        actual_entry = line_to_entries.get(entry.statement.meta.line, entry)
+        txn_update = line_to_updates.get(entry.statement.meta.line)
+        if txn_update is not None:
+            actual_entry = update_transaction(
+                entry=entry,
+                transaction_update=txn_update,
+                lineno=entry.statement.meta.line,
+            )
+        else:
+            actual_entry = entry
         # use comments from existing entry regardless
         new_children.extend(entry.comments)
         _expand_entry(actual_entry)

@@ -234,11 +234,17 @@ class BeancountTransaction:
 
 
 @dataclasses.dataclass(frozen=True)
+class TransactionUpdate:
+    txn: GeneratedTransaction
+    override: frozenset[ImportOverrideFlag] | None = None
+
+
+@dataclasses.dataclass(frozen=True)
 class ChangeSet:
     # list of existing beancount transaction to remove
     remove: list[BeancountTransaction]
     # map from
-    update: dict[int, GeneratedTransaction]
+    update: dict[int, TransactionUpdate]
     # list of generated transaction to add
     add: list[GeneratedTransaction]
     # list of existing beancount transaction with no corresponding generated transactions (dangling)
