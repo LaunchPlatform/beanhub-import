@@ -4,6 +4,7 @@
     "release-type": "simple",
     "bump-minor-pre-major": true,
     "bump-patch-for-minor-pre-major": true,
+    "bootstrap-sha": "28836b7593f63e8948869ac915a65c3471cfdd26",
     "packages": {
         ".": {
             "release-type": "python"
