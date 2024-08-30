@@ -869,7 +869,6 @@ def test_extract_imported_transactions(
                                 file="main.bean",
                                 postings=[],
                             ),
-                            override=frozenset([ImportOverrideFlag.ALL]),
                         )
                     },
                     remove=[],
