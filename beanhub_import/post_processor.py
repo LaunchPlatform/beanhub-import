@@ -292,13 +292,10 @@ def gen_annotations(hashtags: list[str] | None, links: list[str] | None) -> Tree
         Token("RULE", "annotations"),
         [
             *(
-                Token("TAG", f"#{hashtag}")
+                Token("TAG", hashtag)
                 for hashtag in (hashtags if hashtags is not None else ())
             ),
-            *(
-                Token("LINK", f"^{link}")
-                for link in (links if links is not None else ())
-            ),
+            *(Token("LINK", link) for link in (links if links is not None else ())),
         ],
     )
 

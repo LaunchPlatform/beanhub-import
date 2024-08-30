@@ -569,6 +569,36 @@ def test_extract_txn_statement(text: str, expected: TransactionStatement):
 
 
 @pytest.mark.parametrize(
+    "text, expected",
+    [
+        (
+            textwrap.dedent(
+                """\
+            2024-08-29 * "MOCK_PAYEE" "MOCK_NARRATION" #Hash1 #Hash2 ^Link1 ^Link2
+                import-id: "MOCK_IMPORT_ID"
+                Assets:Cash    -100.00 USD
+                Expenses:Food
+            """
+            ),
+            TransactionStatement(
+                date=datetime.date(2024, 8, 29),
+                flag="*",
+                payee="MOCK_PAYEE",
+                narration="MOCK_NARRATION",
+                hashtags=["#Hash1", "#Hash2"],
+                links=["^Link1", "^Link2"],
+            ),
+        )
+    ],
+)
+def test_gen_txn_statement(text: str, expected: TransactionStatement):
+    parser = make_parser()
+    entry = to_parser_entry(parser=parser, text=text, lineno=1)
+    statement = extract_txn_statement(entry.statement)
+    assert gen_txn_statement(statement) == entry.statement
+
+
+@pytest.mark.parametrize(
     "folder, expected",
     [
         (
