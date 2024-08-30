@@ -239,15 +239,19 @@ def extract_txn_statement(tree: Tree) -> TransactionStatement:
     narration: Token
     annoations: Tree | None
     date, flag, payee, narration, annotations = txn.children
-    annotation_values = [annotation.value for annotation in annotations.children]
-    links = list(filter(lambda v: v.startswith("^"), annotation_values))
-    links.sort()
-    hashes = list(filter(lambda v: v.startswith("#"), annotation_values))
-    hashes.sort()
+    if annotations is not None:
+        annotation_values = [annotation.value for annotation in annotations.children]
+        links = list(filter(lambda v: v.startswith("^"), annotation_values))
+        links.sort()
+        hashes = list(filter(lambda v: v.startswith("#"), annotation_values))
+        hashes.sort()
+    else:
+        links = None
+        hashes = None
     return TransactionStatement(
         date=parse_date(date.value),
         flag=flag.value,
-        payee=json.loads(payee.value),
+        payee=json.loads(payee.value) if payee is not None else None,
         narration=json.loads(narration.value),
         hashtags=hashes,
         links=links,
@@ -327,27 +331,22 @@ def update_transaction(
     ).intersection(transaction_update.override):
         txn_statement = extract_txn_statement(entry.statement)
         new_txn_statement = extract_txn_statement(new_entry.statement)
-
-        replacement["statement"] = Tree(
-            Token("RULE", "statement"),
-            [
-                Tree(
-                    Token("RULE", "date_directive"),
-                    [
-                        Tree(
-                            Token("RULE", "txn"),
-                            [
-                                Token("DATE", "2024-08-29"),
-                                Token("FLAG", "*"),
-                                None,
-                                Token("ESCAPED_STRING", '"MOCK_NARRATIVE"'),
-                                None,
-                            ],
-                        )
-                    ],
-                ),
-                None,
-            ],
+        replacement["statement"] = gen_txn_statement(
+            TransactionStatement(
+                **{
+                    name: getattr(new_txn_statement, name)
+                    if flag in transaction_update.override
+                    else getattr(txn_statement, name)
+                    for flag, name in [
+                        (ImportOverrideFlag.DATE, "date"),
+                        (ImportOverrideFlag.FLAG, "flag"),
+                        (ImportOverrideFlag.PAYEE, "payee"),
+                        (ImportOverrideFlag.NARRATION, "narration"),
+                        (ImportOverrideFlag.HASHTAGS, "hashtags"),
+                        (ImportOverrideFlag.LINKS, "links"),
+                    ]
+                }
+            )
         )
     if ImportOverrideFlag.POSTINGS in transaction_update.override:
         replacement["postings"] = new_entry.postings

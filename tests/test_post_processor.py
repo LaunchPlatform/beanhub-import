@@ -24,14 +24,15 @@ from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportOverrideFlag
 from beanhub_import.data_types import TransactionStatement
+from beanhub_import.data_types import TransactionUpdate
 from beanhub_import.post_processor import apply_change_set
 from beanhub_import.post_processor import compute_changes
 from beanhub_import.post_processor import extract_existing_transactions
 from beanhub_import.post_processor import extract_txn_statement
-from beanhub_import.post_processor import gen_annotations
 from beanhub_import.post_processor import gen_txn_statement
 from beanhub_import.post_processor import parse_override_flags
 from beanhub_import.post_processor import to_parser_entry
+from beanhub_import.post_processor import update_transaction
 
 
 def strip_txn_for_compare(base_path: pathlib.Path, txn: BeancountTransaction):
@@ -596,6 +597,53 @@ def test_gen_txn_statement(text: str, expected: TransactionStatement):
     entry = to_parser_entry(parser=parser, text=text, lineno=1)
     statement = extract_txn_statement(entry.statement)
     assert gen_txn_statement(statement) == entry.statement
+
+
+@pytest.mark.parametrize(
+    "text, transaction_update, expected",
+    [
+        (
+            textwrap.dedent(
+                """\
+            2024-08-29 * "MOCK_PAYEE" "MOCK_NARRATION" #Hash1 #Hash2 ^Link1 ^Link2
+                import-id: "MOCK_IMPORT_ID"
+                Assets:Cash    -100.00 USD
+                Expenses:Food
+            """
+            ),
+            TransactionUpdate(
+                txn=GeneratedTransaction(
+                    id="MOCK_ID",
+                    sources=["import-data/mock.csv"],
+                    date="2024-05-05",
+                    flag="*",
+                    narration="NEW_DESC",
+                    file="main.bean",
+                    postings=[],
+                ),
+                override=frozenset([ImportOverrideFlag.NARRATION]),
+            ),
+            TransactionStatement(
+                date=datetime.date(2024, 8, 29),
+                flag="*",
+                payee="MOCK_PAYEE",
+                narration="NEW_DESC",
+                hashtags=["#Hash1", "#Hash2"],
+                links=["^Link1", "^Link2"],
+            ),
+        )
+    ],
+)
+def test_update_transaction(
+    text: str, transaction_update: TransactionUpdate, expected: TransactionStatement
+):
+    parser = make_parser()
+    entry = to_parser_entry(parser=parser, text=text, lineno=1)
+    new_entry = update_transaction(
+        entry=entry, transaction_update=transaction_update, lineno=1
+    )
+    statement = extract_txn_statement(new_entry.statement)
+    assert statement == expected
 
 
 @pytest.mark.parametrize(
