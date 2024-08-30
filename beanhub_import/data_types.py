@@ -2,6 +2,7 @@ import dataclasses
 import enum
 import pathlib
 import typing
+from datetime import datetime
 
 import pydantic
 from beanhub_extract.data_types import Transaction
@@ -222,6 +223,8 @@ class ImportOverrideFlag(enum.Enum):
     FLAG = "flag"
     NARRATION = "narration"
     PAYEE = "payee"
+    HASHTAGS = "hashtags"
+    LINKS = "links"
     POSTINGS = "postings"
 
 
@@ -259,3 +262,13 @@ class UnprocessedTransaction:
     output_file: str | None = None
     prepending_postings: list[GeneratedPosting] | None = None
     appending_postings: list[GeneratedPosting] | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class TransactionStatement:
+    date: datetime.date
+    flag: str
+    payee: str | None
+    narration: str | None
+    hashtags: list[str] | None = None
+    links: list[str] | None = None

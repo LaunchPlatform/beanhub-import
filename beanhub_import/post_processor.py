@@ -5,12 +5,14 @@ import pathlib
 import typing
 import warnings
 
+from beancount_black.formatter import parse_date
 from beancount_parser.data_types import Entry
 from beancount_parser.data_types import EntryType
 from beancount_parser.helpers import collect_entries
 from beancount_parser.parser import make_parser
 from beancount_parser.parser import traverse
 from lark import Lark
+from lark import Token
 from lark import Tree
 
 from . import constants
@@ -20,6 +22,7 @@ from .data_types import DeletedTransaction
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
 from .data_types import ImportOverrideFlag
+from .data_types import TransactionStatement
 from .data_types import TransactionUpdate
 
 
@@ -221,6 +224,85 @@ def txn_to_text(
     )
 
 
+def extract_txn_statement(tree: Tree) -> TransactionStatement:
+    if tree.data != "statement":
+        raise ValueError("Expected a statement here")
+    date_directive = tree.children[0]
+    if date_directive.data != "date_directive":
+        raise ValueError("Expected a date_directive here")
+    txn = date_directive.children[0]
+    if txn.data != "txn":
+        raise ValueError("Expected a txn here")
+    date: Token
+    flag: Token
+    payee: Token | None
+    narration: Token
+    annoations: Tree | None
+    date, flag, payee, narration, annotations = txn.children
+    annotation_values = [annotation.value for annotation in annotations.children]
+    links = list(filter(lambda v: v.startswith("^"), annotation_values))
+    links.sort()
+    hashes = list(filter(lambda v: v.startswith("#"), annotation_values))
+    hashes.sort()
+    return TransactionStatement(
+        date=parse_date(date.value),
+        flag=flag.value,
+        payee=json.loads(payee.value),
+        narration=json.loads(narration.value),
+        hashtags=hashes,
+        links=links,
+    )
+
+
+def gen_txn_statement(txn_statement: TransactionStatement) -> Tree:
+    return Tree(
+        Token("RULE", "statement"),
+        [
+            Tree(
+                Token("RULE", "date_directive"),
+                [
+                    Tree(
+                        Token("RULE", "txn"),
+                        [
+                            Token("DATE", str(txn_statement.date)),
+                            Token("FLAG", txn_statement.flag),
+                            Token("ESCAPED_STRING", json.dumps(txn_statement.payee))
+                            if txn_statement.payee is not None
+                            else None,
+                            Token(
+                                "ESCAPED_STRING", json.dumps(txn_statement.narration)
+                            ),
+                            gen_annotations(
+                                hashtags=txn_statement.hashtags,
+                                links=txn_statement.links,
+                            ),
+                        ],
+                    )
+                ],
+            ),
+            None,
+        ],
+    )
+
+
+def gen_annotations(hashtags: list[str] | None, links: list[str] | None) -> Tree | None:
+    if hashtags is None and links is None:
+        return
+    return Tree(
+        Token("RULE", "annotations"),
+        [
+            *(
+                Token("TAG", f"#{hashtag}")
+                for hashtag in (hashtags if hashtags is not None else ())
+            ),
+            *(
+                Token("LINK", f"^{link}")
+                for link in (links if links is not None else ())
+            ),
+        ],
+    )
+
+
 def update_transaction(
     entry: Entry, transaction_update: TransactionUpdate, lineno: int
 ) -> Entry:
@@ -236,6 +318,40 @@ def update_transaction(
     elif ImportOverrideFlag.NONE in transaction_update.override:
         return entry
     replacement = {}
+    if frozenset(
+        [
+            ImportOverrideFlag.DATE,
+            ImportOverrideFlag.FLAG,
+            ImportOverrideFlag.PAYEE,
+            ImportOverrideFlag.NARRATION,
+            ImportOverrideFlag.HASHTAGS,
+            ImportOverrideFlag.LINKS,
+        ]
+    ).intersection(transaction_update.override):
+        txn_statement = extract_txn_statement(entry.statement)
+        new_txn_statement = extract_txn_statement(new_entry.statement)
+
+        replacement["statement"] = Tree(
+            Token("RULE", "statement"),
+            [
+                Tree(
+                    Token("RULE", "date_directive"),
+                    [
+                        Tree(
+                            Token("RULE", "txn"),
+                            [
+                                Token("DATE", "2024-08-29"),
+                                Token("FLAG", "*"),
+                                None,
+                                Token("ESCAPED_STRING", '"MOCK_NARRATIVE"'),
+                                None,
+                            ],
+                        )
+                    ],
+                ),
+                None,
+            ],
+        )
     if ImportOverrideFlag.POSTINGS in transaction_update.override:
         replacement["postings"] = new_entry.postings
     return entry._replace(**replacement)

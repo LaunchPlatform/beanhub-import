@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 import functools
 import io
 import pathlib
@@ -22,9 +23,13 @@ from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportOverrideFlag
+from beanhub_import.data_types import TransactionStatement
 from beanhub_import.post_processor import apply_change_set
 from beanhub_import.post_processor import compute_changes
 from beanhub_import.post_processor import extract_existing_transactions
+from beanhub_import.post_processor import extract_txn_statement
+from beanhub_import.post_processor import gen_annotations
+from beanhub_import.post_processor import gen_txn_statement
 from beanhub_import.post_processor import parse_override_flags
 from beanhub_import.post_processor import to_parser_entry
 
@@ -388,11 +393,179 @@ def test_parse_override_flags(
                 ],
             ),
         ),
+        (
+            textwrap.dedent(
+                """\
+                2024-08-29 * "MOCK_NARRATIVE" #Hash1 #Hash2 ^Link1 ^Link2
+                    import-id: "MOCK_IMPORT_ID"
+                    Assets:Cash    -100.00 USD
+                    Expenses:Food
+                """
+            ),
+            5,
+            Entry(
+                type=EntryType.TXN,
+                comments=[],
+                statement=Tree(
+                    Token("RULE", "statement"),
+                    [
+                        Tree(
+                            Token("RULE", "date_directive"),
+                            [
+                                Tree(
+                                    Token("RULE", "txn"),
+                                    [
+                                        Token("DATE", "2024-08-29"),
+                                        Token("FLAG", "*"),
+                                        None,
+                                        Token("ESCAPED_STRING", '"MOCK_NARRATIVE"'),
+                                        Tree(
+                                            Token("RULE", "annotations"),
+                                            [
+                                                Token("TAG", "#Hash1"),
+                                                Token("TAG", "#Hash2"),
+                                                Token("LINK", "^Link1"),
+                                                Token("LINK", "^Link2"),
+                                            ],
+                                        ),
+                                    ],
+                                )
+                            ],
+                        ),
+                        None,
+                    ],
+                ),
+                metadata=[
+                    Metadata(
+                        comments=[],
+                        statement=Tree(
+                            Token("RULE", "statement"),
+                            [
+                                Tree(
+                                    Token("RULE", "metadata_item"),
+                                    [
+                                        Token("METADATA_KEY", "import-id"),
+                                        Token("ESCAPED_STRING", '"MOCK_IMPORT_ID"'),
+                                    ],
+                                ),
+                                None,
+                            ],
+                        ),
+                    ),
+                ],
+                postings=[
+                    Posting(
+                        comments=[],
+                        statement=Tree(
+                            Token("RULE", "statement"),
+                            [
+                                Tree(
+                                    Token("RULE", "posting"),
+                                    [
+                                        Tree(
+                                            Token("RULE", "detailed_posting"),
+                                            [
+                                                None,
+                                                Token("ACCOUNT", "Assets:Cash"),
+                                                Tree(
+                                                    Token("RULE", "amount"),
+                                                    [
+                                                        Tree(
+                                                            Token(
+                                                                "RULE", "number_expr"
+                                                            ),
+                                                            [
+                                                                Tree(
+                                                                    Token(
+                                                                        "RULE",
+                                                                        "number_atom",
+                                                                    ),
+                                                                    [
+                                                                        Token(
+                                                                            "UNARY_OP",
+                                                                            "-",
+                                                                        ),
+                                                                        Token(
+                                                                            "NUMBER",
+                                                                            "100.00",
+                                                                        ),
+                                                                    ],
+                                                                )
+                                                            ],
+                                                        ),
+                                                        Token("CURRENCY", "USD"),
+                                                    ],
+                                                ),
+                                                None,
+                                                None,
+                                            ],
+                                        )
+                                    ],
+                                ),
+                                None,
+                            ],
+                        ),
+                        metadata=[],
+                    ),
+                    Posting(
+                        comments=[],
+                        statement=Tree(
+                            Token("RULE", "statement"),
+                            [
+                                Tree(
+                                    Token("RULE", "posting"),
+                                    [
+                                        Tree(
+                                            Token("RULE", "simple_posting"),
+                                            [
+                                                None,
+                                                Token("ACCOUNT", "Expenses:Food"),
+                                            ],
+                                        )
+                                    ],
+                                ),
+                                None,
+                            ],
+                        ),
+                        metadata=[],
+                    ),
+                ],
+            ),
+        ),
     ],
 )
 def test_to_parser_entry(text: str, lineno: int, expected: Entry):
     parser = make_parser()
     assert to_parser_entry(parser=parser, text=text, lineno=lineno) == expected
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        (
+            textwrap.dedent(
+                """\
+            2024-08-29 * "MOCK_PAYEE" "MOCK_NARRATION" #Hash1 #Hash2 ^Link1 ^Link2
+                import-id: "MOCK_IMPORT_ID"
+                Assets:Cash    -100.00 USD
+                Expenses:Food
+            """
+            ),
+            TransactionStatement(
+                date=datetime.date(2024, 8, 29),
+                flag="*",
+                payee="MOCK_PAYEE",
+                narration="MOCK_NARRATION",
+                hashtags=["#Hash1", "#Hash2"],
+                links=["^Link1", "^Link2"],
+            ),
+        )
+    ],
+)
+def test_extract_txn_statement(text: str, expected: TransactionStatement):
+    parser = make_parser()
+    entry = to_parser_entry(parser=parser, text=text, lineno=1)
+    assert extract_txn_statement(entry.statement) == expected
 
 
 @pytest.mark.parametrize(
