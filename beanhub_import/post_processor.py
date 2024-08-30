@@ -330,7 +330,7 @@ def update_transaction(
     ).intersection(transaction_update.override):
         txn_statement = extract_txn_statement(entry.statement)
         new_txn_statement = extract_txn_statement(new_entry.statement)
-        replacement["statement"] = gen_txn_statement(
+        replacement_statement = gen_txn_statement(
             TransactionStatement(
                 **{
                     name: getattr(new_txn_statement, name)
@@ -347,6 +347,8 @@ def update_transaction(
                 }
             )
         )
+        replacement_statement.meta.line = entry.statement.meta.line
+        replacement["statement"] = replacement_statement
     if ImportOverrideFlag.POSTINGS in transaction_update.override:
         replacement["postings"] = new_entry.postings
     return entry._replace(**replacement)
