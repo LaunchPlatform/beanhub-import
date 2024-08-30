@@ -46,3 +46,6 @@ runs:
     # they'll be installed and working.
     - run: pdm install --frozen-lockfile
       shell: bash
+
+    - shell: bash
+      run: echo "$PWD/.venv/bin" >> $GITHUB_PATH

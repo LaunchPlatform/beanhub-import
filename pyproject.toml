@@ -18,10 +18,14 @@ dependencies = [
     "click>=8.1.7",
     "rich>=13.8.0",
     "pendulum>=3.0.0",
+    "types-PyYAML>=6.0.12.20240808",
+    "types-Pygments>=2.18.0.20240506",
+    "types-regex>=2024.7.24.20240726",
 ]
 requires-python = ">=3.12"
 readme = "README.md"
 license = { text = "MIT" }
+
 [tool.pdm]
 distribution = true
 
@@ -34,6 +38,9 @@ dev = [
     "pylance>=0.16.1",
     "ruff>=0.6.2",
     "pytest-md-report>=0.6.2",
+    "mypy>=1.11.2",
+    "pyright>=1.1.378",
+    "pre-commit>=3.8.0",
 ]
 
 [tool.pdm.build]
@@ -44,8 +51,10 @@ includes = [
     "LICENSE",
 ]
 
-[tool.pdm.scripts]
-start = "flask run -p 54321"
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"

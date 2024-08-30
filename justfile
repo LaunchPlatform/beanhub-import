@@ -14,6 +14,16 @@ setup:
     @echo "👍 Done"
     @echo ""
 
+types:
+    echo "Checking types..."
+
+    pdm run pyright ./beancount_importer_rules
+
+    @echo ""
+    @echo "👍 Done"
+    @echo ""
+
+
 lint:
     echo "Linting files..."
 
