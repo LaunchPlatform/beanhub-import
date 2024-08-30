@@ -36,16 +36,16 @@ runs:
     # Install dependencies. `--no-root` means "install all dependencies but not the project
     # itself", which is what you want to avoid caching _your_ code. The `if` statement
     # ensures this only runs on a cache miss.
-    - run: pdm install
-      shell: bash
+    - shell: bash
       if: steps.pdm-cache.outputs.cache-hit != 'true'
+      run: pdm install
 
     # Now install _your_ project. This isn't necessary for many types of projects -- particularly
     # things like Django apps don't need this. But it's a good idea since it fully-exercises the
     # pyproject.toml and makes that if you add things like console-scripts at some point that
     # they'll be installed and working.
-    - run: pdm install --frozen-lockfile
-      shell: bash
+    - shell: bash
+      run: pdm install --frozen-lockfile
 
     - shell: bash
       run: echo "$PWD/.venv/bin" >> $GITHUB_PATH

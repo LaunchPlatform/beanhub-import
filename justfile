@@ -85,6 +85,18 @@ build:
     @echo "👍 Done"
     @echo ""
 
+secrets:
+    echo "Checking for secrets..."
+
+    pdm run detect-secrets scan \
+        --baseline \
+        --exclude-files ".secrets.baseline" \
+        --exclude-files ".venv/.*" > .secrets.baseline
+
+    @echo ""
+    @echo "👍 Done"
+    @echo ""
+
 docs:
     echo "Generating documentation..."
 

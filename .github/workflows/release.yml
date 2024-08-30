@@ -61,14 +61,45 @@ jobs:
           just build
           just integrationtest
 
-  Deploy:
+  DeployProd:
+    if: ${{ needs.Process.outputs.releases_created == 'true' }}
     needs:
       - Process
       - QA
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/beancount-import
+      url: https://pypi.org/p/beancount-importer-rules
+    steps:
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # 4.1.7
+
+      - uses: jdx/mise-action@d6e32c1796099e0f1f3ac741c220a8b7eae9e5dd # v2.0.6
+        with:
+          version: 2024.8.12 # [default: latest] mise version to install
+          install: true # [default: true] run `mise install`
+          cache: true # [default: true] cache mise using GitHub's cache
+          log_level: debug # [default: info] log level
+
+      - name: Install Python Packages
+        uses: ./.github/actions/setup-dependencies
+
+      - name: Preflight
+        run: |
+          just build
+
+      - run: |
+          echo 'Release PR Merged.'
+          pdm publish --repository pypi
+
+  DeployTest:
+    needs:
+      - Process
+      - QA
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/beancount-importer-rules
     steps:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # 4.1.7
