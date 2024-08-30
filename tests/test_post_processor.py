@@ -619,7 +619,16 @@ def test_gen_txn_statement(text: str, expected: TransactionStatement):
                     flag="*",
                     narration="NEW_DESC",
                     file="main.bean",
-                    postings=[],
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Cash",
+                            amount=Amount(number="111.45", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:Food",
+                            amount=Amount(number="-111.45", currency="USD"),
+                        ),
+                    ],
                 ),
                 override=frozenset([ImportOverrideFlag.NARRATION]),
             ),
@@ -631,7 +640,58 @@ def test_gen_txn_statement(text: str, expected: TransactionStatement):
                 hashtags=["#Hash1", "#Hash2"],
                 links=["^Link1", "^Link2"],
             ),
-        )
+        ),
+        (
+            textwrap.dedent(
+                """\
+                2024-08-29 * "MOCK_PAYEE" "MOCK_NARRATION" #Hash1 #Hash2 ^Link1 ^Link2
+                    import-id: "MOCK_IMPORT_ID"
+                    Assets:Cash    -100.00 USD
+                    Expenses:Food
+                """
+            ),
+            TransactionUpdate(
+                txn=GeneratedTransaction(
+                    id="MOCK_ID",
+                    sources=["import-data/mock.csv"],
+                    date="2024-05-05",
+                    flag="!",
+                    payee="NEW_PAYEE",
+                    narration="NEW_DESC",
+                    file="main.bean",
+                    links=["NewLink1"],
+                    tags=["NewTag1"],
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Cash",
+                            amount=Amount(number="111.45", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:Food",
+                            amount=Amount(number="-111.45", currency="USD"),
+                        ),
+                    ],
+                ),
+                override=frozenset(
+                    [
+                        ImportOverrideFlag.DATE,
+                        ImportOverrideFlag.FLAG,
+                        ImportOverrideFlag.PAYEE,
+                        ImportOverrideFlag.NARRATION,
+                        ImportOverrideFlag.HASHTAGS,
+                        ImportOverrideFlag.LINKS,
+                    ]
+                ),
+            ),
+            TransactionStatement(
+                date=datetime.date(2024, 5, 5),
+                flag="!",
+                payee="NEW_PAYEE",
+                narration="NEW_DESC",
+                hashtags=["#NewTag1"],
+                links=["^NewLink1"],
+            ),
+        ),
     ],
 )
 def test_update_transaction(
