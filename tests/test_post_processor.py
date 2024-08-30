@@ -860,13 +860,16 @@ def test_extract_imported_transactions(
                 pathlib.Path("main.bean"): ChangeSet(
                     add=[],
                     update={
-                        0: GeneratedTransaction(
-                            id="MOCK_ID",
-                            date="2024-05-05",
-                            flag="*",
-                            narration="MOCK_DESC",
-                            file="main.bean",
-                            postings=[],
+                        0: TransactionUpdate(
+                            txn=GeneratedTransaction(
+                                id="MOCK_ID",
+                                date="2024-05-05",
+                                flag="*",
+                                narration="MOCK_DESC",
+                                file="main.bean",
+                                postings=[],
+                            ),
+                            override=frozenset([ImportOverrideFlag.ALL]),
                         )
                     },
                     remove=[],
@@ -942,13 +945,15 @@ def test_extract_imported_transactions(
                 pathlib.Path("main.bean"): ChangeSet(
                     add=[],
                     update={
-                        0: GeneratedTransaction(
-                            id="id0",
-                            date="2024-05-05",
-                            flag="*",
-                            narration="MOCK_DESC",
-                            file="main.bean",
-                            postings=[],
+                        0: TransactionUpdate(
+                            txn=GeneratedTransaction(
+                                id="id0",
+                                date="2024-05-05",
+                                flag="*",
+                                narration="MOCK_DESC",
+                                file="main.bean",
+                                postings=[],
+                            )
                         ),
                     },
                     remove=[],
@@ -1023,13 +1028,15 @@ def test_extract_imported_transactions(
                 pathlib.Path("main.bean"): ChangeSet(
                     add=[],
                     update={
-                        0: GeneratedTransaction(
-                            id="id0",
-                            date="2024-05-05",
-                            flag="*",
-                            narration="MOCK_DESC",
-                            file="main.bean",
-                            postings=[],
+                        0: TransactionUpdate(
+                            txn=GeneratedTransaction(
+                                id="id0",
+                                date="2024-05-05",
+                                flag="*",
+                                narration="MOCK_DESC",
+                                file="main.bean",
+                                postings=[],
+                            )
                         ),
                     },
                     remove=[
@@ -1139,23 +1146,25 @@ def test_compute_changes(
                     ),
                 ],
                 update={
-                    13: GeneratedTransaction(
-                        id="id1",
-                        date="2024-03-05",
-                        flag="!",
-                        payee="Uber Eats",
-                        narration="Buy lunch",
-                        file="main.bean",
-                        postings=[
-                            GeneratedPosting(
-                                account="Assets:Cash",
-                                amount=Amount(number="111.45", currency="USD"),
-                            ),
-                            GeneratedPosting(
-                                account="Expenses:Food",
-                                amount=Amount(number="-111.45", currency="USD"),
-                            ),
-                        ],
+                    13: TransactionUpdate(
+                        txn=GeneratedTransaction(
+                            id="id1",
+                            date="2024-03-05",
+                            flag="!",
+                            payee="Uber Eats",
+                            narration="Buy lunch",
+                            file="main.bean",
+                            postings=[
+                                GeneratedPosting(
+                                    account="Assets:Cash",
+                                    amount=Amount(number="111.45", currency="USD"),
+                                ),
+                                GeneratedPosting(
+                                    account="Expenses:Food",
+                                    amount=Amount(number="-111.45", currency="USD"),
+                                ),
+                            ],
+                        )
                     ),
                 },
                 remove=[
@@ -1191,23 +1200,25 @@ def test_compute_changes(
                     ),
                 ],
                 update={
-                    13: GeneratedTransaction(
-                        id="id1",
-                        date="2024-03-05",
-                        flag="!",
-                        payee="Uber Eats",
-                        narration="Buy lunch",
-                        file="main.bean",
-                        postings=[
-                            GeneratedPosting(
-                                account="Assets:Cash",
-                                amount=Amount(number="111.45", currency="USD"),
-                            ),
-                            GeneratedPosting(
-                                account="Expenses:Food",
-                                amount=Amount(number="-111.45", currency="USD"),
-                            ),
-                        ],
+                    13: TransactionUpdate(
+                        txn=GeneratedTransaction(
+                            id="id1",
+                            date="2024-03-05",
+                            flag="!",
+                            payee="Uber Eats",
+                            narration="Buy lunch",
+                            file="main.bean",
+                            postings=[
+                                GeneratedPosting(
+                                    account="Assets:Cash",
+                                    amount=Amount(number="111.45", currency="USD"),
+                                ),
+                                GeneratedPosting(
+                                    account="Expenses:Food",
+                                    amount=Amount(number="-111.45", currency="USD"),
+                                ),
+                            ],
+                        )
                     ),
                 },
                 remove=[],
