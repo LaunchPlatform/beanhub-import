@@ -881,6 +881,48 @@ def test_extract_imported_transactions(
             [
                 GeneratedTransaction(
                     id="MOCK_ID",
+                    date="2024-05-05",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    file="main.bean",
+                    postings=[],
+                )
+            ],
+            [
+                BeancountTransaction(
+                    file=pathlib.Path("main.bean"),
+                    lineno=0,
+                    id="MOCK_ID",
+                    override=frozenset([ImportOverrideFlag.NONE]),
+                )
+            ],
+            [],
+            {
+                pathlib.Path("main.bean"): ChangeSet(
+                    add=[],
+                    update={
+                        0: TransactionUpdate(
+                            txn=GeneratedTransaction(
+                                id="MOCK_ID",
+                                date="2024-05-05",
+                                flag="*",
+                                narration="MOCK_DESC",
+                                file="main.bean",
+                                postings=[],
+                            ),
+                            override=frozenset([ImportOverrideFlag.NONE]),
+                        )
+                    },
+                    remove=[],
+                    dangling=[],
+                ),
+            },
+            id="single-update-with-override",
+        ),
+        pytest.param(
+            [
+                GeneratedTransaction(
+                    id="MOCK_ID",
                     sources=["import-data/mock.csv"],
                     date="2024-05-05",
                     flag="*",
