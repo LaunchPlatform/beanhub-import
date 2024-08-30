@@ -89,8 +89,10 @@ jobs:
 
       - if: ${{ needs.Process.outputs.releases_created == 'true' }}
         run: |
-          just publish
+          echo 'Release PR Merged.'
+          pdm publish --repository pypi
 
       - if: ${{ needs.Process.outputs.prs_created == 'true' }}
         run: |
-          echo 'PRs created, but no releases. Skipping publish.'
+          echo 'Release PRs created/updated.'
+          pdm publish --repository testpypi

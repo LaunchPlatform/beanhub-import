@@ -100,8 +100,11 @@ docs-serve:
     @echo "👍 Done"
     @echo ""
 
-publish TAG="next":
+publish ENV="pypi":
     echo "Publishing package..."
+
+    gopass env websites/{{ENV}}/pdm \
+        pdm publish --repository {{ENV}}
 
     @echo ""
     @echo "👍 Done"
