@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/zenobi-us/beancount-importer-rules/compare/v0.1.0...v0.1.1) (2024-08-30)
+
+
+### Bug Fixes
+
+* deployment environments ([#7](https://github.com/zenobi-us/beancount-importer-rules/issues/7)) ([a1de061](https://github.com/zenobi-us/beancount-importer-rules/commit/a1de061143140d09cf0e5b8ce01980f5fe18c936))
+* publish-workflow ([#4](https://github.com/zenobi-us/beancount-importer-rules/issues/4)) ([e0d6b29](https://github.com/zenobi-us/beancount-importer-rules/commit/e0d6b293c8e0e90d9c8ae0f2a643deb81f5c1f63))
+
 ## 0.1.0 (2024-08-30)
 
 

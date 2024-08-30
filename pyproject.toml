@@ -1,6 +1,6 @@
 [project]
 name = "beancount-importer-rules"
-version = "0.1.0"
+version = "0.1.1"
 description = "Beancount importer rules engine"
 authors = [
     { name = "Zeno Jiricek", email = "airtonix@users.noreply.github.com" },
