@@ -305,9 +305,8 @@ def gen_annotations(hashtags: list[str] | None, links: list[str] | None) -> Tree
 
 
 def update_transaction(
-    entry: Entry, transaction_update: TransactionUpdate, lineno: int
+    parser: Lark, entry: Entry, transaction_update: TransactionUpdate, lineno: int
 ) -> Entry:
-    parser = make_parser()
     new_entry = to_parser_entry(
         parser, txn_to_text(transaction_update.txn), lineno=lineno
     )
@@ -416,6 +415,7 @@ def apply_change_set(
         txn_update = line_to_updates.get(entry.statement.meta.line)
         if txn_update is not None:
             actual_entry = update_transaction(
+                parser=parser,
                 entry=entry,
                 transaction_update=txn_update,
                 lineno=entry.statement.meta.line,

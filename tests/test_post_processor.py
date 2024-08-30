@@ -700,7 +700,7 @@ def test_update_transaction(
     parser = make_parser()
     entry = to_parser_entry(parser=parser, text=text, lineno=1)
     new_entry = update_transaction(
-        entry=entry, transaction_update=transaction_update, lineno=1
+        parser=parser, entry=entry, transaction_update=transaction_update, lineno=1
     )
     statement = extract_txn_statement(new_entry.statement)
     assert statement == expected
