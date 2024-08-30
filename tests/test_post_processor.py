@@ -1106,6 +1106,9 @@ def test_compute_changes(
             )
             for txn in change_set.dangling
         ]
+        kwargs["update"] = {
+            k: TransactionUpdate(**v) for k, v in kwargs["update"].items()
+        }
         return ChangeSet(**kwargs)
 
     assert {
