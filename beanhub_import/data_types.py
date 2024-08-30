@@ -2,6 +2,7 @@ import dataclasses
 import enum
 import pathlib
 import typing
+from datetime import datetime
 
 import pydantic
 from beanhub_extract.data_types import Transaction
@@ -214,11 +215,31 @@ class ImportDoc(ImportBaseModel):
     outputs: list[OutputConfig] | None = None
 
 
+@enum.unique
+class ImportOverrideFlag(enum.Enum):
+    NONE = "none"
+    ALL = "all"
+    DATE = "date"
+    FLAG = "flag"
+    NARRATION = "narration"
+    PAYEE = "payee"
+    HASHTAGS = "hashtags"
+    LINKS = "links"
+    POSTINGS = "postings"
+
+
 @dataclasses.dataclass(frozen=True)
 class BeancountTransaction:
     file: pathlib.Path
     lineno: int
     id: str
+    override: frozenset[ImportOverrideFlag] | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class TransactionUpdate:
+    txn: GeneratedTransaction
+    override: frozenset[ImportOverrideFlag] | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -226,7 +247,7 @@ class ChangeSet:
     # list of existing beancount transaction to remove
     remove: list[BeancountTransaction]
     # map from
-    update: dict[int, GeneratedTransaction]
+    update: dict[int, TransactionUpdate]
     # list of generated transaction to add
     add: list[GeneratedTransaction]
     # list of existing beancount transaction with no corresponding generated transactions (dangling)
@@ -241,3 +262,13 @@ class UnprocessedTransaction:
     output_file: str | None = None
     prepending_postings: list[GeneratedPosting] | None = None
     appending_postings: list[GeneratedPosting] | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class TransactionStatement:
+    date: datetime.date
+    flag: str
+    payee: str | None
+    narration: str | None
+    hashtags: list[str] | None = None
+    links: list[str] | None = None

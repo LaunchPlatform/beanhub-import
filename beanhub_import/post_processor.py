@@ -3,13 +3,16 @@ import copy
 import json
 import pathlib
 import typing
+import warnings
 
+from beancount_black.formatter import parse_date
 from beancount_parser.data_types import Entry
 from beancount_parser.data_types import EntryType
 from beancount_parser.helpers import collect_entries
 from beancount_parser.parser import make_parser
 from beancount_parser.parser import traverse
 from lark import Lark
+from lark import Token
 from lark import Tree
 
 from . import constants
@@ -18,6 +21,27 @@ from .data_types import ChangeSet
 from .data_types import DeletedTransaction
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
+from .data_types import ImportOverrideFlag
+from .data_types import TransactionStatement
+from .data_types import TransactionUpdate
+
+
+def parse_override_flags(value: str) -> frozenset[ImportOverrideFlag] | None:
+    parts = value.split(",")
+    try:
+        flags = frozenset(map(ImportOverrideFlag, parts))
+    except ValueError:
+        warnings.warn(f"Invalid override flags: {value}", RuntimeWarning)
+        return
+    if (ImportOverrideFlag.ALL in flags or ImportOverrideFlag.NONE in flags) and len(
+        flags
+    ) > 1:
+        warnings.warn(
+            f"When NONE or ALL present in the override flags, there should be no other flags but we got {value}",
+            RuntimeWarning,
+        )
+        return
+    return flags
 
 
 def extract_existing_transactions(
@@ -25,10 +49,12 @@ def extract_existing_transactions(
     bean_file: pathlib.Path,
     root_dir: pathlib.Path | None = None,
 ) -> typing.Generator[BeancountTransaction, None, None]:
-    last_txn = None
     for bean_path, tree in traverse(
         parser=parser, bean_file=bean_file, root_dir=root_dir
     ):
+        last_txn = None
+        import_id = None
+        import_override = None
         if tree.data != "start":
             raise ValueError("Expected start")
         for child in tree.children:
@@ -44,19 +70,32 @@ def extract_existing_transactions(
                 directive_type = date_directive.data.value
                 if directive_type != "txn":
                     continue
+                if last_txn is not None and import_id is not None:
+                    yield BeancountTransaction(
+                        file=bean_path,
+                        lineno=last_txn.meta.line,
+                        id=import_id,
+                        override=import_override,
+                    )
+                import_id = None
+                import_override = None
                 last_txn = date_directive
             elif first_child.data == "metadata_item":
                 metadata_key = first_child.children[0].value
                 metadata_value = first_child.children[1]
-                if (
-                    metadata_key == constants.IMPORT_ID_KEY
-                    and metadata_value.type == "ESCAPED_STRING"
-                ):
-                    yield BeancountTransaction(
-                        file=bean_path,
-                        lineno=last_txn.meta.line,
-                        id=json.loads(metadata_value.value),
-                    )
+                if metadata_value.type == "ESCAPED_STRING":
+                    metadata_value_str = json.loads(metadata_value.value)
+                    if metadata_key == constants.IMPORT_ID_KEY:
+                        import_id = metadata_value_str
+                    elif metadata_key == constants.IMPORT_OVERRIDE_KEY:
+                        import_override = parse_override_flags(metadata_value_str)
+        if last_txn is not None and import_id is not None:
+            yield BeancountTransaction(
+                file=bean_path,
+                lineno=last_txn.meta.line,
+                id=import_id,
+                override=import_override,
+            )
 
 
 def compute_changes(
@@ -82,8 +121,9 @@ def compute_changes(
         ):
             # it appears that the generated txn's file is different from the old one, let's remove it
             to_remove[txn.file].append(txn)
-        elif generated_txn is None:
-            # we have existing imported txn but has no corresponding generated txn, let's add it to danging txns
+        elif generated_txn is None and txn.override is None:
+            # we have existing imported txn without override flags but has no corresponding generated txn,
+            # let's add it to danging txns
             dangling_txns[txn.file].append(txn)
 
     to_add = collections.defaultdict(list)
@@ -94,7 +134,9 @@ def compute_changes(
         imported_txn = imported_id_txns.get(txn.id)
         generated_file = (work_dir / txn.file).resolve()
         if imported_txn is not None and imported_txn.file.resolve() == generated_file:
-            to_update[generated_file][imported_txn.lineno] = txn
+            to_update[generated_file][imported_txn.lineno] = TransactionUpdate(
+                txn=txn, override=imported_txn.override
+            )
         else:
             to_add[generated_file].append(txn)
 
@@ -182,6 +224,135 @@ def txn_to_text(
     )
 
 
+def extract_txn_statement(tree: Tree) -> TransactionStatement:
+    if tree.data != "statement":
+        raise ValueError("Expected a statement here")
+    date_directive = tree.children[0]
+    if date_directive.data != "date_directive":
+        raise ValueError("Expected a date_directive here")
+    txn = date_directive.children[0]
+    if txn.data != "txn":
+        raise ValueError("Expected a txn here")
+    date: Token
+    flag: Token
+    payee: Token | None
+    narration: Token
+    annoations: Tree | None
+    date, flag, payee, narration, annotations = txn.children
+    if annotations is not None:
+        annotation_values = [annotation.value for annotation in annotations.children]
+        links = list(filter(lambda v: v.startswith("^"), annotation_values))
+        links.sort()
+        hashes = list(filter(lambda v: v.startswith("#"), annotation_values))
+        hashes.sort()
+    else:
+        links = None
+        hashes = None
+    return TransactionStatement(
+        date=parse_date(date.value),
+        flag=flag.value,
+        payee=json.loads(payee.value) if payee is not None else None,
+        narration=json.loads(narration.value),
+        hashtags=hashes,
+        links=links,
+    )
+
+
+def gen_txn_statement(txn_statement: TransactionStatement) -> Tree:
+    return Tree(
+        Token("RULE", "statement"),
+        [
+            Tree(
+                Token("RULE", "date_directive"),
+                [
+                    Tree(
+                        Token("RULE", "txn"),
+                        [
+                            Token("DATE", str(txn_statement.date)),
+                            Token("FLAG", txn_statement.flag),
+                            Token("ESCAPED_STRING", json.dumps(txn_statement.payee))
+                            if txn_statement.payee is not None
+                            else None,
+                            Token(
+                                "ESCAPED_STRING", json.dumps(txn_statement.narration)
+                            ),
+                            gen_annotations(
+                                hashtags=txn_statement.hashtags,
+                                links=txn_statement.links,
+                            ),
+                        ],
+                    )
+                ],
+            ),
+            None,
+        ],
+    )
+
+
+def gen_annotations(hashtags: list[str] | None, links: list[str] | None) -> Tree | None:
+    if hashtags is None and links is None:
+        return
+    return Tree(
+        Token("RULE", "annotations"),
+        [
+            *(
+                Token("TAG", hashtag)
+                for hashtag in (hashtags if hashtags is not None else ())
+            ),
+            *(Token("LINK", link) for link in (links if links is not None else ())),
+        ],
+    )
+
+
+def update_transaction(
+    entry: Entry, transaction_update: TransactionUpdate, lineno: int
+) -> Entry:
+    parser = make_parser()
+    new_entry = to_parser_entry(
+        parser, txn_to_text(transaction_update.txn), lineno=lineno
+    )
+    if (
+        transaction_update.override is None
+        or ImportOverrideFlag.ALL in transaction_update.override
+    ):
+        return new_entry
+    elif ImportOverrideFlag.NONE in transaction_update.override:
+        return entry
+    replacement = {}
+    if frozenset(
+        [
+            ImportOverrideFlag.DATE,
+            ImportOverrideFlag.FLAG,
+            ImportOverrideFlag.PAYEE,
+            ImportOverrideFlag.NARRATION,
+            ImportOverrideFlag.HASHTAGS,
+            ImportOverrideFlag.LINKS,
+        ]
+    ).intersection(transaction_update.override):
+        txn_statement = extract_txn_statement(entry.statement)
+        new_txn_statement = extract_txn_statement(new_entry.statement)
+        replacement["statement"] = gen_txn_statement(
+            TransactionStatement(
+                **{
+                    name: getattr(new_txn_statement, name)
+                    if flag in transaction_update.override
+                    else getattr(txn_statement, name)
+                    for flag, name in [
+                        (ImportOverrideFlag.DATE, "date"),
+                        (ImportOverrideFlag.FLAG, "flag"),
+                        (ImportOverrideFlag.PAYEE, "payee"),
+                        (ImportOverrideFlag.NARRATION, "narration"),
+                        (ImportOverrideFlag.HASHTAGS, "hashtags"),
+                        (ImportOverrideFlag.LINKS, "links"),
+                    ]
+                }
+            )
+        )
+    if ImportOverrideFlag.POSTINGS in transaction_update.override:
+        replacement["postings"] = new_entry.postings
+    return entry._replace(**replacement)
+
+
 def apply_change_set(
     tree: Lark,
     change_set: ChangeSet,
@@ -195,9 +366,8 @@ def apply_change_set(
     if remove_dangling and change_set.dangling is not None:
         txns_to_remove += change_set.dangling
     lines_to_remove = [txn.lineno for txn in txns_to_remove]
-    line_to_entries = {
-        lineno: to_parser_entry(parser, txn_to_text(txn), lineno=lineno)
-        for lineno, txn in change_set.update.items()
+    line_to_updates = {
+        lineno: txn_update for lineno, txn_update in change_set.update.items()
     }
     entries_to_add = [
         # Set a super huge lineno to the new entry statement as beancount-black sorts entries based on (date, lineno).
@@ -243,7 +413,15 @@ def apply_change_set(
         if entry.statement.meta.line in lines_to_remove:
             # We also drop the comments
             continue
-        actual_entry = line_to_entries.get(entry.statement.meta.line, entry)
+        txn_update = line_to_updates.get(entry.statement.meta.line)
+        if txn_update is not None:
+            actual_entry = update_transaction(
+                entry=entry,
+                transaction_update=txn_update,
+                lineno=entry.statement.meta.line,
+            )
+        else:
+            actual_entry = entry
         # use comments from existing entry regardless
         new_children.extend(entry.comments)
         _expand_entry(actual_entry)
