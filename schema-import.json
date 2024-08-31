@@ -181,117 +181,27 @@
       "title": "ImportRule",
       "type": "object"
     },
-    "InputConfig": {
+    "IncludeRule": {
       "properties": {
-        "match": {
+        "include": {
           "anyOf": [
             {
               "type": "string"
             },
             {
-              "$ref": "#/$defs/StrExactMatch"
-            },
-            {
-              "$ref": "#/$defs/StrRegexMatch"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           ],
-          "title": "Match"
-        },
-        "config": {
-          "$ref": "#/$defs/InputConfigDetails"
+          "title": "Include"
         }
       },
       "required": [
-        "match",
-        "config"
+        "include"
       ],
-      "title": "InputConfig",
-      "type": "object"
-    },
-    "InputConfigDetails": {
-      "properties": {
-        "extractor": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Extractor"
-        },
-        "default_file": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Default File"
-        },
-        "prepend_postings": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/PostingTemplate"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Prepend Postings"
-        },
-        "appending_postings": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/PostingTemplate"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Appending Postings"
-        },
-        "append_postings": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/PostingTemplate"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Append Postings"
-        },
-        "default_txn": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/TransactionTemplate"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        }
-      },
-      "title": "InputConfigDetails",
+      "title": "IncludeRule",
       "type": "object"
     },
     "MetadataItemTemplate": {
@@ -310,29 +220,6 @@
         "value"
       ],
       "title": "MetadataItemTemplate",
-      "type": "object"
-    },
-    "OutputConfig": {
-      "properties": {
-        "match": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "$ref": "#/$defs/StrExactMatch"
-            },
-            {
-              "$ref": "#/$defs/StrRegexMatch"
-            }
-          ],
-          "title": "Match"
-        }
-      },
-      "required": [
-        "match"
-      ],
-      "title": "OutputConfig",
       "type": "object"
     },
     "PostingTemplate": {
@@ -1015,19 +902,6 @@
       "title": "StrPrefixMatch",
       "type": "object"
     },
-    "StrRegexMatch": {
-      "properties": {
-        "regex": {
-          "title": "Regex",
-          "type": "string"
-        }
-      },
-      "required": [
-        "regex"
-      ],
-      "title": "StrRegexMatch",
-      "type": "object"
-    },
     "StrSuffixMatch": {
       "properties": {
         "suffix": {
@@ -1205,53 +1079,16 @@
       "type": "object"
     }
   },
-  "properties": {
-    "context": {
-      "anyOf": [
-        {
-          "type": "object"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Context"
-    },
-    "inputs": {
-      "items": {
-        "$ref": "#/$defs/InputConfig"
-      },
-      "title": "Inputs",
-      "type": "array"
-    },
-    "imports": {
-      "items": {
+  "items": {
+    "anyOf": [
+      {
         "$ref": "#/$defs/ImportRule"
       },
-      "title": "Imports",
-      "type": "array"
-    },
-    "outputs": {
-      "anyOf": [
-        {
-          "items": {
-            "$ref": "#/$defs/OutputConfig"
-          },
-          "type": "array"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Outputs"
-    }
+      {
+        "$ref": "#/$defs/IncludeRule"
+      }
+    ]
   },
-  "required": [
-    "inputs",
-    "imports"
-  ],
-  "title": "ImportDoc",
-  "type": "object"
+  "title": "ImportList",
+  "type": "array"
 }

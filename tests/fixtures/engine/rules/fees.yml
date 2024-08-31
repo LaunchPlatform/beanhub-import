@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=../../../../schema-import.json
+
+- name: "Subscription fees from something"
+  match:
+    desc: "Subscription fee"
+  actions:
+    - txn:
+        metadata:
+          - name: "subscription"
+            value: "true"
+        postings:
+          - account: "Assets:Bank"
+          - account: "Expenses:Entertainment:Subscription"
+            amount:
+              number: "{{ -amount }}"
+              currency: "{{ currency | default('AUD', true) }}"

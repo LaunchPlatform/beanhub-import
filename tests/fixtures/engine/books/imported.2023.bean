@@ -1,0 +1,54 @@
+2023-01-01 * "Payment for services"
+  import-id: "imports/agrimaster.csv:-1"
+  import-src: "imports/agrimaster.csv"
+  Expenses:Unknown
+  Assets:Bank                                                500.00 AUD
+
+2023-01-02 * "Invoice payment"
+  import-id: "imports/agrimaster.csv:-2"
+  import-src: "imports/agrimaster.csv"
+  Expenses:Unknown
+  Assets:Bank                                               -750.00 AUD
+
+2023-01-03 * "Refund for order"
+  import-id: "imports/agrimaster.csv:-3"
+  import-src: "imports/agrimaster.csv"
+  Expenses:Unknown
+  Assets:Bank                                                200.00 AUD
+
+2023-01-04 * "Salary payment"
+  import-id: "imports/agrimaster.csv:-4"
+  import-src: "imports/agrimaster.csv"
+  Expenses:Unknown
+  Assets:Bank                                             -1,500.00 AUD
+
+2023-01-05 * "Utility bill"
+  import-id: "imports/agrimaster.csv:-5"
+  import-src: "imports/agrimaster.csv"
+  Expenses:Unknown
+  Assets:Bank                                                100.00 AUD
+
+2023-01-06 * "Subscription fee"
+  import-id: "imports/agrimaster.csv:-6"
+  import-src: "imports/agrimaster.csv"
+  subscription: "true"
+  Assets:Bank
+  Expenses:Entertainment:Subscription                         50.00 AUD
+
+2023-01-07 * "Loan repayment"
+  import-id: "imports/agrimaster.csv:-7"
+  import-src: "imports/agrimaster.csv"
+  Expenses:Unknown
+  Assets:Bank                                                300.00 AUD
+
+2023-01-08 * "Dividend payment"
+  import-id: "imports/agrimaster.csv:-8"
+  import-src: "imports/agrimaster.csv"
+  Expenses:Unknown
+  Assets:Bank                                               -200.00 AUD
+
+2023-01-09 * "Purchase at store"
+  import-id: "imports/agrimaster.csv:-9"
+  import-src: "imports/agrimaster.csv"
+  Expenses:Unknown
+  Assets:Bank                                                150.00 AUD

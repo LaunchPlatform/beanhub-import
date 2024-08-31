@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=../../../schema.json
+
+inputs:
+  - match: "imports/*.csv"
+    config:
+      # import path is relative to the location of the configuration file
+      # so this will import the `AgrimasterCsvExtractor` class from the
+      # file tests/fixtures/integration/importer/agrimaster_csv.py
+      extractor: tests.fixtures.importer.agrimaster:AgrimasterCsvExtractor
+      default_file: "books/imported.{{ date.year }}.bean"
+      default_txn:
+        date: "{{ date }}"
+        narration: "{{ desc }}"
+        meta: "{{ meta }}"
+        postings:
+          - account: "{{ account }}"
+            amount:
+              number: "{{ amount }}"
+              currency: "{{ currency | default('AUD', true) }}"
+
+imports:
+  - include: "rules/fees.yml"
+  - include: "rules/uknown.yml"

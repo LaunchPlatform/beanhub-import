@@ -25,86 +25,19 @@ poetry add beancount-import-rules
 
 ## Usage
 
-1. create a `.beancount_import_rules.yml` file in the root of your beancount project
-   1. or you can point to a different file by setting the `BEANHUB_IMPORT_RULES_FILE` environment variable
+1. create a `import.yml` file.
 2. define your import rules in the file; see below for the schema
-   1. to the top of your rules file, add `# yaml-language-server: $schema=https://raw.githubusercontent.com/zenobi-us/beancount-importer-rules/master/beancount-import.schema.json` for schema hints.
+   1. to the top of your rules file, add `# yaml-language-server: $schema=https://raw.githubusercontent.com/zenobi-us/beancount-importer-rules/master/schema.json` for schema hints.
 3. run `beancount-import import` to import transactions
-
-
-```sh
-[19:01:30] INFO     Loaded import doc from import.yaml                                                                                                 cli.py:110
-           INFO     Processing file imports/mercury.csv with extractor importer.agrimaster_csv:AgrimasterCsvExtractor                            processor.py:414
-           INFO     Generated transaction imports/mercury.csv:-9 to file output.bean                                                                   cli.py:129
-           INFO     Generated transaction imports/mercury.csv:-8 to file output.bean                                                                   cli.py:129
-           INFO     Generated transaction imports/mercury.csv:-7 to file output.bean                                                                   cli.py:129
-           INFO     Generated transaction imports/mercury.csv:-6 to file output.bean                                                                   cli.py:129
-           INFO     Generated transaction imports/mercury.csv:-5 to file output.bean                                                                   cli.py:129
-           INFO     Generated transaction imports/mercury.csv:-4 to file output.bean                                                                   cli.py:129
-           INFO     Generated transaction imports/mercury.csv:-3 to file output.bean                                                                   cli.py:129
-           INFO     Generated transaction imports/mercury.csv:-2 to file output.bean                                                                   cli.py:129
-           INFO     Generated transaction imports/mercury.csv:-1 to file output.bean                                                                   cli.py:129
-           INFO     Generated transaction imports/mercury.csv:0 to file output.bean                                                                    cli.py:129
-           INFO     Generated 10 transactions                                                                                                          cli.py:154
-           INFO     Deleted 0 transactions                                                                                                             cli.py:155
-           INFO     Skipped 0 transactions                                                                                                             cli.py:156
-           INFO     Collecting existing imported transactions from Beancount books ...                                                                 cli.py:167
-           INFO     Found 4 existing imported transactions in Beancount books                                                                          cli.py:178
-           INFO     Applying change sets (add=10, update=0, remove=0, dangling=0) with remove_dangling=False to                                        cli.py:203
-           INFO     Calculate column width                                                                                                       formatter.py:646
-           INFO     Collecting                                                                                                                   formatter.py:130
-           INFO     Applying change sets (add=0, update=0, remove=0, dangling=4) with remove_dangling=False to                                         cli.py:203
-           INFO     Calculate column width                                                                                                       formatter.py:646
-           INFO     Collecting                                                                                                                   formatter.py:130
-
-                                                                        Deleted transactions
-
-      File                                                                                          Id
-     ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-
-                                                                   Dangling Transactions (Ignored)
-
-      File                                                                                                                                                Id
-     ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-      tests/fixtures/integration/simple.bean:5                                                                                                            id0
-      tests/fixtures/integration/simple.bean:13                                                                                                           id1
-      tests/fixtures/integration/simple.bean:18                                                                                                           id2
-      tests/fixtures/integration/simple.bean:29                                                                                                           id3
-
-
-                                                                       Generated transactions
-
-      File                   Id                                       Source                             Date                 Narration
-     ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-      output.bean            imports/mercury.csv:-9                   imports/mercury.csv                2023-01-10           Transfer to savings
-      output.bean            imports/mercury.csv:-8                   imports/mercury.csv                2023-01-09           Purchase at store
-      output.bean            imports/mercury.csv:-7                   imports/mercury.csv                2023-01-08           Dividend payment
-      output.bean            imports/mercury.csv:-6                   imports/mercury.csv                2023-01-07           Loan repayment
-      output.bean            imports/mercury.csv:-5                   imports/mercury.csv                2023-01-06           Subscription fee
-      output.bean            imports/mercury.csv:-4                   imports/mercury.csv                2023-01-05           Utility bill
-      output.bean            imports/mercury.csv:-3                   imports/mercury.csv                2023-01-04           Salary payment
-      output.bean            imports/mercury.csv:-2                   imports/mercury.csv                2023-01-03           Refund for order
-      output.bean            imports/mercury.csv:-1                   imports/mercury.csv                2023-01-02           Invoice payment
-      output.bean            imports/mercury.csv:0                    imports/mercury.csv                2023-01-01           Payment for services
-
-
-                                                                      Unprocessed transactions
-
-      File          Line          Id        Extractor                Date          Desc          Bank Desc                         Amount   Currency
-     ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-           INFO     done
-```
 
 
 
 ## Example
 
-`.beancount_import_rules.yaml`.
+`import.yaml`.
 
 ```yml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/zenobi-us/beancount-importer-rules/master/beancount-import.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/zenobi-us/beancount-importer-rules/master/schema.json
 
 # the `context` defines global variables to be referenced in the Jinja2 template for
 # generating transactions
@@ -240,7 +173,12 @@ imports:
       # ignore action is a special type of import rule action to tell the importer to ignore the
       # transaction so that it won't show up in the "unprocessed" section in the import result
       - type: ignore
+```
 
+Then, run the following command to import the transactions:
+
+```sh
+beancount-import import
 ```
 
 ## Scheme definition

@@ -1,0 +1,1290 @@
+{
+  "$defs": {
+    "ActionAddTxn": {
+      "properties": {
+        "type": {
+          "const": "add_txn",
+          "default": "add_txn",
+          "enum": [
+            "add_txn"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        },
+        "txn": {
+          "$ref": "#/$defs/TransactionTemplate"
+        }
+      },
+      "required": [
+        "txn"
+      ],
+      "title": "ActionAddTxn",
+      "type": "object"
+    },
+    "ActionDelTxn": {
+      "properties": {
+        "type": {
+          "const": "del_txn",
+          "default": "del_txn",
+          "enum": [
+            "del_txn"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "txn": {
+          "$ref": "#/$defs/DeleteTransactionTemplate"
+        }
+      },
+      "required": [
+        "txn"
+      ],
+      "title": "ActionDelTxn",
+      "type": "object"
+    },
+    "ActionIgnore": {
+      "properties": {
+        "type": {
+          "const": "ignore",
+          "default": "ignore",
+          "enum": [
+            "ignore"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "ActionIgnore",
+      "type": "object"
+    },
+    "AmountTemplate": {
+      "properties": {
+        "number": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Number"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        }
+      },
+      "title": "AmountTemplate",
+      "type": "object"
+    },
+    "DeleteTransactionTemplate": {
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        }
+      },
+      "title": "DeleteTransactionTemplate",
+      "type": "object"
+    },
+    "ImportList": {
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ImportRule"
+          },
+          {
+            "$ref": "#/$defs/IncludeRule"
+          }
+        ]
+      },
+      "title": "ImportList",
+      "type": "array"
+    },
+    "ImportRule": {
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "common_cond": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SimpleTxnMatchRule"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "match": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SimpleTxnMatchRule"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/TxnMatchVars"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Match"
+        },
+        "actions": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ActionAddTxn"
+              },
+              {
+                "$ref": "#/$defs/ActionDelTxn"
+              },
+              {
+                "$ref": "#/$defs/ActionIgnore"
+              }
+            ]
+          },
+          "title": "Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "match",
+        "actions"
+      ],
+      "title": "ImportRule",
+      "type": "object"
+    },
+    "IncludeRule": {
+      "properties": {
+        "include": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Include"
+        }
+      },
+      "required": [
+        "include"
+      ],
+      "title": "IncludeRule",
+      "type": "object"
+    },
+    "InputConfig": {
+      "properties": {
+        "match": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrRegexMatch"
+            }
+          ],
+          "title": "Match"
+        },
+        "config": {
+          "$ref": "#/$defs/InputConfigDetails"
+        }
+      },
+      "required": [
+        "match",
+        "config"
+      ],
+      "title": "InputConfig",
+      "type": "object"
+    },
+    "InputConfigDetails": {
+      "properties": {
+        "extractor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extractor"
+        },
+        "default_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default File"
+        },
+        "prepend_postings": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/PostingTemplate"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prepend Postings"
+        },
+        "appending_postings": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/PostingTemplate"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Appending Postings"
+        },
+        "append_postings": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/PostingTemplate"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Append Postings"
+        },
+        "default_txn": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TransactionTemplate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "InputConfigDetails",
+      "type": "object"
+    },
+    "MetadataItemTemplate": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "title": "MetadataItemTemplate",
+      "type": "object"
+    },
+    "OutputConfig": {
+      "properties": {
+        "match": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrRegexMatch"
+            }
+          ],
+          "title": "Match"
+        }
+      },
+      "required": [
+        "match"
+      ],
+      "title": "OutputConfig",
+      "type": "object"
+    },
+    "PostingTemplate": {
+      "properties": {
+        "account": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Account"
+        },
+        "amount": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AmountTemplate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "price": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AmountTemplate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cost": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost"
+        }
+      },
+      "title": "PostingTemplate",
+      "type": "object"
+    },
+    "SimpleTxnMatchRule": {
+      "properties": {
+        "extractor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extractor"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        },
+        "date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date"
+        },
+        "post_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Post Date"
+        },
+        "timezone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        },
+        "desc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Desc"
+        },
+        "bank_desc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bank Desc"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "subcategory": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subcategory"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        },
+        "source_account": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Account"
+        },
+        "dest_account": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dest Account"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference"
+        },
+        "payee": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Payee"
+        },
+        "gl_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gl Code"
+        },
+        "name_on_card": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name On Card"
+        },
+        "last_four_digits": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Four Digits"
+        },
+        "transaction_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StrPrefixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrSuffixMatch"
+            },
+            {
+              "$ref": "#/$defs/StrExactMatch"
+            },
+            {
+              "$ref": "#/$defs/StrContainsMatch"
+            },
+            {
+              "$ref": "#/$defs/StrOneOfMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Transaction Id"
+        }
+      },
+      "title": "SimpleTxnMatchRule",
+      "type": "object"
+    },
+    "StrContainsMatch": {
+      "properties": {
+        "contains": {
+          "title": "Contains",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contains"
+      ],
+      "title": "StrContainsMatch",
+      "type": "object"
+    },
+    "StrExactMatch": {
+      "properties": {
+        "equals": {
+          "title": "Equals",
+          "type": "string"
+        }
+      },
+      "required": [
+        "equals"
+      ],
+      "title": "StrExactMatch",
+      "type": "object"
+    },
+    "StrOneOfMatch": {
+      "properties": {
+        "one_of": {
+          "items": {
+            "type": "string"
+          },
+          "title": "One Of",
+          "type": "array"
+        }
+      },
+      "required": [
+        "one_of"
+      ],
+      "title": "StrOneOfMatch",
+      "type": "object"
+    },
+    "StrPrefixMatch": {
+      "properties": {
+        "prefix": {
+          "title": "Prefix",
+          "type": "string"
+        }
+      },
+      "required": [
+        "prefix"
+      ],
+      "title": "StrPrefixMatch",
+      "type": "object"
+    },
+    "StrRegexMatch": {
+      "properties": {
+        "regex": {
+          "title": "Regex",
+          "type": "string"
+        }
+      },
+      "required": [
+        "regex"
+      ],
+      "title": "StrRegexMatch",
+      "type": "object"
+    },
+    "StrSuffixMatch": {
+      "properties": {
+        "suffix": {
+          "title": "Suffix",
+          "type": "string"
+        }
+      },
+      "required": [
+        "suffix"
+      ],
+      "title": "StrSuffixMatch",
+      "type": "object"
+    },
+    "TransactionTemplate": {
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date"
+        },
+        "flag": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Flag"
+        },
+        "narration": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Narration"
+        },
+        "payee": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Payee"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tags"
+        },
+        "links": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Links"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/MetadataItemTemplate"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "postings": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/PostingTemplate"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Postings"
+        }
+      },
+      "title": "TransactionTemplate",
+      "type": "object"
+    },
+    "TxnMatchVars": {
+      "properties": {
+        "cond": {
+          "$ref": "#/$defs/SimpleTxnMatchRule"
+        },
+        "vars": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vars"
+        }
+      },
+      "required": [
+        "cond"
+      ],
+      "title": "TxnMatchVars",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "context": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Context"
+    },
+    "inputs": {
+      "items": {
+        "$ref": "#/$defs/InputConfig"
+      },
+      "title": "Inputs",
+      "type": "array"
+    },
+    "imports": {
+      "$ref": "#/$defs/ImportList"
+    },
+    "outputs": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/OutputConfig"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Outputs"
+    }
+  },
+  "required": [
+    "inputs",
+    "imports"
+  ],
+  "title": "ImportDoc",
+  "type": "object"
+}

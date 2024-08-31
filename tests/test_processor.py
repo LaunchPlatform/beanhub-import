@@ -38,6 +38,7 @@ from beancount_importer_rules.data_types import (
     UnprocessedTransaction,
 )
 from beancount_importer_rules.extractor import create_extractor_factory
+from beancount_importer_rules.includes import resolve_includes
 from beancount_importer_rules.processor import (
     match_file,
     match_str,
@@ -946,9 +947,13 @@ def test_process_imports(
 
     doc = ImportDoc.model_validate(payload)
 
+    imports = resolve_includes(workdir_path=fixtures_folder, rules=doc.imports.root)
+
     result = list(
         process_imports(
-            import_doc=doc,
+            context=doc.context,
+            imports=imports,
+            inputs=doc.inputs,
             input_dir=folder_path,
             extractor_factory=extractor_factory,
         )

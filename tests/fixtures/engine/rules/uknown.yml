@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../../../../schema-import.json
+
+- match:
+    desc: ".*"
+  actions:
+    - txn:
+        postings:
+          - account: "Expenses:Unknown"
+          - account: "Assets:Bank"
+            amount:
+              number: "{{ -amount }}"
+              currency: "{{ currency | default('AUD', true) }}"

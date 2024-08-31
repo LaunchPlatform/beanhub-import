@@ -1,8 +1,6 @@
-import dataclasses
 import enum
 import logging
 
-import click
 from beancount_black.formatter import VERBOSE_LOG_LEVEL
 
 
@@ -26,10 +24,10 @@ LOG_LEVEL_MAP = {
 }
 
 
-@dataclasses.dataclass
-class Environment:
-    log_level: LogLevel = LogLevel.INFO
-    logger: logging.Logger = logging.getLogger("beanhub_cli")
+# @dataclasses.dataclass
+# class Environment:
+#     log_level: LogLevel = LogLevel.INFO
+#     logger: logging.Logger = logging.getLogger("beanhub_cli")
 
 
-pass_env = click.make_pass_decorator(Environment, ensure=True)
+# pass_env = click.make_pass_decorator(Environment, ensure=True)
