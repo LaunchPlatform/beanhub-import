@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/zenobi-us/beancount-importer-rules/compare/v0.1.1...v0.1.2) (2024-08-31)
+
+
+### Bug Fixes
+
+* Support including import rules from other files ([#8](https://github.com/zenobi-us/beancount-importer-rules/issues/8)) ([1df5c85](https://github.com/zenobi-us/beancount-importer-rules/commit/1df5c85e95ac884aaaaf46303a87360b1583f4ef))
+
 ## [0.1.1](https://github.com/zenobi-us/beancount-importer-rules/compare/v0.1.0...v0.1.1) (2024-08-30)
 
 
