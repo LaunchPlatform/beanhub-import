@@ -98,6 +98,31 @@ class StrSuffixMatch(ImportBaseModel):
     suffix: str
 
 
+class DateBeforeMatch(ImportBaseModel):
+    date_before: str
+    format: str
+
+
+class DateAfterMatch(ImportBaseModel):
+    date_after: str
+    format: str
+
+
+class DateSameDayMatch(ImportBaseModel):
+    date_same_day: str
+    format: str
+
+
+class DateSameMonthMatch(ImportBaseModel):
+    date_same_month: str
+    format: str
+
+
+class DateSameYearMatch(ImportBaseModel):
+    date_same_year: str
+    format: str
+
+
 class StrContainsMatch(ImportBaseModel):
     contains: str
 
@@ -109,6 +134,11 @@ StrMatch = (
     | StrExactMatch
     | StrContainsMatch
     | StrOneOfMatch
+    | DateAfterMatch
+    | DateBeforeMatch
+    | DateSameDayMatch
+    | DateSameMonthMatch
+    | DateSameYearMatch
 )
 
 
