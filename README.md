@@ -25,161 +25,123 @@ poetry add beancount-import-rules
 
 ## Usage
 
-1. create a `import.yml` file.
-2. define your import rules in the file; see below for the schema
-   1. to the top of your rules file, add `# yaml-language-server: $schema=https://raw.githubusercontent.com/zenobi-us/beancount-importer-rules/master/schema.json` for schema hints.
-3. run `beancount-import import` to import transactions
-
-
-
-## Example
-
-`import.yaml`.
+Create a `import.yml` file. Define some source files and import transform rules.
 
 ```yml
 # yaml-language-server: $schema=https://raw.githubusercontent.com/zenobi-us/beancount-importer-rules/master/schema.json
 
-# the `context` defines global variables to be referenced in the Jinja2 template for
-# generating transactions
-context:
-  routine_expenses:
-    "Amazon Web Services":
-      account: Expenses:Engineering:Servers:AWS
-    Netlify:
-      account: Expenses:Engineering:ServiceSubscription
-    Mailchimp:
-      account: Expenses:Marketing:ServiceSubscription
-    Circleci:
-      account: Expenses:Engineering:ServiceSubscription
-    Adobe:
-      account: Expenses:Design:ServiceSubscription
-    Digital Ocean:
-      account: Expenses:Engineering:ServiceSubscription
-    Microsoft:
-      account: Expenses:Office:Supplies:SoftwareAsService
-      narration: "Microsoft 365 Apps for Business Subscription"
-    Mercury IO Cashback:
-      account: Expenses:CreditCardCashback
-      narration: "Mercury IO Cashback"
-    WeWork:
-      account: Expenses:Office
-      narration: "Virtual mailing address service fee from WeWork"
-
-# the `inputs` defines which files to import, what type of extractor to use,
-# and other configurations, such as `prepend_postings` or default values for generating
-# a transaction
 inputs:
-  - match: "import-data/mercury/*.csv"
+  - match: "import-data/some-folder/*.csv"
     config:
-      # use `mercury` extractor for extracting transactions from the input file
-      extractor: beanhub_extract.extractors.mercury:MercuryExtractor
-      # the default output file to use
+      # this will be imported as a python module and the ExtractorClass will be used
+      extractor: some.valid.python.path:YourCustomCsvExtractor
+      # this will be used to compute which file each resulting transaction will be written to
       default_file: "books/{{ date.year }}.bean"
-      # postings to prepend for all transactions generated from this input file
+      # these postings will be prepended to each transaction
       prepend_postings:
-        - account: Assets:Bank:US:Mercury
+        - account: Assets:Bank:Cash
           amount:
             number: "{{ amount }}"
             currency: "{{ currency | default('USD', true) }}"
 
-# the `imports` defines the rules to match transactions extracted from the input files and
-# how to generate the transaction
 imports:
-  - name: Routine expenses
+  # name of the rule
+  - name: Tax deductable investment costs
     match:
-      extractor:
-        equals: "mercury"
-      desc:
-        one_of:
-          - Amazon Web Services
-          - Netlify
-          - Mailchimp
-          - Circleci
-          - WeWork
-          - Adobe
-          - Digital Ocean
-          - Microsoft
-          - Mercury IO Cashback
-    actions:
-      # generate a transaction into the beancount file
-      - file: "books/{{ date.year }}.bean"
-        txn:
-          narration: "{{ routine_expenses[desc].narration | default(desc, true) | default(bank_desc, true) }}"
-          postings:
-            - account: "{{ routine_expenses[desc].account }}"
-              amount:
-                number: "{{ -amount }}"
-                currency: "{{ currency | default('USD', true) }}"
-
-  # To avoid many match/actions statements for mostly identical transaction template,
-  # you can also define different match conditions and the corresponding variables for the transaction template
-  - name: Routine Wells Fargo expenses
-    # the condition shared but all the matches
-    common_cond:
-      extractor:
-        equals: "plaid"
+      # the csv file being processed must match this pattern
       file:
-        suffix: "(.+)/Wells Fargo/(.+).csv"
-    match:
-      - cond:
-          desc: "Comcast"
-        vars:
-          account: Expenses:Internet:Comcast
-          narration: "Comcast internet fee"
-      - cond:
-          desc: "PG&E"
-        vars:
-          account: Expenses:Gas:PGE
-          narration: "PG&E Gas"
-    actions:
-      # generate a transaction into the beancount file
-      - file: "books/{{ date.year }}.bean"
-        txn:
-          payee: "{{ payee | default(omit, true) }}"
-          narration: "{{ narration | default(desc, true) | default(bank_desc, true) }}"
-          postings:
-            - account: "{{ account }}"
-              amount:
-                number: "{{ -amount }}"
-                currency: "{{ currency | default('USD', true) }}"
-
-  - name: Receive payments from contracting client
-    match:
-      extractor:
-        equals: "mercury"
+        suffix: "(.+)/InvestmentPropertyFoo/(.+).csv"
+      # AND the date field must be before 2024-01-01
+      date:
+        date_before: 2024-01-02
+        date_format: "YYYY-MM-DD"
+      # AND the decription field must contain "Bank Fees"
       desc:
-        equals: Evil Corp
+        contains: Bank Fees
+    # if this matches, then we perform the following actions
     actions:
       - txn:
-          narration: "Receive payment from Evil Corp"
+          metadata:
+            - name: tax-rule
+              value: "deductable"
           postings:
-            - account: "Assets:AccountsReceivable:EvilCorpContracting"
+            # create a posting with the following account and amount
+            - account: Expenses:Bank:Fees:InvestmentPropertyFoo
               amount:
-                number: "{{ -amount / 300 }}"
-                currency: "EVIL.WORK_HOUR"
-              price:
-                number: "300.0"
-                currency: "USD"
-
-  - name: Ignore unused entries
-    match:
-      extractor:
-        equals: "mercury"
-      desc:
-        one_of:
-        - Mercury Credit
-        - Mercury Checking xx1234
-    actions:
-      # ignore action is a special type of import rule action to tell the importer to ignore the
-      # transaction so that it won't show up in the "unprocessed" section in the import result
-      - type: ignore
+                # fee amounts in this csv are already negative, so we negate it again
+                # to make it positive. (expense records cant be negative)
+                number: "{{ -amount }}"
+                currency: "{{ currency | default('AUD', true) }}"
 ```
 
-Then, run the following command to import the transactions:
+Create a python file with the extractor class.
+
+
+```python
+# ./some/valid/python/path.py
+import decimal
+import typing
+
+from beancount_importer_rules.data_types import Transaction
+from beancount_importer_rules.extractor import ExtractorCsvBase
+
+
+class YourCustomCsvExtractor(ExtractorCsvBase):
+    name: str = "your-extractor-name"
+    fields: typing.List[str] = [
+        "Date",
+        "Description",
+        "Amount",
+    ]
+    date_format: str = "%d/%m/%Y"
+    date_field: str = "Date"
+
+    def process_line(self, lineno: int, line: typing.Dict[str, str]) -> Transaction:
+        date = self.parse_date(line.pop("Date"))
+        description = line.pop("Description")
+        amount = decimal.Decimal(line.pop("Amount"))
+
+        return Transaction(
+            # The following fields are common to all extractors and required
+            extractor=self.name,
+            file=self.filename,
+            lineno=lineno + 1,
+            reversed_lineno=lineno - self.line_count,
+            extra=line,
+
+            # The following fields are unique to this extractor
+            date=date,
+            amount=amount,
+            desc=description,
+        )
+```
+
+The with a csv file like this:
+
+```csv
+Date,Description,Amount
+2024-01-01,Bank Fees,-10.00
+2024-01-02,Interest,5.00
+2024-01-02,Loan Payment,-20.00
+```
+
+And running the import command:
 
 ```sh
-beancount-import import
+$ beancount-import import
 ```
+
+Will generate the following beancount transactions:
+
+```beancount
+; books/2024.bean
+2024-01-01 * "Bank Fees"
+  tax-rule: "deductable"
+  Assets:Bank:Cash                          -10.00 USD
+  Expenses:Bank:Fees:InvestmentPropertyFoo   10.00 USD
+```
+
+
 
 ## Scheme definition
 
