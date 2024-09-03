@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/zenobi-us/beancount-importer-rules/compare/v0.1.2...v0.1.3) (2024-09-03)
+
+
+### Features
+
+* matchers now support comparing dates ([#10](https://github.com/zenobi-us/beancount-importer-rules/issues/10)) ([85e6355](https://github.com/zenobi-us/beancount-importer-rules/commit/85e6355a1a4b134c5e1c12b006fc2689b523651c))
+
 ## [0.1.2](https://github.com/zenobi-us/beancount-importer-rules/compare/v0.1.1...v0.1.2) (2024-08-31)
 
 
