@@ -5,7 +5,6 @@ import pathlib
 import re
 import typing
 import uuid
-import warnings
 
 import arrow
 import yaml
@@ -302,14 +301,7 @@ def process_transaction(
             elif default_txn is not None and default_txn.postings is not None:
                 posting_templates.extend(default_txn.postings)
 
-            if input_config.appending_postings is not None:
-                warnings.warn(
-                    'The "appending_postings" field is deprecated, please use "append_postings" instead',
-                    DeprecationWarning,
-                )
-                posting_templates.extend(input_config.appending_postings)
-
-            elif input_config.append_postings is not None:
+            if input_config.append_postings is not None:
                 posting_templates.extend(input_config.append_postings)
 
             generated_tags = process_links_or_tags(action.txn.tags)
@@ -470,42 +462,43 @@ def process_imports(
             if not match_file(input_config.match, filepath):
                 continue
             rel_filepath = filepath.relative_to(input_dir)
-            extractor_name = input_config.config.extractor
+            extractor = input_config.config.extractor
 
-            if extractor_name is None:
+            if extractor is None:
                 raise ValueError(
                     f"Extractor not specified for {rel_filepath} and the extractor type cannot be automatically detected"
                 )
 
             ExtractorKlass = None
             try:
-                ExtractorKlass = extractor_factory(extractor_name)
+                ExtractorKlass = extractor_factory(extractor)
             except ExtractorClassNotFoundError:
                 logger.warning(
                     "Extractor %s not found for file %s, skip",
-                    extractor_name,
+                    extractor.import_path,
                     rel_filepath,
                 )
                 continue
             except ExtractorImportError:
                 logger.warning(
                     "Could not import module %s for file %s, skip",
-                    extractor_name,
+                    extractor.import_path,
                     rel_filepath,
                 )
                 continue
             except ExtractorClassNotSubclassError:
                 logger.warning(
                     "Extractor %s found for file %s; But it does not correctly subclass ExtractorBase, skip",
-                    extractor_name,
+                    extractor.import_path,
                     rel_filepath,
                 )
                 continue
 
             logger.info(
-                "Processing file %s with extractor %s", rel_filepath, extractor_name
+                "Processing file %s with extractor %s",
+                rel_filepath,
+                extractor.import_path,
             )
-
             with filepath.open("rt") as fo:
                 extractor = ExtractorKlass(fo)
                 for transaction in extractor.process():

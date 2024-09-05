@@ -20,6 +20,7 @@ jobs:
   Process:
     runs-on: ubuntu-latest
     outputs:
+      release_version: ${{ steps.release-please.outputs.major }}.${{ steps.release-please.outputs.minor }}.${{ steps.release-please.outputs.patch }}
       releases_created: ${{ steps.release-please.outputs.releases_created }}
       prs_created: ${{ steps.release-please.outputs.prs_created }}
     steps:
@@ -122,6 +123,10 @@ jobs:
         run: |
           echo 'Release PR Merged.'
           pdm publish --repository pypi
+          mike deploy {{needs.Process.outputs.release_version}} \
+            --push-branch=master \
+            --push-remote=origin \
+            --update-aliases=latest
 
       - if: ${{ needs.Process.outputs.prs_created == 'true' }}
         run: |

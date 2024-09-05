@@ -9,9 +9,13 @@ import typing
 from importlib import import_module
 from pathlib import Path
 
-from beancount_importer_rules.data_types import Fingerprint, Transaction
+from beancount_importer_rules.data_types import (
+    ExractorInputConfig,
+    Fingerprint,
+    Transaction,
+)
 
-type ExtractorFactory = typing.Callable[[str], type[ExtractorBase]]
+type ExtractorFactory = typing.Callable[[ExractorInputConfig], type[ExtractorBase]]
 
 
 class ExtractorError(Exception):
@@ -64,9 +68,9 @@ def create_extractor_factory(
     working_dir = working_dir
     sys.path.append(str(working_dir))
 
-    def get_extractor(extrator_name: str) -> type[ExtractorBase]:
+    def get_extractor(extractor: ExractorInputConfig) -> type[ExtractorBase]:
         # set the import path to the working directory
-        bits = extrator_name.split(":")
+        bits = extractor.import_path.split(":")
         module_import = bits[0]
         module_class = bits[1] if len(bits) > 1 else class_name
 
@@ -101,6 +105,24 @@ DEFAULT_IMPORT_ID_TEMPLATE: str = "{{ file | as_posix_path }}:{{ reversed_lineno
 
 
 class ExtractorBase:
+    """
+    Base class for extractors
+
+    Examples
+
+        class MyExtractor(ExtractorBase):
+            def detect(self):
+                return True
+
+            def process(self):
+                yield Transaction(
+                    date=datetime.date.today(),
+                    narration="Test transaction",
+                    amount=Decimal("10.00"),
+                    currency="USD",
+                )
+    """
+
     input_file: typing.TextIO
     """The input file to be processed"""
 
@@ -141,6 +163,25 @@ class ExtractorCsvBase(ExtractorBase):
     """
     Base class for CSV extractors
     """
+
+    def __getting_started__(self):
+        """
+        Create a file called `extractors/csv.py` by
+        subclassing [`ExtractorCsvBase`][beancount_importer_rules.extractor.ExtractorCsvBase]:
+
+
+            class MyCsvExtractor(ExtractorCsvBase):
+
+                fields = ["Date", "Description", "Amount", "Currency"]
+
+                def process_line(self, lineno, line):
+                    return Transaction(
+                        date=self.parse_date(line["Date"]),
+                        narration=line["Description"],
+                        amount=Decimal(line["Amount"]),
+                        currency=line["Currency"],
+                    )
+        """
 
     date_format: str = "%d/%m/%Y"
     """The date format the CSV file uses"""

@@ -61,6 +61,45 @@ def import_cmd(
     remove_dangling: bool,
     log_level: str,
 ):
+    """
+    Import transactions from external sources to Beancount files:
+
+        > tree .
+        workspace/
+            ├── importer_config.yaml
+            ├── importers/
+            │   ├── extractors/
+            │   │   ├── my_extractor.py
+            │   ├── csvs/
+            │       ├── 2024-01-01.csv
+            │       ├── 2024-01-02.csv
+            │       ├── 2024-01-03.csv
+            ├── main.bean
+            ├── imported/
+            │   ├── 2024-01-01.bean
+            │   ├── 2024-01-02.bean
+            │   ├── 2024-01-03.bean
+            ├── imported.bean
+            ├── data.bean
+            ├── fava_options.bean
+            ├── accounts.bean
+            ├── commodities.bean\
+            ├── prices.bean
+            ├── budget.bean
+
+
+        > beancount-import import \
+            -w workspace \
+            -b data.bean \
+            -c importer_config.yaml
+
+    Note:
+          We recommend that if you're using fava, then it's options should go in `fava_options.bean`
+          where your `main.bean` should import it.
+          Your `data.bean` should import `prices.bean`, `accounts.bean`, `commodities.bean`, `budget.bean` and `imported.bean`.
+          This is beacause beancount-importer-rules doesn't support all of the beancount syntax yet.
+
+    """
     engine = ImportRuleEngine(
         workdir=workdir,
         config_path=config,

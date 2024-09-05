@@ -100,6 +100,8 @@ secrets:
 docs:
     echo "Generating documentation..."
 
+    pdm run mkdocs build
+
     @echo ""
     @echo "👍 Done"
     @echo ""
@@ -107,6 +109,7 @@ docs:
 docs-serve:
     echo "Serving documentation..."
 
+    pdm run mkdocs serve
 
     @echo ""
     @echo "👍 Done"
