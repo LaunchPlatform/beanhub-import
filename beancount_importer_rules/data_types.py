@@ -302,6 +302,7 @@ class SimpleTxnMatchRule(ImportBaseModel):
 
     We will extend the matching rule to support more complex matching logic in the future, such as NOT, AND, OR operators.
 
+
     """
 
     extractor: StrMatch | None = None
@@ -810,6 +811,33 @@ class DeletedTransaction(ImportBaseModel):
 class ActionAddTxn(ImportBaseModel):
     """
     Add a transaction to the beancount file.
+
+    This is the default action type. If your action does not specify a type, it will be assumed to be an add transaction action.
+
+    The following keys are available for the add transaction action:
+
+    - `file`: output beancount file name to write the transaction to
+    - `txn`: the template of the transaction to insert
+
+    A transaction template is an object that contains the following keys:
+
+    - `id`: the optional `import-id` to overwrite the default one. By default, `{{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
+    - `date`: the optional date value to overwrite the default one. By default, `{{ date }}` will be used.
+    - `flag`: the optional flag value to overwrite the default one. By default, `*` will be used.
+    - `narration`: the optional narration value to overwrite the default one. By default `{{ desc | default(bank_desc, true) }}` will be used.
+    - `payee`: the optional payee value of the transaction.
+    - `tags`: an optional list of tags for the transaction
+    - `links`: an optional list of links for the transaction
+    - `metadata`: an optional list of `name` and `value` objects as the metadata items for the transaction.
+    - `postings`: a list of templates for postings in the transaction.
+
+    The structure of the posting template object looks like this.
+
+    - `account`: the account of posting
+    - `amount`: the optional amount object with `number` and `currency` keys
+    - `price`: the optional amount object with `number` and `currency` keys
+    - `cost`: the optional template of cost spec
+
     """
 
     type: typing.Literal[ActionType.add_txn] = pydantic.Field(ActionType.add_txn)
@@ -829,6 +857,16 @@ class ActionAddTxn(ImportBaseModel):
 class ActionDelTxn(ImportBaseModel):
     """
     Delete a transaction from the beancount file.
+
+
+    The following keys are available for the delete transaction action:
+
+    - `txn`: the template of the transaction to insert
+
+    A deleting transaction template is an object that contains the following keys:
+
+    - `id`: the `import-id` value for ensuring transactions to be deleted. By default, `{{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
+
     """
 
     type: typing.Literal[ActionType.del_txn] = pydantic.Field(ActionType.del_txn)
@@ -846,6 +884,23 @@ class ActionIgnore(ImportBaseModel):
     Ignore the transaction.
 
     This prevents the transaction from being added to the beancount file.
+
+    Sometimes, we are not interested in some transactions, but if we don't process them, you will still see them
+    appear in the "unprocessed transactions" section of the report provided by our command line tool.
+    To mark one transaction as processed, you can simply use the `ignore` action like this:
+
+    ```YAML
+    - name: Ignore unused entries
+      match:
+        extractor:
+          equals: "mercury"
+        desc:
+          one_of:
+            - Mercury Credit
+            - Mercury Checking xx1234
+      actions:
+        - type: ignore
+
     """
 
     type: typing.Literal[ActionType.ignore] = pydantic.Field(ActionType.ignore)
@@ -858,6 +913,33 @@ Action = ActionAddTxn | ActionDelTxn | ActionIgnore
 
 
 SimpleFileMatch = str | StrExactMatch | StrRegexMatch
+"""
+
+Currently, we support three different modes of matching a CSV file. The first one is
+the default one, glob. A simple string would make it use glob mode like this:
+
+```YAML
+inputs:
+  - match: "import-data/mercury/*.csv"
+```
+
+You can also do an exact match like this:
+
+```YAML
+inputs:
+- match:
+    equals: "import-data/mercury/2024.csv"
+```
+
+Or, if you prefer regular expression:
+
+```YAML
+inputs:
+- match:
+    regex: "import-data/mercury/2([0-9]+).csv"
+```
+
+"""
 
 
 class ExractorInputConfig(ImportBaseModel):
@@ -868,14 +950,47 @@ class ExractorInputConfig(ImportBaseModel):
 
 
 class InputConfigDetails(ImportBaseModel):
+    """
+    The input configuration details for the import rule.
+
+    """
+
     extractor: ExractorInputConfig
+    """
+    A python import path to the extractor to use for extracting transactions from the matched file.
+                The format is `package.module:extractor_class`. For example, `beancount_import_rules.extractors.plaid:PlaidExtractor`.
+                Your Extractor Class should inherit from `beancount_import_rules.extractors.ExtractorBase` or
+                `beancount_import_rules.extractors.ExtractorCsvBase`.
+    """
     default_file: str | None = None
+    """
+    The default output file for generated transactions from the matched file to use if not specified
+                    in the `add_txn` action.
+    """
     prepend_postings: list[PostingTemplate] | None = None
+    """
+    Postings are to be prepended for the generated transactions from the matched file. A
+                    list of posting templates as described in the [Add Transaction Action](#add-transaction-action) section.
+    """
     append_postings: list[PostingTemplate] | None = None
+    """
+    Postings are to be appended to the generated transactions from the matched file.
+                        A list of posting templates as described in the [Add Transaction Action](#add-transaction-action) section.
+    """
     default_txn: TransactionTemplate | None = None
+    """
+    The default transaction template values to use in the generated transactions from the
+                    matched file. Please see the [Add Transaction Action](#add-transaction-action) section.
+
+    """
 
 
 class InputConfig(ImportBaseModel):
+    """
+    The input configuration for the import rule.
+
+    """
+
     match: SimpleFileMatch
     config: InputConfigDetails
 
@@ -967,7 +1082,44 @@ class ImportDoc(ImportBaseModel):
     """
 
     context: dict | None = None
-    """The context for the import rule"""
+    """
+
+    Context comes in handy when you need to define variables to be referenced in the template.
+    As you can see in the example, we define a `routine_expenses` dictionary variable in the context.
+
+    ```YAML
+    context:
+    routine_expenses:
+        "Amazon Web Services":
+        account: Expenses:Engineering:Servers:AWS
+        Netlify:
+        account: Expenses:Engineering:ServiceSubscription
+        Mailchimp:
+        account: Expenses:Marketing:ServiceSubscription
+        Circleci:
+        account: Expenses:Engineering:ServiceSubscription
+        Adobe:
+        account: Expenses:Design:ServiceSubscription
+        Digital Ocean:
+        account: Expenses:Engineering:ServiceSubscription
+        Microsoft:
+        account: Expenses:Office:Supplies:SoftwareAsService
+        narration: "Microsoft 365 Apps for Business Subscription"
+        Mercury IO Cashback:
+        account: Expenses:CreditCardCashback
+        narration: "Mercury IO Cashback"
+        WeWork:
+        account: Expenses:Office
+        narration: "Virtual mailing address service fee from WeWork"
+    ```
+
+    Then, in the transaction template, we look up the dictionary to find out what narration value to use:
+
+    ```
+    "{{ routine_expenses[desc].narration | default(desc, true) | default(bank_desc, true) }}"
+    ```
+
+    """
     inputs: list[InputConfig]
     """The input rules"""
     imports: ImportList
