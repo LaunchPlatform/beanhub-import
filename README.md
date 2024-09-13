@@ -661,14 +661,14 @@ bh import
 ```
 
 It will override the changes.
-To solve the problem, we provide a metadata item, `import-override,` to control the overriding behavior from transactions generated from the rule to the existing transactions.
+To solve the problem, we provide a metadata item, `import-override`, to control the overriding behavior from transactions generated from the rule to the existing transactions.
 
 There are two modes you can use:
 
 - `none`: Do not override anything. Keep transaction as is
 - `all`: Override the existing transaction using the one generated from the automatic import rules.
 
-Other than none or all, if you want to have fine-grained control over which part of the transactions get overridden, here are available values
+Other than `none` or `all`, if you want to have fine-grained control over which part of the transactions get overridden, here are available values
 
 - `date`: Date of transaction, e.g. 2024-09-01
 - `flag`: Flag of the transaction, e.g., "*" or "!"
@@ -684,7 +684,7 @@ You can combine any of those above with a comma. For example, to allow date and 
 import-override: "date,flag"
 ```
 
-For example, say for the transaction you just updated manually, you only want beanhub-import to override the amount, date, postings and flag, then you can add `import-override` to the transaction like this:
+For example, say for the transaction you just updated manually, you only want beanhub-import to override the amount, date, postings, and flag, then you can add `import-override` to the transaction like this:
 
 ```
 2024-04-15 * "CircleCI refund due to billing error"
@@ -694,7 +694,7 @@ For example, say for the transaction you just updated manually, you only want be
   Expenses:Engineering:ServiceSubscription            -10.00 USD 
 ```
 
-That way, the narration stays the same.
+That way, the narration stays the same, but if the source import file changes, the transaction will still be updated accordingly.
 
 ### The flow of beanhub-import
 
