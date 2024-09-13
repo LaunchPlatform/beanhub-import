@@ -141,7 +141,7 @@ imports:
   # To avoid many match/actions statements for mostly identical transaction template,
   # you can also define different match conditions and the corresponding variables for the transaction template
   - name: Routine Wells Fargo expenses
-    # the condition shared but all the matches
+    # the condition shared between all the matches
     common_cond:
       extractor:
         equals: "plaid"
