@@ -42,7 +42,7 @@ copyright: Copyright &copy; 2024 Launch Platform LLC
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/launchplatform
+      link: https://github.com/launchplatform/beanhub-import
     - icon: fontawesome/solid/house
       link: https://beanhub.io
   generator: false
