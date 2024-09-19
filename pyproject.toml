@@ -6,6 +6,10 @@ authors = ["Fang-Pen Lin <fangpen@launchplatform.com>"]
 license = "MIT"
 readme = "README.md"
 
+[project.urls]
+Documentation = "https://beanhub-import-docs.beanhub.io"
+Repository = "https://github.com/LaunchPlatform/beanhub-import"
+
 [tool.poetry.dependencies]
 python = "^3.9"
 pytz = ">=2023.1,<2025"
