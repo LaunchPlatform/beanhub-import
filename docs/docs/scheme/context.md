@@ -30,6 +30,6 @@ context:
 
 Then, in the transaction template, we look up the dictionary to find out what narration value to use:
 
-```jinja2
+```jinja
 "{{ routine_expenses[desc].narration | default(desc, true) | default(bank_desc, true) }}"
 ```
