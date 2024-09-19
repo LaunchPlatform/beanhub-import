@@ -1,14 +1,11 @@
 [tool.poetry]
 name = "beanhub-import"
-version = "1.0.1"
+version = "1.0.2"
 description = "The simple library for import extracted transactions provided by beanhub-extract and generate corresponding Beancount transactions based on predefined rules"
 authors = ["Fang-Pen Lin <fangpen@launchplatform.com>"]
 license = "MIT"
 readme = "README.md"
-
-[project.urls]
-Documentation = "https://beanhub-import-docs.beanhub.io"
-Repository = "https://github.com/LaunchPlatform/beanhub-import"
+documentation = "https://beanhub-import-docs.beanhub.io"
 
 [tool.poetry.dependencies]
 python = "^3.9"
