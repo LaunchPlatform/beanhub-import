@@ -1,13 +1,19 @@
-# beanhub-import [![CircleCI](https://dl.circleci.com/status-badge/img/gh/LaunchPlatform/beanhub-import/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/LaunchPlatform/beanhub-import/tree/master)
+---
+title: BeanHub Import
+---
+
+# BeanHub Import
 
 Beanhub-import is a simple, declarative, smart, and easy-to-use library for importing extracted transactions from [beanhub-extract](https://github.com/LaunchPlatform/beanhub-extract).
 It generates Beancount transactions based on predefined rules.
 
-**Note**: This project is still in early stage, still subject to rapid major changes
-
 Please also checkout our blog posts about the BeanHub Import and BeanHub Connect features based on this tool:
+
 - [BeanHub Import - One small step closer to fully automating transaction importing](https://beanhub.io/blog/2024/05/27/introduction-of-beanhub-import/)
 - [BeanHub Connect - one giant leap with fully automatic bank transactions import from 12,000+ financial institutions in 17 countries for all Beancount users!](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/)
+
+!!! note "Subject to changes"
+    This project is still in early stage, still subject to rapid major changes
 
 ## Features
 
@@ -20,27 +26,19 @@ Please also checkout our blog posts about the BeanHub Import and BeanHub Connect
 
 For example, change the import rules like this to output transactions to files grouped by quarter instead of year:
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/quater-output-file.png?raw=true" alt="Git diff screenshot showing default_file changed to output quater file names instead of just year" />
-</p>
+![Git diff screenshot showing default_file changed to output quater file names instead of just year](/img/quater-output-file.png){: .center }
 
 Then run the import again, and you will get this:
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/auto-txn-migration.png?raw=true" alt="Git diff screenshot showing Beancount transactions removed from the books/2024.bean file and new quater beancount files added" />
-</p>
+![Git diff screenshot showing Beancount transactions removed from the books/2024.bean file and new quater beancount files added](/img/auto-txn-migration.png){: .center }
 
 Another example is when you want to add new tags to the generated transactions, so you change the rules with new tags like this:
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/new-tags.png?raw=true" alt="Git diff screenshot showing new line" />
-</p>
+![Git diff screenshot showing new line](/img/new-tags.png){: .center }
 
 When you run import again, you will get this:
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/new-tags-result.png?raw=true" alt="Git diff screenshot showing new tags added to all imported Beancount transactions" />
-</p>
+![Git diff screenshot showing new tags added to all imported Beancount transactions](/img/new-tags-result.png){: .center }
 
 Please check out our demonstration repository [beanhub-import-demo](https://github.com/LaunchPlatform/beanhub-import-demo) to try it yourself.
 
@@ -207,3 +205,16 @@ imports:
 
 This project is a library and not meant for end-users.
 If you simply want to import transactions from CSV into their beancount files, please checkout the `import` command of [beanhub-cli](https://github.com/LaunchPlatform/beanhub-cli).
+
+## Sponsor
+
+This open-source library is sponsored by [BeanHub](https://beanhub.io/), a modern accounting app built on Beancount and Git.
+It supports automatically importing transactions from 12,000+ financial institutions in 17 countries to your Beancount book.
+Many awesome features make bookkeeping with Beancount much easier.
+If you enjoy the content, you can also try out [BeanHub](https://beanhub.io/) starting free.
+
+<a href="https://beanhub.io">
+  <p align="center">
+    <img src="/img/beanhub.svg" alt="BeanHub Logo" />
+  </p>
+</a>

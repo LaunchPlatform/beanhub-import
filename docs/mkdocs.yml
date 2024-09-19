@@ -1,0 +1,53 @@
+site_name: BeanHub Import
+repo_url: https://github.com/launchplatform/beanhub-import
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
+  palette:
+    primary: deep purple
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.prune
+    - navigation.footer
+  custom_dir: overrides
+  icon:
+    repo: fontawesome/brands/github
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+nav:
+  - 'BeanHub Import': 'index.md'
+  - 'How it works':
+    - 'Unique Import Id': 'how-it-works/unique-import-id.md'
+    - 'Data Flow': 'how-it-works/data-flow.md'
+  - 'Override Flags': 'override-flags.md'
+  - 'Import Scheme':
+    - 'Import Doc': 'scheme/import-doc.md'
+    - 'Context': 'scheme/context.md'
+    - 'Input Config': 'scheme/input-config.md'
+    - 'Import Config':
+      - 'Import Config': 'scheme/import-config/import-config.md'
+      - 'Basic Match Rules': 'scheme/import-config/basic-match.md'
+      - 'Match with variables': 'scheme/import-config/match-with-vars.md'
+      - 'Actions': 'scheme/import-config/actions.md'
+      - 'Omit Field': 'scheme/import-config/omit.md'
+copyright: Copyright &copy; 2024 Launch Platform LLC
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/launchplatform
+    - icon: fontawesome/solid/house
+      link: https://beanhub.io
+  generator: false
+  analytics:
+    provider: custom
