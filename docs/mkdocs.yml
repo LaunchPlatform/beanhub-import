@@ -1,4 +1,5 @@
 site_name: BeanHub Import
+repo_url: https://github.com/launchplatform/beanhub-import
 theme:
   name: material
   logo: assets/logo.svg
@@ -11,6 +12,8 @@ theme:
     - navigation.prune
     - navigation.footer
   custom_dir: overrides
+  icon:
+    repo: fontawesome/brands/github
 markdown_extensions:
   - admonition
   - attr_list
@@ -42,7 +45,7 @@ copyright: Copyright &copy; 2024 Launch Platform LLC
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/launchplatform/beanhub-import
+      link: https://github.com/launchplatform
     - icon: fontawesome/solid/house
       link: https://beanhub.io
   generator: false
