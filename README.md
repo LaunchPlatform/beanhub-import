@@ -3,6 +3,8 @@
 Beanhub-import is a simple, declarative, smart, and easy-to-use library for importing extracted transactions from [beanhub-extract](https://github.com/LaunchPlatform/beanhub-extract).
 It generates Beancount transactions based on predefined rules.
 
+Read the [documentations here](https://beanhub-import-docs.beanhub.io/).
+
 **Note**: This project is still in early stage, still subject to rapid major changes
 
 Please also checkout our blog posts about the BeanHub Import and BeanHub Connect features based on this tool:
