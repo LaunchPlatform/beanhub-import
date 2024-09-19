@@ -27,7 +27,7 @@ nav:
   - 'How it works': 'how-it-works.md'
   - 'Override Flags': 'override-flags.md'
   - 'Import Scheme':
-    - 'Root - Import Doc': 'scheme/import-doc.md'
+    - 'Import Doc': 'scheme/import-doc.md'
     - 'Context': 'scheme/context.md'
     - 'Input Config': 'scheme/input-config.md'
     - 'Import Config':
