@@ -34,10 +34,10 @@ nav:
     - 'Input Config': 'scheme/input-config.md'
     - 'Import Config':
       - 'Import Config': 'scheme/import-config/import-config.md'
-      - 'Basic Match': 'scheme/import-config/basic-match.md'
+      - 'Basic Match Rules': 'scheme/import-config/basic-match.md'
       - 'Match with variables': 'scheme/import-config/match-with-vars.md'
       - 'Actions': 'scheme/import-config/actions.md'
-      - 'Omit': 'scheme/import-config/omit.md'
+      - 'Omit Field': 'scheme/import-config/omit.md'
 copyright: Copyright &copy; 2024 Launch Platform LLC
 extra:
   social:

@@ -1,8 +1,8 @@
-# Omit field in the generated transaction
+# Omit Field
 
 Sometimes, you may want to omit a particular field in your transactions if the value is unavailable instead of leaving it as a blank string.
 For example, the `payee` field sometimes doesn't make sense for some transactions, and the value should not even be present.
-With a Jinja2 template, it looks like `{{ payee }}`, but without the `payee` value provided by the transaction, it will end up with an ugly empty string like this:
+With a Jinja2 template, it looks like `#!jinja {{ payee }}`, but without the `payee` value provided by the transaction, it will end up with an ugly empty string like this:
 
 ```beancount
 2024-02-26 * "" "Interest payment"

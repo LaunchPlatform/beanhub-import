@@ -19,10 +19,10 @@ The following keys are available for the add transaction action:
  
 A transaction template is an object that contains the following keys:
 
-- `id`: the optional `import-id` to overwrite the default one. By default, `{{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
-- `date`: the optional date value to overwrite the default one. By default, `{{ date }}` will be used.
+- `id`: the optional `import-id` to overwrite the default one. By default, `#!jinja {{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
+- `date`: the optional date value to overwrite the default one. By default, `#!jinja {{ date }}` will be used.
 - `flag`: the optional flag value to overwrite the default one. By default, `*` will be used.
-- `narration`: the optional narration value to overwrite the default one. By default `{{ desc | default(bank_desc, true) }}` will be used.
+- `narration`: the optional narration value to overwrite the default one. By default `#!jinja {{ desc | default(bank_desc, true) }}` will be used.
 - `payee`: the optional payee value of the transaction.
 - `tags`: an optional list of tags for the transaction
 - `links`: an optional list of links for the transaction
@@ -44,7 +44,7 @@ The following keys are available for the delete transaction action:
  
 A deleting transaction template is an object that contains the following keys:
 
-- `id`: the `import-id` value for ensuring transactions to be deleted. By default, `{{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
+- `id`: the `import-id` value for ensuring transactions to be deleted. By default, `#!jinja {{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
 
 ## Ignore Action
 

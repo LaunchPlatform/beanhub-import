@@ -1,4 +1,4 @@
-# Basic Batch
+# Basic Batch Rules
 
 The raw transactions extracted by the beanhub extractor come with many attributes. Here we list only a few from it:
 
