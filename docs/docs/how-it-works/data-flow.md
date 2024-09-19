@@ -1,4 +1,4 @@
-# How it works - The flow of beanhub-import
+# Data Flow
 
 Now, as you know, we can produce transactions and insert them into Beacount files with unique import IDs so that we can trace them. The next would be putting all the pieces together. Here's the flow diagram of how beanhub-import works:
 

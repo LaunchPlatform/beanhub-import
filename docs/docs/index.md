@@ -205,3 +205,16 @@ imports:
 
 This project is a library and not meant for end-users.
 If you simply want to import transactions from CSV into their beancount files, please checkout the `import` command of [beanhub-cli](https://github.com/LaunchPlatform/beanhub-cli).
+
+## Sponsor
+
+This open-source library is sponsored by [BeanHub](https://beanhub.io/), a modern accounting app built on Beancount and Git.
+It supports automatically importing transactions from 12,000+ financial institutions in 17 countries to your Beancount book.
+Many awesome features make bookkeeping with Beancount much easier.
+If you enjoy the content, you can also try out [BeanHub](https://beanhub.io/) starting free.
+
+<a href="https://beanhub.io">
+  <p align="center">
+    <img src="/img/beanhub.svg" alt="BeanHub Logo" />
+  </p>
+</a>
