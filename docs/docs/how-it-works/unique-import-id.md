@@ -23,9 +23,7 @@ import-data/mybank/2024.csv:123
 As most of the bank transactions export CSV files have transactions come in sorted order by date, even if there are new transactions added and we export the CSV file for the same bank again and overwrite the existing file, there will only be new lines added at the bottom of the file.
 Like this:
 
-<p align="center">
-  <img src="https://github.com/LaunchPlatform/beanhub-import/raw/master/assets/csv-file-diff.png?raw=true" alt="Diff of CSV file adding only new lines at the end" />
-</p>
+![Diff of CSV file adding only new lines at the end](/img/csv-file-diff.png){: .center }
 
 The line number of older transactions from the same CSV file with the same export time range and filter settings should remain the same. The file name and line number serve as a decent default unique identifier for the transactions from CSV files.
 
