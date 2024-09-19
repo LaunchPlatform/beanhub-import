@@ -24,6 +24,8 @@ markdown_extensions:
   - pymdownx.superfences
 nav:
   - 'BeanHub Import': 'index.md'
+  - 'How it works': 'how-it-works.md'
+  - 'Override Flags': 'override-flags.md'
   - 'Import Scheme':
     - 'Root - Import Doc': 'scheme/import-doc.md'
     - 'Context': 'scheme/context.md'
