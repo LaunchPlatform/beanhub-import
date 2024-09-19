@@ -61,7 +61,7 @@ For example, say for the transaction you just updated manually, you only want be
   import-id: "bAPgjNEZj6FaEdqGQP4lsx33gAbQw9umpQAmk"
   import-override: "date,amount,postings,flag"
   Assets:Bank:US:MyBank                              10.00 USD
-  Expenses:Engineering:ServiceSubscription            -10.00 USD 
+  Expenses:Engineering:ServiceSubscription          -10.00 USD 
 ```
 
 That way, the narration stays the same, but if the source import file changes, the transaction will still be updated accordingly.
