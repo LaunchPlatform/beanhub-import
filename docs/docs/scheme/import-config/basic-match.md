@@ -87,3 +87,20 @@ imports:
         - UberEats
         - Postmate
 ```
+
+You may often want to match a list of regular expressions instead of exact values.
+You can set `regex` as `true` to make it so for that.
+You can also add `ignore_case` to `true` to match the in case insensitive mode.
+Here's an example:
+
+```YAML
+imports:
+- match:
+    desc:
+      regex: true
+      ignore_case: true
+      one_of:
+        - DoorDash
+        - UberEats
+        - Postmate
+```
