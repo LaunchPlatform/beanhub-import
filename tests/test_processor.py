@@ -141,7 +141,7 @@ def test_match_file(pattern: SimpleFileMatch, path: str, expected: bool):
         (
             StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True, ignore_case=True),
             "foobar",
-            False,
+            True,
         ),
     ],
 )
