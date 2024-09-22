@@ -100,7 +100,7 @@ imports:
       regex: true
       ignore_case: true
       one_of:
-        - DoorDash
-        - UberEats
-        - Postmate
+        - doordash(.+)
+        - ubereats(.+)
+        - postmate(.+)
 ```
