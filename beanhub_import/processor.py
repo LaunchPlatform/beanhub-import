@@ -73,7 +73,19 @@ def match_str(pattern: StrMatch, value: str | None) -> bool:
     elif isinstance(pattern, StrContainsMatch):
         return pattern.contains in value
     elif isinstance(pattern, StrOneOfMatch):
-        return value in pattern.one_of
+        if not pattern.regex:
+            if not pattern.ignore_case:
+                return value in pattern.one_of
+            else:
+                return value.lower() in frozenset(
+                    item.lower() for item in pattern.one_of
+                )
+        else:
+            return any(
+                re.match(item, value, flags=re.IGNORECASE if pattern.ignore_case else 0)
+                is not None
+                for item in pattern.one_of
+            )
     else:
         raise ValueError(f"Unexpected str match type {type(pattern)}")
 
