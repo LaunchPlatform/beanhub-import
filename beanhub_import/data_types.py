@@ -23,6 +23,8 @@ class StrExactMatch(ImportBaseModel):
 
 class StrOneOfMatch(ImportBaseModel):
     one_of: list[str]
+    regex: bool = False
+    ignore_case: bool = False
 
 
 class StrPrefixMatch(ImportBaseModel):

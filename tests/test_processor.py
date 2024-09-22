@@ -28,6 +28,7 @@ from beanhub_import.data_types import SimpleFileMatch
 from beanhub_import.data_types import SimpleTxnMatchRule
 from beanhub_import.data_types import StrContainsMatch
 from beanhub_import.data_types import StrExactMatch
+from beanhub_import.data_types import StrOneOfMatch
 from beanhub_import.data_types import StrPrefixMatch
 from beanhub_import.data_types import StrRegexMatch
 from beanhub_import.data_types import StrSuffixMatch
@@ -129,6 +130,19 @@ def test_match_file(pattern: SimpleFileMatch, path: str, expected: bool):
         (StrContainsMatch(contains="Foo"), "prefix-Fo-suffix", False),
         (StrContainsMatch(contains="Foo"), "", False),
         (StrContainsMatch(contains="Foo"), None, False),
+        (StrOneOfMatch(one_of=["Foo", "Bar"]), "Foo", True),
+        (StrOneOfMatch(one_of=["Foo", "Bar"]), "Bar", True),
+        (StrOneOfMatch(one_of=["Foo", "Bar"]), "Eggs", False),
+        (StrOneOfMatch(one_of=["Foo", "Bar"]), "boo", False),
+        (StrOneOfMatch(one_of=["Foo", "Bar"], ignore_case=True), "bar", True),
+        (StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True), "FooBar", True),
+        (StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True), "Foo", False),
+        (StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True), "foo", False),
+        (
+            StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True, ignore_case=True),
+            "foobar",
+            True,
+        ),
     ],
 )
 def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
