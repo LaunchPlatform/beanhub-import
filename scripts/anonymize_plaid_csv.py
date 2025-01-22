@@ -34,9 +34,14 @@ def get_id_maps():
 def main():
     account_ids, txn_ids = get_id_maps()
 
+    output_rows = []
+    hardwired_amounts = {
+        "Netflix": decimal.Decimal("15.49"),
+        "Comcast": decimal.Decimal("50.00"),
+    }
     with (
-        open(sys.argv[1], "rt") as input_file,
-        open(sys.argv[2], "wt") as output_file,
+        open(sys.argv[1], "rt", newline="") as input_file,
+        open(sys.argv[2], "wt", newline="") as output_file,
     ):
         reader = csv.DictReader(input_file)
         writer = csv.DictWriter(output_file, fieldnames=reader.fieldnames)
@@ -63,17 +68,31 @@ def main():
                     dt += datetime.timedelta(seconds=time_shift, days=date_shift)
                     row[column] = dt
                 elif column == "amount":
-                    row[column] = "{:.2f}".format(
-                        decimal.Decimal(value)
-                        + decimal.Decimal(random.uniform(-30, 30))
-                    )
+                    name = row["name"]
+                    if name in hardwired_amounts:
+                        row[column] = "{:.2f}".format(hardwired_amounts[name])
+                    else:
+                        for i in range(1000):
+                            new_amount = decimal.Decimal(value) + decimal.Decimal(
+                                random.uniform(-30, 30)
+                            )
+                            if new_amount > 0:
+                                break
+                        if new_amount < 0:
+                            raise ValueError()
+                        row[column] = "{:.2f}".format(new_amount)
                 elif column == "account_id":
                     row[column] = account_ids[value]
                 elif column == "transaction_id":
                     row[column] = txn_ids[value]
                 elif column == "pending_transaction_id":
                     row[column] = txn_ids[value]
-            print(row)
+            output_rows.append(row)
+
+        output_rows.sort(key=lambda r: r["date"])
+        for row in output_rows:
+            writer.writerow(row)
+    print("done")
 
 
 if __name__ == "__main__":
