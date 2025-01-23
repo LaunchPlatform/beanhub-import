@@ -993,6 +993,29 @@ def test_process_transaction(
                 ),
             ],
         ),
+        (
+            "input-without-config",
+            [
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="mercury.csv:-1",
+                    sources=["mercury.csv"],
+                    date="2024-04-15",
+                    flag="*",
+                    narration="Jane Doe",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-1500.00", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses",
+                            amount=Amount(number="1500.00", currency="USD"),
+                        ),
+                    ],
+                ),
+            ],
+        ),
     ],
 )
 def test_process_imports(

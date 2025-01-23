@@ -1,5 +1,11 @@
 inputs:
 - match: "*.csv"
+  config:
+    prepend_postings:
+      - account: Assets:Bank:US:Mercury
+        amount:
+          number: "{{ amount }}"
+          currency: "{{ currency | default('USD', true) }}"
 
 imports:
   - match:
@@ -10,10 +16,6 @@ imports:
         file: "output.bean"
         txn:
           postings:
-            - account: Assets:Bank:US:Mercury
-              amount:
-                number: "{{ amount }}"
-                currency: "{{ currency | default('USD', true) }}"
             - account: "Expenses"
               amount:
                 number: "{{ -amount }}"
