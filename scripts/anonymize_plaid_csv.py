@@ -11,7 +11,12 @@ from beancount_black.formatter import parse_date
 
 
 def make_random_id():
-    return base64.urlsafe_b64encode(urandom(24)).decode("ascii").replace("-", "")
+    return (
+        base64.urlsafe_b64encode(urandom(24))
+        .decode("ascii")
+        .replace("-", "")
+        .replace("_", "")
+    )
 
 
 def get_id_maps():

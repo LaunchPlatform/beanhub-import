@@ -340,7 +340,9 @@ def process_imports(
             if not match_file(input_config.match, filepath):
                 continue
             rel_filepath = filepath.relative_to(input_dir)
-            extractor_name = input_config.config.extractor
+            extractor_name = (
+                input_config.config.extractor if input_config is not None else None
+            )
             if extractor_name is None:
                 with filepath.open("rt") as fo:
                     extractor_cls = detect_extractor(fo)
