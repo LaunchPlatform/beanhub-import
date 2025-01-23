@@ -24,10 +24,12 @@ def get_id_maps():
             account_ids.setdefault(account_id, make_random_id())
 
             txn_id = row["transaction_id"]
-            txn_ids.setdefault(txn_id, make_random_id())
+            if txn_id:
+                txn_ids.setdefault(txn_id, make_random_id())
 
             pending_txn_id = row["pending_transaction_id"]
-            txn_ids.setdefault(pending_txn_id, make_random_id())
+            if pending_txn_id:
+                txn_ids.setdefault(pending_txn_id, make_random_id())
     return account_ids, txn_ids
 
 
@@ -84,9 +86,11 @@ def main():
                 elif column == "account_id":
                     row[column] = account_ids[value]
                 elif column == "transaction_id":
-                    row[column] = txn_ids[value]
+                    if value:
+                        row[column] = txn_ids[value]
                 elif column == "pending_transaction_id":
-                    row[column] = txn_ids[value]
+                    if value:
+                        row[column] = txn_ids[value]
             output_rows.append(row)
 
         output_rows.sort(key=lambda r: r["date"])
