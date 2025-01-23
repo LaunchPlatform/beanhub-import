@@ -119,9 +119,9 @@ def first_non_none(*values):
 
 def process_transaction(
     template_env: SandboxedEnvironment,
-    input_config: InputConfigDetails,
     import_rules: list[ImportRule],
     txn: Transaction,
+    input_config: InputConfigDetails | None,
     omit_token: str | None = None,
     default_import_id: str | None = None,
 ) -> typing.Generator[
@@ -132,7 +132,17 @@ def process_transaction(
     if omit_token is None:
         omit_token = uuid.uuid4().hex
     txn_ctx["omit"] = omit_token
-    default_txn = input_config.default_txn
+    default_txn = None
+    prepend_postings = None
+    appending_postings = None
+    append_postings = None
+    default_file = None
+    if input_config is not None:
+        default_txn = input_config.default_txn
+        prepend_postings = input_config.prepend_postings
+        appending_postings = input_config.appending_postings
+        append_postings = input_config.append_postings
+        default_file = input_config.default_file
     processed = False
     matched_vars: dict | None = None
 
@@ -203,20 +213,20 @@ def process_transaction(
             template_values["id"] = txn_id
 
             posting_templates: list[PostingTemplate] = []
-            if input_config.prepend_postings is not None:
-                posting_templates.extend(input_config.prepend_postings)
+            if prepend_postings is not None:
+                posting_templates.extend(prepend_postings)
             if action.txn.postings is not None:
                 posting_templates.extend(action.txn.postings)
             elif default_txn is not None and default_txn.postings is not None:
                 posting_templates.extend(default_txn.postings)
-            if input_config.appending_postings is not None:
+            if appending_postings is not None:
                 warnings.warn(
                     'The "appending_postings" field is deprecated, please use "append_postings" instead',
                     DeprecationWarning,
                 )
-                posting_templates.extend(input_config.appending_postings)
-            elif input_config.append_postings is not None:
-                posting_templates.extend(input_config.append_postings)
+                posting_templates.extend(appending_postings)
+            elif append_postings is not None:
+                posting_templates.extend(append_postings)
 
             generated_tags = process_links_or_tags(action.txn.tags)
             generated_links = process_links_or_tags(action.txn.links)
@@ -233,7 +243,7 @@ def process_transaction(
                 generated_metadata = None
 
             generated_postings = generate_postings(posting_templates, render_str)
-            output_file = first_non_none(action.file, input_config.default_file)
+            output_file = first_non_none(action.file, default_file)
             if output_file is None:
                 logger.error(
                     "Output file not defined when generating transaction with rule %s",
@@ -269,19 +279,15 @@ def process_transaction(
             constants.DEFAULT_TXN_TEMPLATE["id"],
         )
         prepending_postings = None
-        if input_config.prepend_postings is not None:
-            prepending_postings = generate_postings(
-                input_config.prepend_postings, render_str
-            )
+        if prepend_postings is not None:
+            prepending_postings = generate_postings(prepend_postings, render_str)
         appending_postings = None
-        if input_config.append_postings is not None:
-            appending_postings = generate_postings(
-                input_config.prepend_postings, render_str
-            )
+        if append_postings is not None:
+            appending_postings = generate_postings(prepend_postings, render_str)
         return UnprocessedTransaction(
             txn=txn,
             import_id=render_str(txn_id),
-            output_file=render_str(input_config.default_file),
+            output_file=render_str(default_file),
             prepending_postings=prepending_postings,
             appending_postings=appending_postings,
         )

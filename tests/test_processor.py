@@ -731,11 +731,82 @@ def test_match_transaction_with_vars(
             None,
             id="ignore",
         ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            None,
+            [
+                ImportRule(
+                    match=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    actions=[
+                        ActionAddTxn(
+                            file="{{ extractor }}.bean",
+                            txn=TransactionTemplate(
+                                postings=[
+                                    PostingTemplate(
+                                        account="Expenses:Food",
+                                        amount=AmountTemplate(
+                                            number="{{ -amount }}",
+                                            currency="{{ currency }}",
+                                        ),
+                                    ),
+                                    PostingTemplate(
+                                        account="Assets:Bank:{{ source_account }}",
+                                        amount=AmountTemplate(
+                                            number="{{ amount }}",
+                                            currency="{{ currency }}",
+                                        ),
+                                    ),
+                                ]
+                            ),
+                        )
+                    ],
+                )
+            ],
+            [
+                GeneratedTransaction(
+                    id="mock.csv:123",
+                    sources=["mock.csv"],
+                    date="2024-05-05",
+                    file="MOCK_EXTRACTOR.bean",
+                    flag="*",
+                    narration="MOCK_DESC",
+                    postings=[
+                        GeneratedPosting(
+                            account="Expenses:Food",
+                            amount=Amount(
+                                number="-123.45",
+                                currency="BTC",
+                            ),
+                        ),
+                        GeneratedPosting(
+                            account="Assets:Bank:Foobar",
+                            amount=Amount(
+                                number="123.45",
+                                currency="BTC",
+                            ),
+                        ),
+                    ],
+                )
+            ],
+            None,
+            id="no-config-value",
+        ),
     ],
 )
 def test_process_transaction(
     template_env: SandboxedEnvironment,
-    input_config: InputConfigDetails,
+    input_config: InputConfigDetails | None,
     import_rules: list[ImportRule],
     txn: Transaction,
     expected: list[GeneratedTransaction],

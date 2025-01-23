@@ -194,7 +194,7 @@ class InputConfigDetails(ImportBaseModel):
 
 class InputConfig(ImportBaseModel):
     match: SimpleFileMatch
-    config: InputConfigDetails
+    config: InputConfigDetails | None = None
 
 
 class OutputConfig(ImportBaseModel):
