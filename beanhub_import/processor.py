@@ -189,7 +189,7 @@ def process_transaction(
                 return None
 
             txn_id = first_non_none(
-                getattr(action.txn, "id"),
+                getattr(action.txn, "id") if action.txn is not None else None,
                 getattr(default_txn, "id") if default_txn is not None else None,
                 default_import_id,
                 constants.DEFAULT_TXN_TEMPLATE["id"],

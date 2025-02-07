@@ -169,7 +169,7 @@ class ActionAddTxn(ImportBaseModel):
 
 class ActionDelTxn(ImportBaseModel):
     type: typing.Literal[ActionType.del_txn] = pydantic.Field(ActionType.del_txn)
-    txn: DeleteTransactionTemplate
+    txn: DeleteTransactionTemplate | None = None
 
 
 class ActionIgnore(ImportBaseModel):

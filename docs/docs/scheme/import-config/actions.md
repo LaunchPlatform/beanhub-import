@@ -40,11 +40,43 @@ The structure of the posting template object looks like this.
 
 The following keys are available for the delete transaction action:
 
-- `txn`: the template of the transaction to insert
+- `txn`: the template of the transaction to delete (optional)
  
 A deleting transaction template is an object that contains the following keys:
 
 - `id`: the `import-id` value for ensuring transactions to be deleted. By default, `#!jinja {{ file | as_posix_path }}:{{ lineno }}` will be used unless the extractor provides a default value.
+
+For example:
+
+```YAML
+- name: Delete incorrectly inserted transactions
+  match:
+    extractor:
+      equals: "mercury"
+    desc:
+      one_of:
+      - Mercury Credit
+      - Mercury Checking xx1234
+  actions:
+    - type: del_txn
+```
+
+You also can define custom import-ids to be deleted like this:
+
+```YAML
+- name: Delete incorrectly inserted transactions
+  match:
+    extractor:
+      equals: "mercury"
+    desc:
+      one_of:
+      - Mercury Credit
+      - Mercury Checking xx1234
+  actions:
+    - type: del_txn
+      txn:
+        id: "id-{{ file }}:{{ lineno }}"
+```
 
 ## Ignore Action
 

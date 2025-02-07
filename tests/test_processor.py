@@ -724,6 +724,32 @@ def test_match_transaction_with_vars(
                     match=SimpleTxnMatchRule(
                         extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
                     ),
+                    actions=[ActionDelTxn()],
+                )
+            ],
+            [
+                DeletedTransaction(id="mock.csv:123"),
+            ],
+            None,
+            id="delete-with-default-template",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            InputConfigDetails(),
+            [
+                ImportRule(
+                    match=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
                     actions=[ActionIgnore()],
                 )
             ],
