@@ -1,6 +1,7 @@
 inputs:
 - match: "{{ match_path }}"
   config:
+    extractor: "{{ src_extractor }}"
     prepend_postings:
       - account: "{{ src_account }}"
         amount:
@@ -9,9 +10,11 @@ inputs:
   loop:
     - match_path: "mercury/*.csv"
       src_account: Assets:Bank:US:Mercury
+      src_extractor: mercury
       output_file: "mercury-output.bean"
     - match_path: "chase/*.csv"
       src_account: Assets:Bank:US:Chase
+      src_extractor: chase_credit_card
 
 imports:
   - match:
