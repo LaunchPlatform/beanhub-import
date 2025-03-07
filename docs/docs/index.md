@@ -107,7 +107,8 @@ inputs:
           amount:
             number: "{{ amount }}"
             currency: "{{ currency | default('USD', true) }}"
-    # loop through different variables with the same input file template
+    # loop through different variables with the same input file template to avoid repeating
+    # the same input config over and over
     loop:
     - match_path: mercury/*.csv
       src_account: Assets:Bank:US:Mercury

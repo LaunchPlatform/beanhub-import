@@ -351,7 +351,9 @@ def render_input_config_match(
 
 
 def expand_input_loops(
-    template_env: SandboxedEnvironment, inputs: list[InputConfig]
+    template_env: SandboxedEnvironment,
+    inputs: list[InputConfig],
+    omit_token: str,
 ) -> typing.Generator[RenderedInputConfig, None, None]:
     for input_config in inputs:
         if input_config.loop is None:
@@ -367,8 +369,10 @@ def expand_input_loops(
             if config.extractor is not None:
                 config = copy.deepcopy(config)
                 config.extractor = template_env.from_string(config.extractor).render(
-                    **vars
+                    **(dict(omit=omit_token) | vars)
                 )
+                if config.extractor == omit_token or not config.extractor:
+                    config.extractor = None
             yield RenderedInputConfig(
                 input_config=InputConfig(
                     match=rendered_match,
@@ -390,7 +394,9 @@ def process_imports(
     if import_doc.context is not None:
         template_env.globals.update(import_doc.context)
     expanded_input_configs = list(
-        expand_input_loops(template_env=template_env, inputs=import_doc.inputs)
+        expand_input_loops(
+            template_env=template_env, inputs=import_doc.inputs, omit_token=omit_token
+        ),
     )
     for filepath in walk_dir_files(input_dir):
         for rendered_input_config in expanded_input_configs:

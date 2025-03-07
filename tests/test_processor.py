@@ -895,9 +895,9 @@ def test_render_input_config_match(
 
 
 @pytest.mark.parametrize(
-    "inputs, expected",
+    "inputs, omit_token, expected",
     [
-        (
+        pytest.param(
             [
                 InputConfig(
                     match="import-data/connect/{{ match_path }}",
@@ -942,6 +942,7 @@ def test_render_input_config_match(
                     ),
                 ),
             ],
+            "MOCK_OMIT_TOKEN",
             [
                 RenderedInputConfig(
                     input_config=InputConfig(
@@ -1006,16 +1007,74 @@ def test_render_input_config_match(
                     ),
                 ),
             ],
+            id="basic",
+        ),
+        pytest.param(
+            [
+                InputConfig(
+                    match="import-data/connect/{{ match_path }}",
+                    config=InputConfigDetails(
+                        extractor="{{ src_extractor | default(omit) }}",
+                        default_file="{{ default_file }}",
+                        prepend_postings=[
+                            PostingTemplate(
+                                account="Expenses:Food",
+                                amount=AmountTemplate(
+                                    number="{{ -(amount - 5) }}",
+                                    currency="{{ currency }}",
+                                ),
+                            ),
+                        ],
+                    ),
+                    loop=[
+                        dict(
+                            match_path="bar.csv",
+                            default_file="output.bean",
+                        ),
+                    ],
+                ),
+            ],
+            "MOCK_OMIT_TOKEN",
+            [
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/bar.csv",
+                        config=InputConfigDetails(
+                            default_file="{{ default_file }}",
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Food",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    vars=dict(
+                        match_path="bar.csv",
+                        default_file="output.bean",
+                    ),
+                ),
+            ],
+            id="omit",
         ),
     ],
 )
 def test_expand_input_loops(
     template_env: template_env,
     inputs: list[InputConfig],
+    omit_token: str,
     expected: list[RenderedInputConfig],
 ):
     assert (
-        list(expand_input_loops(template_env=template_env, inputs=inputs)) == expected
+        list(
+            expand_input_loops(
+                template_env=template_env, inputs=inputs, omit_token=omit_token
+            )
+        )
+        == expected
     )
 
 
