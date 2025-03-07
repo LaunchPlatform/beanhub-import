@@ -926,7 +926,21 @@ def test_render_input_config_match(
                             default_file="eggs.bean",
                         ),
                     ],
-                )
+                ),
+                InputConfig(
+                    match="import-data/connect/other.csv",
+                    config=InputConfigDetails(
+                        prepend_postings=[
+                            PostingTemplate(
+                                account="Expenses:Other",
+                                amount=AmountTemplate(
+                                    number="{{ -(amount - 5) }}",
+                                    currency="{{ currency }}",
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
             ],
             [
                 RenderedInputConfig(
@@ -973,6 +987,22 @@ def test_render_input_config_match(
                         match_path="eggs.csv",
                         src_extractor="chase",
                         default_file="eggs.bean",
+                    ),
+                ),
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/other.csv",
+                        config=InputConfigDetails(
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Other",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
                     ),
                 ),
             ],
