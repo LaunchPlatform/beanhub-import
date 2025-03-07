@@ -20,6 +20,7 @@ from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
 from beanhub_import.data_types import ImportRule
+from beanhub_import.data_types import InputConfig
 from beanhub_import.data_types import InputConfigDetails
 from beanhub_import.data_types import MetadataItem
 from beanhub_import.data_types import MetadataItemTemplate
@@ -35,12 +36,15 @@ from beanhub_import.data_types import StrSuffixMatch
 from beanhub_import.data_types import TransactionTemplate
 from beanhub_import.data_types import TxnMatchVars
 from beanhub_import.data_types import UnprocessedTransaction
+from beanhub_import.processor import expand_input_loops
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
 from beanhub_import.processor import match_transaction_with_vars
 from beanhub_import.processor import process_imports
 from beanhub_import.processor import process_transaction
+from beanhub_import.processor import render_input_config_match
+from beanhub_import.processor import RenderedInputConfig
 from beanhub_import.processor import walk_dir_files
 from beanhub_import.templates import make_environment
 
@@ -854,6 +858,168 @@ def test_process_transaction(
 
 
 @pytest.mark.parametrize(
+    "match, vars, expected",
+    [
+        (
+            "import-data/connect/{{ foo }}",
+            dict(foo="bar.csv"),
+            "import-data/connect/bar.csv",
+        ),
+        (
+            "import-data/connect/eggs.csv",
+            dict(foo="bar.csv"),
+            "import-data/connect/eggs.csv",
+        ),
+        (
+            StrExactMatch(equals="import-data/connect/{{ foo }}"),
+            dict(foo="bar.csv"),
+            StrExactMatch(equals="import-data/connect/bar.csv"),
+        ),
+        (
+            StrRegexMatch(regex="import-data/connect/{{ foo }}"),
+            dict(foo="bar.csv"),
+            StrRegexMatch(regex="import-data/connect/bar.csv"),
+        ),
+    ],
+)
+def test_render_input_config_match(
+    template_env: template_env,
+    match: SimpleFileMatch,
+    vars: dict,
+    expected: SimpleFileMatch,
+):
+    assert (
+        render_input_config_match(template_env=template_env, match=match, vars=vars)
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    "inputs, expected",
+    [
+        (
+            [
+                InputConfig(
+                    match="import-data/connect/{{ match_path }}",
+                    config=InputConfigDetails(
+                        extractor="{{ src_extractor }}",
+                        default_file="{{ default_file }}",
+                        prepend_postings=[
+                            PostingTemplate(
+                                account="Expenses:Food",
+                                amount=AmountTemplate(
+                                    number="{{ -(amount - 5) }}",
+                                    currency="{{ currency }}",
+                                ),
+                            ),
+                        ],
+                    ),
+                    loop=[
+                        dict(
+                            match_path="bar.csv",
+                            src_extractor="mercury",
+                            default_file="output.bean",
+                        ),
+                        dict(
+                            match_path="eggs.csv",
+                            src_extractor="chase",
+                            default_file="eggs.bean",
+                        ),
+                    ],
+                ),
+                InputConfig(
+                    match="import-data/connect/other.csv",
+                    config=InputConfigDetails(
+                        prepend_postings=[
+                            PostingTemplate(
+                                account="Expenses:Other",
+                                amount=AmountTemplate(
+                                    number="{{ -(amount - 5) }}",
+                                    currency="{{ currency }}",
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ],
+            [
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/bar.csv",
+                        config=InputConfigDetails(
+                            extractor="mercury",
+                            default_file="{{ default_file }}",
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Food",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    vars=dict(
+                        match_path="bar.csv",
+                        src_extractor="mercury",
+                        default_file="output.bean",
+                    ),
+                ),
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/eggs.csv",
+                        config=InputConfigDetails(
+                            extractor="chase",
+                            default_file="{{ default_file }}",
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Food",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    vars=dict(
+                        match_path="eggs.csv",
+                        src_extractor="chase",
+                        default_file="eggs.bean",
+                    ),
+                ),
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/other.csv",
+                        config=InputConfigDetails(
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Other",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ],
+        ),
+    ],
+)
+def test_expand_input_loops(
+    template_env: template_env,
+    inputs: list[InputConfig],
+    expected: list[RenderedInputConfig],
+):
+    assert (
+        list(expand_input_loops(template_env=template_env, inputs=inputs)) == expected
+    )
+
+
+@pytest.mark.parametrize(
     "folder, expected",
     [
         (
@@ -1037,6 +1203,123 @@ def test_process_transaction(
                         GeneratedPosting(
                             account="Expenses",
                             amount=Amount(number="1500.00", currency="USD"),
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        (
+            "input-loop",
+            [
+                UnprocessedTransaction(
+                    import_id="chase/2024.csv:-3",
+                    txn=Transaction(
+                        extractor="chase_credit_card",
+                        file=str(pathlib.Path("chase") / "2024.csv"),
+                        lineno=1,
+                        reversed_lineno=-3,
+                        date=datetime.date(2024, 4, 3),
+                        post_date=datetime.date(2024, 4, 5),
+                        desc="APPLE.COM/BILL",
+                        amount=decimal.Decimal("-1.23"),
+                        category="Shopping",
+                        type="Sale",
+                        note="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-1.23", currency="USD"),
+                        )
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="chase/2024.csv:-2",
+                    sources=[str(pathlib.Path("chase") / "2024.csv")],
+                    date="2024-04-02",
+                    flag="*",
+                    narration="Amazon web services",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-6.54", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="6.54", currency="USD"),
+                        ),
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="chase/2024.csv:-1",
+                    txn=Transaction(
+                        extractor="chase_credit_card",
+                        file=str(pathlib.Path("chase") / "2024.csv"),
+                        lineno=3,
+                        reversed_lineno=-1,
+                        date=datetime.date(2024, 4, 1),
+                        post_date=datetime.date(2024, 4, 2),
+                        desc="GITHUB  INC.",
+                        amount=decimal.Decimal("-4.00"),
+                        category="Professional Services",
+                        type="Sale",
+                        note="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-4.00", currency="USD"),
+                        )
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="mercury/2024.csv:-2",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file=str(pathlib.Path("mercury") / "2024.csv"),
+                        lineno=1,
+                        reversed_lineno=-2,
+                        date=datetime.date(2024, 4, 17),
+                        timestamp=datetime.datetime(
+                            2024, 4, 17, 21, 30, 40, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="GUSTO",
+                        bank_desc="GUSTO; FEE 111111; Launch Platform LLC",
+                        amount=decimal.Decimal("-46.00"),
+                        currency="",
+                        category="",
+                        status="Sent",
+                        source_account="Mercury Checking xx12",
+                        note="",
+                        reference="",
+                        gl_code="",
+                        name_on_card="",
+                        last_four_digits="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-46.00", currency="USD"),
+                        )
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="mercury-output.bean",
+                    id="mercury/2024.csv:-1",
+                    sources=[str(pathlib.Path("mercury") / "2024.csv")],
+                    date="2024-04-16",
+                    flag="*",
+                    narration="Amazon Web Services",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-353.63", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="353.63", currency="USD"),
                         ),
                     ],
                 ),

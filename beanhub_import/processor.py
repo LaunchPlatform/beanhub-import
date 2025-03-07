@@ -1,3 +1,4 @@
+import copy
 import dataclasses
 import logging
 import os
@@ -21,6 +22,7 @@ from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
 from .data_types import ImportRule
+from .data_types import InputConfig
 from .data_types import InputConfigDetails
 from .data_types import MetadataItem
 from .data_types import PostingTemplate
@@ -36,6 +38,12 @@ from .data_types import StrSuffixMatch
 from .data_types import TxnMatchVars
 from .data_types import UnprocessedTransaction
 from .templates import make_environment
+
+
+@dataclasses.dataclass(frozen=True)
+class RenderedInputConfig:
+    input_config: InputConfig
+    vars: dict | None = None
 
 
 def walk_dir_files(
@@ -124,6 +132,7 @@ def process_transaction(
     input_config: InputConfigDetails | None,
     omit_token: str | None = None,
     default_import_id: str | None = None,
+    input_vars: dict | None = None,
 ) -> typing.Generator[
     GeneratedTransaction | DeletedTransaction, None, UnprocessedTransaction | None
 ]:
@@ -151,6 +160,8 @@ def process_transaction(
         if value is None:
             return None
         template_ctx = txn_ctx
+        if input_vars is not None:
+            template_ctx |= input_vars
         if matched_vars is not None:
             template_ctx |= matched_vars
         result_value = template_env.from_string(value).render(**template_ctx)
@@ -324,6 +335,49 @@ def generate_postings(
     return generated_postings
 
 
+def render_input_config_match(
+    template_env: SandboxedEnvironment, match: SimpleFileMatch, vars: dict
+) -> SimpleFileMatch:
+    if isinstance(match, str):
+        return template_env.from_string(match).render(**vars)
+    elif isinstance(match, StrExactMatch):
+        return StrExactMatch(
+            equals=template_env.from_string(match.equals).render(**vars)
+        )
+    elif isinstance(match, StrRegexMatch):
+        return StrRegexMatch(regex=template_env.from_string(match.regex).render(**vars))
+    else:
+        raise ValueError(f"Unexpected match type {type(match)}")
+
+
+def expand_input_loops(
+    template_env: SandboxedEnvironment, inputs: list[InputConfig]
+) -> typing.Generator[RenderedInputConfig, None, None]:
+    for input_config in inputs:
+        if input_config.loop is None:
+            yield RenderedInputConfig(input_config=input_config)
+            continue
+        if not input_config.loop:
+            raise ValueError("Loop content cannot be empty")
+        for vars in input_config.loop:
+            rendered_match = render_input_config_match(
+                template_env=template_env, match=input_config.match, vars=vars
+            )
+            config = input_config.config
+            if config.extractor is not None:
+                config = copy.deepcopy(config)
+                config.extractor = template_env.from_string(config.extractor).render(
+                    **vars
+                )
+            yield RenderedInputConfig(
+                input_config=InputConfig(
+                    match=rendered_match,
+                    config=config,
+                ),
+                vars=vars,
+            )
+
+
 def process_imports(
     import_doc: ImportDoc,
     input_dir: pathlib.Path,
@@ -335,8 +389,12 @@ def process_imports(
     omit_token = uuid.uuid4().hex
     if import_doc.context is not None:
         template_env.globals.update(import_doc.context)
+    expanded_input_configs = list(
+        expand_input_loops(template_env=template_env, inputs=import_doc.inputs)
+    )
     for filepath in walk_dir_files(input_dir):
-        for input_config in import_doc.inputs:
+        for rendered_input_config in expanded_input_configs:
+            input_config = rendered_input_config.input_config
             if not match_file(input_config.match, filepath):
                 continue
             rel_filepath = filepath.relative_to(input_dir)
@@ -375,6 +433,7 @@ def process_imports(
                         omit_token=omit_token,
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
+                        input_vars=rendered_input_config.vars,
                     )
                     unprocessed_txn = yield from txn_generator
                     if unprocessed_txn is not None:

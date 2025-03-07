@@ -195,6 +195,7 @@ class InputConfigDetails(ImportBaseModel):
 class InputConfig(ImportBaseModel):
     match: SimpleFileMatch
     config: InputConfigDetails | None = None
+    loop: list[dict] | None = None
 
 
 class OutputConfig(ImportBaseModel):
