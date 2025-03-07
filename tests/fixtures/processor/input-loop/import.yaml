@@ -1,0 +1,28 @@
+inputs:
+- match: "{{ match_path }}"
+  config:
+    prepend_postings:
+      - account: "{{ src_account }}"
+        amount:
+          number: "{{ amount }}"
+          currency: "{{ currency | default('USD', true) }}"
+  loop:
+    - match_path: "mercury/*.csv"
+      src_account: Assets:Bank:US:Mercury
+      output_file: "mercury-output.bean"
+    - match_path: "chase/*.csv"
+      src_account: Assets:Bank:US:Chase
+
+imports:
+  - match:
+      desc: "^Amazon (.+)"
+    actions:
+      - type: add_txn
+        file: "{{ output_file | default('output.bean') }}"
+        txn:
+          narration: "{{ desc }}"
+          postings:
+            - account: "Expenses:AWS"
+              amount:
+                number: "{{ -amount }}"
+                currency: "{{ currency | default('USD', true) }}"

@@ -1105,26 +1105,22 @@ def test_render_input_config_match(
                         )
                     ],
                 ),
-                UnprocessedTransaction(
-                    import_id="chase/2024.csv:-2",
-                    txn=Transaction(
-                        extractor="chase_credit_card",
-                        file=str(pathlib.Path("chase") / "2024.csv"),
-                        lineno=2,
-                        reversed_lineno=-2,
-                        date=datetime.date(2024, 4, 2),
-                        post_date=datetime.date(2024, 4, 3),
-                        desc="Amazon web services",
-                        amount=decimal.Decimal("-6.54"),
-                        category="Personal",
-                        type="Sale",
-                        note="",
-                    ),
-                    prepending_postings=[
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="chase/2024.csv:-2",
+                    sources=[str(pathlib.Path("chase") / "2024.csv")],
+                    date="2024-04-02",
+                    flag="*",
+                    narration="Amazon web services",
+                    postings=[
                         GeneratedPosting(
                             account="Assets:Bank:US:Chase",
                             amount=Amount(number="-6.54", currency="USD"),
-                        )
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="6.54", currency="USD"),
+                        ),
                     ],
                 ),
                 UnprocessedTransaction(
@@ -1182,7 +1178,7 @@ def test_render_input_config_match(
                     ],
                 ),
                 GeneratedTransaction(
-                    file="output.bean",
+                    file="mercury-output.bean",
                     id="mercury/2024.csv:-1",
                     sources=[str(pathlib.Path("mercury") / "2024.csv")],
                     date="2024-04-16",
@@ -1194,7 +1190,7 @@ def test_render_input_config_match(
                             amount=Amount(number="-353.63", currency="USD"),
                         ),
                         GeneratedPosting(
-                            account="",
+                            account="Expenses:AWS",
                             amount=Amount(number="353.63", currency="USD"),
                         ),
                     ],
