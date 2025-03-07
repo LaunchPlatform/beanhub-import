@@ -3,7 +3,7 @@
 version: 2.1
 
 orbs:
-  python: circleci/python@2.1.1
+  python: circleci/python@3.0.0
 
 jobs:
   test:
@@ -12,27 +12,23 @@ jobs:
     steps:
       - checkout
       - python/install-packages:
-          pkg-manager: poetry
+          pkg-manager: uv
       - run:
           name: Run test
-          command: poetry run python -m pytest ./tests -svvvv
+          command: uv run python -m pytest ./tests -svvvv
   build-and-publish:
     docker:
       - image: cimg/python:3.10.11
     steps:
       - checkout
       - python/install-packages:
-          pkg-manager: poetry
-      - run:
-          name: config
-          command: |
-            poetry config http-basic.pypi "__token__" "${POETRY_PYPI_TOKEN_PYPI}"
+          pkg-manager: uv
       - run:
           name: Build
-          command: poetry build
+          command: uv build
       - run:
           name: Publish
-          command: poetry publish
+          command: uv publish
 
 workflows:
   test:
