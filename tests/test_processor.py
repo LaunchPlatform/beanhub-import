@@ -20,6 +20,7 @@ from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
 from beanhub_import.data_types import ImportRule
+from beanhub_import.data_types import InputConfig
 from beanhub_import.data_types import InputConfigDetails
 from beanhub_import.data_types import MetadataItem
 from beanhub_import.data_types import MetadataItemTemplate
@@ -35,6 +36,7 @@ from beanhub_import.data_types import StrSuffixMatch
 from beanhub_import.data_types import TransactionTemplate
 from beanhub_import.data_types import TxnMatchVars
 from beanhub_import.data_types import UnprocessedTransaction
+from beanhub_import.processor import expand_input_loops
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
@@ -42,6 +44,7 @@ from beanhub_import.processor import match_transaction_with_vars
 from beanhub_import.processor import process_imports
 from beanhub_import.processor import process_transaction
 from beanhub_import.processor import render_input_config_match
+from beanhub_import.processor import RenderedInputConfig
 from beanhub_import.processor import walk_dir_files
 from beanhub_import.templates import make_environment
 
@@ -888,6 +891,101 @@ def test_render_input_config_match(
     assert (
         render_input_config_match(template_env=template_env, match=match, vars=vars)
         == expected
+    )
+
+
+@pytest.mark.parametrize(
+    "inputs, expected",
+    [
+        (
+            [
+                InputConfig(
+                    match="import-data/connect/{{ match_path }}",
+                    config=InputConfigDetails(
+                        extractor="{{ src_extractor }}",
+                        default_file="{{ default_file }}",
+                        prepend_postings=[
+                            PostingTemplate(
+                                account="Expenses:Food",
+                                amount=AmountTemplate(
+                                    number="{{ -(amount - 5) }}",
+                                    currency="{{ currency }}",
+                                ),
+                            ),
+                        ],
+                    ),
+                    loop=[
+                        dict(
+                            match_path="bar.csv",
+                            src_extractor="mercury",
+                            default_file="output.bean",
+                        ),
+                        dict(
+                            match_path="eggs.csv",
+                            src_extractor="chase",
+                            default_file="eggs.bean",
+                        ),
+                    ],
+                )
+            ],
+            [
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/bar.csv",
+                        config=InputConfigDetails(
+                            extractor="mercury",
+                            default_file="{{ default_file }}",
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Food",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    vars=dict(
+                        match_path="bar.csv",
+                        src_extractor="mercury",
+                        default_file="output.bean",
+                    ),
+                ),
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/eggs.csv",
+                        config=InputConfigDetails(
+                            extractor="chase",
+                            default_file="{{ default_file }}",
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Food",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    vars=dict(
+                        match_path="eggs.csv",
+                        src_extractor="chase",
+                        default_file="eggs.bean",
+                    ),
+                ),
+            ],
+        ),
+    ],
+)
+def test_expand_input_loops(
+    template_env: template_env,
+    inputs: list[InputConfig],
+    expected: list[RenderedInputConfig],
+):
+    assert (
+        list(expand_input_loops(template_env=template_env, inputs=inputs)) == expected
     )
 
 
