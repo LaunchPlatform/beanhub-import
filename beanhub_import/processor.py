@@ -132,6 +132,7 @@ def process_transaction(
     input_config: InputConfigDetails | None,
     omit_token: str | None = None,
     default_import_id: str | None = None,
+    input_vars: dict | None = None,
 ) -> typing.Generator[
     GeneratedTransaction | DeletedTransaction, None, UnprocessedTransaction | None
 ]:
@@ -159,6 +160,8 @@ def process_transaction(
         if value is None:
             return None
         template_ctx = txn_ctx
+        if input_vars is not None:
+            template_ctx |= input_vars
         if matched_vars is not None:
             template_ctx |= matched_vars
         result_value = template_env.from_string(value).render(**template_ctx)
@@ -386,8 +389,8 @@ def process_imports(
     omit_token = uuid.uuid4().hex
     if import_doc.context is not None:
         template_env.globals.update(import_doc.context)
-    expanded_input_configs = expand_input_loops(
-        template_env=template_env, inputs=import_doc.inputs
+    expanded_input_configs = list(
+        expand_input_loops(template_env=template_env, inputs=import_doc.inputs)
     )
     for filepath in walk_dir_files(input_dir):
         for rendered_input_config in expanded_input_configs:
@@ -430,6 +433,7 @@ def process_imports(
                         omit_token=omit_token,
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
+                        input_vars=rendered_input_config.vars,
                     )
                     unprocessed_txn = yield from txn_generator
                     if unprocessed_txn is not None:
