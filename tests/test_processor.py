@@ -41,6 +41,7 @@ from beanhub_import.processor import match_transaction
 from beanhub_import.processor import match_transaction_with_vars
 from beanhub_import.processor import process_imports
 from beanhub_import.processor import process_transaction
+from beanhub_import.processor import render_input_config_match
 from beanhub_import.processor import walk_dir_files
 from beanhub_import.templates import make_environment
 
@@ -851,6 +852,38 @@ def test_process_transaction(
 
     assert list(get_result()) == expected
     assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "match, vars, expected",
+    [
+        (
+            "import-data/connect/{{ foo }}",
+            dict(foo="bar.csv"),
+            "import-data/connect/bar.csv",
+        ),
+        (
+            "import-data/connect/eggs.csv",
+            dict(foo="bar.csv"),
+            "import-data/connect/eggs.csv",
+        ),
+        (
+            StrExactMatch(equals="import-data/connect/{{ foo }}"),
+            dict(foo="bar.csv"),
+            StrExactMatch(equals="import-data/connect/bar.csv"),
+        ),
+    ],
+)
+def test_render_input_config_match(
+    template_env: template_env,
+    match: SimpleFileMatch,
+    vars: dict,
+    expected: SimpleFileMatch,
+):
+    assert (
+        render_input_config_match(template_env=template_env, match=match, vars=vars)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
