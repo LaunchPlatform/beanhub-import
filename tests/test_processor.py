@@ -872,6 +872,11 @@ def test_process_transaction(
             dict(foo="bar.csv"),
             StrExactMatch(equals="import-data/connect/bar.csv"),
         ),
+        (
+            StrRegexMatch(regex="import-data/connect/{{ foo }}"),
+            dict(foo="bar.csv"),
+            StrRegexMatch(regex="import-data/connect/bar.csv"),
+        ),
     ],
 )
 def test_render_input_config_match(
