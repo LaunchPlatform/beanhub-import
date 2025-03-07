@@ -2,18 +2,15 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-orbs:
-  python: circleci/python@3.0.0
-
 jobs:
   test:
     docker:
       - image: cimg/python:3.10.11
     steps:
       - checkout
-      - python/install-packages:
-          pkg-manager: pip
-          args: uv
+      - run:
+          name: Install uv
+          command: pip install uv
       - run:
           name: Run test
           command: uv run python -m pytest ./tests -svvvv
@@ -22,9 +19,9 @@ jobs:
       - image: cimg/python:3.10.11
     steps:
       - checkout
-      - python/install-packages:
-          pkg-manager: pip
-          args: uv
+      - run:
+          name: Install uv
+          command: pip install uv
       - run:
           name: Build
           command: uv build
