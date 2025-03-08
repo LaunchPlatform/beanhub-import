@@ -1332,14 +1332,41 @@ def test_eval_filter(
 @pytest.mark.parametrize(
     "operation, txns, expected",
     [
-        (
-            FilterFieldOperation(field="date", op=">=", value="2025-01-01"),
+        pytest.param(
+            FilterFieldOperation(
+                field="date", op=FilterOperator.greater_equal, value="2025-01-01"
+            ),
             [
                 Transaction(extractor="mercury", date=datetime.date(2025, 1, 1)),
                 Transaction(extractor="mercury", date=datetime.date(2024, 12, 31)),
             ],
             [True, False],
-        )
+            id="date-field",
+        ),
+        pytest.param(
+            FilterFieldOperation(
+                field="lineno", op=FilterOperator.greater_equal, value="1234"
+            ),
+            [
+                Transaction(extractor="mercury", lineno=1233),
+                Transaction(extractor="mercury", lineno=1234),
+                Transaction(extractor="mercury", lineno=1235),
+            ],
+            [False, True, True],
+            id="int-field",
+        ),
+        pytest.param(
+            FilterFieldOperation(
+                field="extractor", op=FilterOperator.equal, value="chase"
+            ),
+            [
+                Transaction(extractor="mercury", lineno=1233),
+                Transaction(extractor="mercury", lineno=1235),
+                Transaction(extractor="chase", lineno=5),
+            ],
+            [False, False, True],
+            id="int-field",
+        ),
     ],
 )
 def test_filter_transaction(

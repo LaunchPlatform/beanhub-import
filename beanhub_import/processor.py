@@ -468,6 +468,8 @@ def filter_transaction(operation: FilterFieldOperation, txn: Transaction) -> boo
         rhs = iso8601.parse_date(operation.value)
     elif isinstance(lhs, str):
         rhs = operation.value
+    elif isinstance(lhs, int):
+        rhs = int(operation.value)
     elif isinstance(lhs, decimal.Decimal):
         rhs = decimal.Decimal(operation.value)
     else:
