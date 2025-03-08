@@ -58,7 +58,9 @@ The key is the variable name, and the value is the actual value to be rendered i
 
 ## Loop with filters
 
-A [filter](./filter.md) usually comes as a list, but it can also be a Jinja2 template to be replaced with a variable defined in the loop. In that way, you can define different filters for each input rule. For example:
+A [filter](./filter.md) usually comes as a list, but it can also be a Jinja2 template to be replaced with a variable defined in the loop.
+In that way, you can define different filters for each input rule.
+For example:
 
 ```yaml
 inputs:
@@ -85,7 +87,8 @@ inputs:
       input_account: Liabilities:CreditCard:US:AMEXBlueCashEveryday
 ```
 
-If you provide the filter as a list of objects, we will render the content with loop variables as well. For example:
+If you provide the filter as a list of objects, we will render the content with loop variables as well.
+For example:
 
 ```yaml
 inputs:
