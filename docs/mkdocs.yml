@@ -34,7 +34,12 @@ nav:
   - 'Import Scheme':
     - 'Import Doc': 'scheme/import-doc.md'
     - 'Context': 'scheme/context.md'
-    - 'Input Config': 'scheme/input-config.md'
+    - 'Input Config':
+        - 'Input Config': 'scheme/input-config/input-config.md'
+        - 'Simple File Match': 'scheme/input-config/match.md'
+        - 'Config': 'scheme/input-config/config.md'
+        - 'Filter': 'scheme/input-config/filter.md'
+        - 'Loop': 'scheme/input-config/loop.md'
     - 'Import Config':
       - 'Import Config': 'scheme/import-config/import-config.md'
       - 'Basic Match Rules': 'scheme/import-config/basic-match.md'
