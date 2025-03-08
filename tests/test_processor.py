@@ -1226,7 +1226,7 @@ def test_render_input_config_match(
     ],
 )
 def test_expand_input_loops(
-    template_env: template_env,
+    template_env: SandboxedEnvironment,
     inputs: list[InputConfig],
     expected: list[RenderedInputConfig],
 ):
