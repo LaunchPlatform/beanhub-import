@@ -1,6 +1,7 @@
 import ast
 import copy
 import dataclasses
+import functools
 import logging
 import os
 import pathlib
@@ -396,8 +397,8 @@ def render_raw_filter_operation(
     return FilterFieldOperation(
         **dict(
             filter(
-                lambda item: item[0] != omit_token and item[1] != omit_token,
-                ((render_str(key), render_str(value)) for key, value in obj.items()),
+                lambda item: item[1] != omit_token,
+                ((key, render_str(value)) for key, value in obj.items()),
             )
         )
     )
@@ -413,7 +414,12 @@ def eval_filter(
         filter_adapter = TypeAdapter(list[FilterFieldOperation])
         return filter_adapter.validate_python(ast.literal_eval(filter_value))
     elif isinstance(raw_filter, list):
-        return None
+        return list(
+            map(
+                functools.partial(render_raw_filter_operation, render_str, omit_token),
+                raw_filter,
+            )
+        )
     else:
         raise ValueError(f"Unexpected filter type {type(raw_filter)}")
 

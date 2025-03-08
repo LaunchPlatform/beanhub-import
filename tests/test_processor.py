@@ -17,6 +17,8 @@ from beanhub_import.data_types import Amount
 from beanhub_import.data_types import AmountTemplate
 from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import DeleteTransactionTemplate
+from beanhub_import.data_types import FilterFieldOperation
+from beanhub_import.data_types import FilterOperator
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
@@ -1085,7 +1087,7 @@ def test_expand_input_loops(
     "values, raw_filter, expected",
     [
         (
-            dict(field_value="mock_field", op=">=", value="mock_value"),
+            dict(field="mock_field", op=">=", value="mock_value"),
             [
                 RawFilterFieldOperation(
                     field="{{ field }}",
@@ -1094,9 +1096,9 @@ def test_expand_input_loops(
                 ),
             ],
             [
-                RawFilterFieldOperation(
+                FilterFieldOperation(
                     field="mock_field",
-                    op=">=",
+                    op=FilterOperator.greater_equal,
                     value="mock_value",
                 ),
             ],
