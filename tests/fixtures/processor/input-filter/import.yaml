@@ -1,0 +1,30 @@
+inputs:
+- match: "mercury.csv"
+  config:
+    extractor: "mercury"
+    prepend_postings:
+      - account: Assets:NonBank:US:Mercury
+        amount:
+          number: "{{ amount }}"
+          currency: "{{ currency | default('USD', true) }}"
+  filter:
+    - field: date
+      op: "<="
+      value: "2024-04-16"
+    - field: amount
+      op: "<"
+      value: "-1.23"
+
+imports:
+  - match:
+      desc: "^Amazon (.+)"
+    actions:
+      - type: add_txn
+        file: "output.bean"
+        txn:
+          narration: "{{ desc }}"
+          postings:
+            - account: "Expenses:AWS"
+              amount:
+                number: "{{ -amount }}"
+                currency: "{{ currency | default('USD', true) }}"

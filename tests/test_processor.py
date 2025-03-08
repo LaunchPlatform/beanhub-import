@@ -1710,6 +1710,29 @@ def test_filter_transaction(
                 ),
             ],
         ),
+        (
+            "input-filter",
+            [
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="mercury.csv:-2",
+                    sources=["mercury.csv"],
+                    date="2024-04-16",
+                    flag="*",
+                    narration="Amazon Web Services",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:NonBank:US:Mercury",
+                            amount=Amount(number="-353.63", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="353.63", currency="USD"),
+                        ),
+                    ],
+                ),
+            ],
+        ),
     ],
 )
 def test_process_imports(
