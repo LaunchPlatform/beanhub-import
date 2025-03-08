@@ -35,14 +35,16 @@ inputs:
       prepend_postings:
         - account: "{{ src_account }}"
           amount:
-            number: "{{ amount * (amount_scalar | int) }}"
+            number: "{{ amount * amount_scalar }}"
             currency: "{{ currency | default('USD', true) }}"
     loop:
     - match_path: "mercury/*.csv"
       input_account: Assets:NonBank:US:Mercury
       input_extractor: mercury
+      amount_scalar: 1
     - match_path: "connect/American Express/Blue Cash Everyday/*.csv"
       input_account: Liabilities:CreditCard:US:AMEXBlueCashEveryday
+      amount_scalar: -1
 ```
 
 ## Schema

@@ -5,16 +5,18 @@ inputs:
     prepend_postings:
       - account: "{{ src_account }}"
         amount:
-          number: "{{ amount }}"
+          number: "{{ amount * scalar }}"
           currency: "{{ currency | default('USD', true) }}"
   loop:
     - match_path: "mercury/*.csv"
       src_account: Assets:Bank:US:Mercury
       src_extractor: mercury
       output_file: "mercury-output.bean"
+      scalar: 1
     - match_path: "chase/*.csv"
       src_account: Assets:Bank:US:Chase
       src_extractor: chase_credit_card
+      scalar: -1
 
 imports:
   - match:
