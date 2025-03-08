@@ -17,7 +17,7 @@ inputs:
             currency: "{{ currency | default('USD', true) }}"
 ```
 
-However, the input data from tools like BeanHub's [Direct Connect](https://academy.beanhub.io/automation/bank-txns/beanhub-direct-connect/) usually provides bank transaction CSV files that go back a few years.
+However, the input data from services like BeanHub's [Direct Connect](https://academy.beanhub.io/automation/bank-txns/beanhub-direct-connect/) usually provides bank transaction CSV files that go back a few years.
 It may include the transactions from 2024 as well.
 Since you already have your transactions in 2024 handwritten, you want to exclude transactions before 2025-01-01.
 In that case, you can use a filter to filter out transactions before 2025-01-1.
