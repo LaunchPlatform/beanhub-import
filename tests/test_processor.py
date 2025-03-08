@@ -1711,6 +1711,91 @@ def test_filter_transaction(
             ],
         ),
         (
+            "input-loop-filter",
+            [
+                UnprocessedTransaction(
+                    import_id="chase/2024.csv:-3",
+                    txn=Transaction(
+                        extractor="chase_credit_card",
+                        file=str(pathlib.Path("chase") / "2024.csv"),
+                        lineno=1,
+                        reversed_lineno=-3,
+                        date=datetime.date(2024, 4, 3),
+                        post_date=datetime.date(2024, 4, 5),
+                        desc="APPLE.COM/BILL",
+                        amount=decimal.Decimal("-1.23"),
+                        category="Shopping",
+                        type="Sale",
+                        note="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-1.23", currency="USD"),
+                        )
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="chase/2024.csv:-2",
+                    sources=[str(pathlib.Path("chase") / "2024.csv")],
+                    date="2024-04-02",
+                    flag="*",
+                    narration="Amazon web services",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-6.54", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="6.54", currency="USD"),
+                        ),
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="chase/2024.csv:-1",
+                    txn=Transaction(
+                        extractor="chase_credit_card",
+                        file=str(pathlib.Path("chase") / "2024.csv"),
+                        lineno=3,
+                        reversed_lineno=-1,
+                        date=datetime.date(2024, 4, 1),
+                        post_date=datetime.date(2024, 4, 2),
+                        desc="GITHUB  INC.",
+                        amount=decimal.Decimal("-4.00"),
+                        category="Professional Services",
+                        type="Sale",
+                        note="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-4.00", currency="USD"),
+                        )
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="mercury-output.bean",
+                    id="mercury/2024.csv:-2",
+                    sources=[str(pathlib.Path("mercury") / "2024.csv")],
+                    date="2024-04-16",
+                    flag="*",
+                    narration="Amazon Web Services",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-353.63", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="353.63", currency="USD"),
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        (
             "input-filter",
             [
                 GeneratedTransaction(
