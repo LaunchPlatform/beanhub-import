@@ -3,14 +3,14 @@ inputs:
   config:
     extractor: "{{ src_extractor }}"
     prepend_postings:
-      - account: "{{ src_account }}"
+      - account: "{{ input_account }}"
         amount:
           number: "{{ amount }}"
           currency: "{{ currency | default('USD', true) }}"
   filter: "{{ filter | default(omit) }}"
   loop:
     - match_path: "mercury/*.csv"
-      src_account: Assets:Bank:US:Mercury
+      input_account: Assets:Bank:US:Mercury
       src_extractor: mercury
       output_file: "mercury-output.bean"
       filter:
@@ -21,7 +21,7 @@ inputs:
           op: "<"
           value: "-1.23"
     - match_path: "chase/*.csv"
-      src_account: Assets:Bank:US:Chase
+      input_account: Assets:Bank:US:Chase
       src_extractor: chase_credit_card
 
 imports:

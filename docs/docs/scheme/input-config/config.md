@@ -1,4 +1,4 @@
-## Config
+# Config
 
 The following keys are available for the input configuration:
 

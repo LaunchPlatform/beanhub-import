@@ -7,13 +7,11 @@ title: BeanHub Import
 Beanhub-import is a simple, declarative, smart, and easy-to-use library for importing extracted transactions from [beanhub-extract](https://github.com/LaunchPlatform/beanhub-extract).
 It generates Beancount transactions based on predefined rules.
 
-Please also checkout our blog posts about the BeanHub Import and BeanHub Connect features based on this tool:
+Please also checkout our blog posts about the BeanHub Import, BeanHub Connect and BeanHub Direct Connect features:
 
 - [BeanHub Import - One small step closer to fully automating transaction importing](https://beanhub.io/blog/2024/05/27/introduction-of-beanhub-import/)
 - [BeanHub Connect - one giant leap with fully automatic bank transactions import from 12,000+ financial institutions in 17 countries for all Beancount users!](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/)
-
-!!! note "Subject to changes"
-    This project is still in early stage, still subject to rapid major changes
+- [Direct Connect: Pulling transactions as CSV files from banks via Plaid directly](https://beanhub.io/blog/2025/01/16/direct-connect-repository/)
 
 ## Features
 
@@ -102,8 +100,8 @@ inputs:
       default_file: "books/{{ date.year }}.bean"
       # postings to prepend for all transactions generated from this input file
       prepend_postings:
-        # the `src_account` will be replaced with the variable value provided in the loop
-        - account: "{{ src_account }}"
+        # the `input_account` will be replaced with the variable value provided in the loop
+        - account: "{{ input_account }}"
           amount:
             number: "{{ amount }}"
             currency: "{{ currency | default('USD', true) }}"
@@ -121,10 +119,10 @@ inputs:
     # the same input config over and over
     loop:
     - match_path: mercury/*.csv
-      src_account: Assets:Bank:US:Mercury
+      input_account: Assets:Bank:US:Mercury
       extractor: mercury
     - match_path: chase/*.csv
-      src_account: Assets:Bank:US:Chase
+      input_account: Assets:Bank:US:Chase
       extractor: chase_credit_card
 
 # the `imports` defines the rules to match transactions extracted from the input files and

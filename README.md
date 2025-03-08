@@ -106,8 +106,8 @@ inputs:
       default_file: "books/{{ date.year }}.bean"
       # postings to prepend for all transactions generated from this input file
       prepend_postings:
-        # the `src_account` will be replaced with the variable value provided in the loop
-        - account: "{{ src_account }}"
+        # the `input_account` will be replaced with the variable value provided in the loop
+        - account: "{{ input_account }}"
           amount:
             number: "{{ amount }}"
             currency: "{{ currency | default('USD', true) }}"
@@ -125,10 +125,10 @@ inputs:
     # the same input config over and over
     loop:
     - match_path: mercury/*.csv
-      src_account: Assets:Bank:US:Mercury
+      input_account: Assets:Bank:US:Mercury
       extractor: mercury
     - match_path: chase/*.csv
-      src_account: Assets:Bank:US:Chase
+      input_account: Assets:Bank:US:Chase
       extractor: chase_credit_card
 
 # the `imports` defines the rules to match transactions extracted from the input files and
