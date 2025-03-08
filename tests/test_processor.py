@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import functools
 import pathlib
 import typing
 
@@ -44,6 +45,7 @@ from beanhub_import.data_types import UnprocessedTransaction
 from beanhub_import.processor import eval_filter
 from beanhub_import.processor import expand_input_loops
 from beanhub_import.processor import Filter
+from beanhub_import.processor import filter_transaction
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
@@ -1325,6 +1327,26 @@ def test_eval_filter(
         eval_filter(render_str=render_str, omit_token=omit_token, raw_filter=raw_filter)
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    "operation, txns, expected",
+    [
+        (
+            FilterFieldOperation(field="date", op=">=", value="2025-01-01"),
+            [
+                Transaction(extractor="mercury", date=datetime.date(2025, 1, 1)),
+                Transaction(extractor="mercury", date=datetime.date(2024, 12, 31)),
+            ],
+            [True, False],
+        )
+    ],
+)
+def test_filter_transaction(
+    operation: FilterFieldOperation, txns: list[Transaction], expected: list[bool]
+):
+    results = list(map(functools.partial(filter_transaction, operation), txns))
+    assert results == expected
 
 
 @pytest.mark.parametrize(

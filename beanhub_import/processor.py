@@ -1,8 +1,11 @@
 import ast
 import copy
 import dataclasses
+import datetime
+import decimal
 import functools
 import logging
+import operator
 import os
 import pathlib
 import re
@@ -10,6 +13,8 @@ import typing
 import uuid
 import warnings
 
+import iso8601
+from beancount_black.formatter import parse_date
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
 from beanhub_extract.extractors import detect_extractor
@@ -22,6 +27,7 @@ from .data_types import Amount
 from .data_types import DeletedTransaction
 from .data_types import Filter
 from .data_types import FilterFieldOperation
+from .data_types import FilterOperator
 from .data_types import FiltersAdapter
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
@@ -45,6 +51,15 @@ from .data_types import StrSuffixMatch
 from .data_types import TxnMatchVars
 from .data_types import UnprocessedTransaction
 from .templates import make_environment
+
+FILTER_OPERATOR_MAP: dict[FilterOperator, typing.Callable] = {
+    FilterOperator.equal: operator.eq,
+    FilterOperator.not_equal: operator.ne,
+    FilterOperator.greater: operator.gt,
+    FilterOperator.greater_equal: operator.ge,
+    FilterOperator.less: operator.lt,
+    FilterOperator.less_equal: operator.le,
+}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -443,6 +458,24 @@ def eval_filter(
         )
     else:
         raise ValueError(f"Unexpected filter type {type(raw_filter)}")
+
+
+def filter_transaction(operation: FilterFieldOperation, txn: Transaction) -> bool:
+    lhs = getattr(txn, operation.field)
+    if isinstance(lhs, datetime.date):
+        rhs = parse_date(operation.value)
+    elif isinstance(lhs, datetime.datetime):
+        rhs = iso8601.parse_date(operation.value)
+    elif isinstance(lhs, str):
+        rhs = operation.value
+    elif isinstance(lhs, decimal.Decimal):
+        rhs = decimal.Decimal(operation.value)
+    else:
+        raise ValueError(
+            f"Unexpected field value type {type(lhs)} for field {operation.field}"
+        )
+    func = FILTER_OPERATOR_MAP[operation.op]
+    return func(lhs, rhs)
 
 
 def process_imports(
