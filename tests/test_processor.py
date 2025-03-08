@@ -1,4 +1,3 @@
-import ast
 import datetime
 import decimal
 import pathlib
@@ -19,6 +18,7 @@ from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import DeleteTransactionTemplate
 from beanhub_import.data_types import FilterFieldOperation
 from beanhub_import.data_types import FilterOperator
+from beanhub_import.data_types import FiltersAdapter
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
@@ -1086,13 +1086,18 @@ def test_expand_input_loops(
 @pytest.mark.parametrize(
     "values, raw_filter, expected",
     [
-        (
+        pytest.param(
             dict(field="mock_field", op=">=", value="mock_value"),
             [
                 RawFilterFieldOperation(
                     field="{{ field }}",
                     op="{{ op }}",
                     value="{{ value }}",
+                ),
+                RawFilterFieldOperation(
+                    field="{{ field }}_2",
+                    op="==",
+                    value="{{ value }}_2",
                 ),
             ],
             [
@@ -1101,7 +1106,52 @@ def test_expand_input_loops(
                     op=FilterOperator.greater_equal,
                     value="mock_value",
                 ),
+                FilterFieldOperation(
+                    field="mock_field_2",
+                    op=FilterOperator.equal,
+                    value="mock_value_2",
+                ),
             ],
+            id="list",
+        ),
+        pytest.param(
+            dict(
+                filter=FiltersAdapter.dump_python(
+                    [
+                        FilterFieldOperation(
+                            field="mock_field",
+                            op=FilterOperator.greater_equal,
+                            value="mock_value",
+                        ),
+                        FilterFieldOperation(
+                            field="mock_field_2",
+                            op=FilterOperator.equal,
+                            value="mock_value_2",
+                        ),
+                    ],
+                    mode="json",
+                )
+            ),
+            "{{ filter }}",
+            [
+                FilterFieldOperation(
+                    field="mock_field",
+                    op=FilterOperator.greater_equal,
+                    value="mock_value",
+                ),
+                FilterFieldOperation(
+                    field="mock_field_2",
+                    op=FilterOperator.equal,
+                    value="mock_value_2",
+                ),
+            ],
+            id="render-str-eval",
+        ),
+        pytest.param(
+            dict(),
+            "{{ omit }}",
+            None,
+            id="omit",
         ),
     ],
 )

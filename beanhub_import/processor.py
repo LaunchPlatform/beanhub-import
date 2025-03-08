@@ -15,7 +15,6 @@ from beanhub_extract.extractors import ALL_EXTRACTORS
 from beanhub_extract.extractors import detect_extractor
 from beanhub_extract.utils import strip_txn_base_path
 from jinja2.sandbox import SandboxedEnvironment
-from pydantic import TypeAdapter
 
 from . import constants
 from .data_types import ActionType
@@ -23,7 +22,7 @@ from .data_types import Amount
 from .data_types import DeletedTransaction
 from .data_types import Filter
 from .data_types import FilterFieldOperation
-from .data_types import FilterOperation
+from .data_types import FiltersAdapter
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
@@ -411,8 +410,7 @@ def eval_filter(
         filter_value = render_str(raw_filter)
         if filter_value == omit_token:
             return None
-        filter_adapter = TypeAdapter(list[FilterFieldOperation])
-        return filter_adapter.validate_python(ast.literal_eval(filter_value))
+        return FiltersAdapter.validate_python(ast.literal_eval(filter_value))
     elif isinstance(raw_filter, list):
         return list(
             map(

@@ -7,6 +7,7 @@ from datetime import datetime
 import pydantic
 from beanhub_extract.data_types import Transaction
 from pydantic import BaseModel
+from pydantic import TypeAdapter
 
 
 class ImportBaseModel(BaseModel):
@@ -219,6 +220,7 @@ class FilterFieldOperation(FilterOperation):
 
 RawFilter = str | list[RawFilterFieldOperation]
 Filter = list[FilterFieldOperation]
+FiltersAdapter = TypeAdapter(list[FilterFieldOperation])
 
 
 class InputConfig(ImportBaseModel):
