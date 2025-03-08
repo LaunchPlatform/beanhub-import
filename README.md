@@ -5,8 +5,6 @@ It generates Beancount transactions based on predefined rules.
 
 Read the [documentations here](https://beanhub-import-docs.beanhub.io/).
 
-**Note**: This project is still in early stage, still subject to rapid major changes
-
 Please also checkout our blog posts about the BeanHub Import and BeanHub Connect features based on this tool:
 - [BeanHub Import - One small step closer to fully automating transaction importing](https://beanhub.io/blog/2024/05/27/introduction-of-beanhub-import/)
 - [BeanHub Connect - one giant leap with fully automatic bank transactions import from 12,000+ financial institutions in 17 countries for all Beancount users!](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/)
