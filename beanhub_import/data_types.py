@@ -178,7 +178,6 @@ class ActionIgnore(ImportBaseModel):
 
 Action = ActionAddTxn | ActionDelTxn | ActionIgnore
 
-
 SimpleFileMatch = str | StrExactMatch | StrRegexMatch
 
 
@@ -192,9 +191,40 @@ class InputConfigDetails(ImportBaseModel):
     default_txn: TransactionTemplate | None = None
 
 
+class FilterOperation(ImportBaseModel):
+    pass
+
+
+@enum.unique
+class FilterOperator(str, enum.Enum):
+    equal = "=="
+    not_equal = "!="
+    greater = ">"
+    greater_equal = ">="
+    less = "<"
+    less_equal = "<="
+
+
+class RawFilterFieldOperation(FilterOperation):
+    field: str
+    op: str
+    value: str
+
+
+class FilterFieldOperation(FilterOperation):
+    field: str
+    op: FilterOperator
+    value: str
+
+
+RawFilter = str | list[RawFilterFieldOperation]
+Filter = list[FilterFieldOperation]
+
+
 class InputConfig(ImportBaseModel):
     match: SimpleFileMatch
     config: InputConfigDetails | None = None
+    filter: RawFilter | None = None
     loop: list[dict] | None = None
 
 

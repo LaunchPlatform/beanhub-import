@@ -1,3 +1,4 @@
+import ast
 import datetime
 import decimal
 import pathlib
@@ -858,7 +859,7 @@ def test_process_transaction(
 
 
 @pytest.mark.parametrize(
-    "match, vars, expected",
+    "match, values, expected",
     [
         (
             "import-data/connect/{{ foo }}",
@@ -883,15 +884,13 @@ def test_process_transaction(
     ],
 )
 def test_render_input_config_match(
-    template_env: template_env,
+    template_env: SandboxedEnvironment,
     match: SimpleFileMatch,
-    vars: dict,
+    values: dict,
     expected: SimpleFileMatch,
 ):
-    assert (
-        render_input_config_match(template_env=template_env, match=match, vars=vars)
-        == expected
-    )
+    render_str = lambda value: template_env.from_string(value).render(values)
+    assert render_input_config_match(render_str=render_str, match=match) == expected
 
 
 @pytest.mark.parametrize(
@@ -961,7 +960,7 @@ def test_render_input_config_match(
                             ],
                         ),
                     ),
-                    vars=dict(
+                    values=dict(
                         match_path="bar.csv",
                         src_extractor="mercury",
                         default_file="output.bean",
@@ -984,7 +983,7 @@ def test_render_input_config_match(
                             ],
                         ),
                     ),
-                    vars=dict(
+                    values=dict(
                         match_path="eggs.csv",
                         src_extractor="chase",
                         default_file="eggs.bean",
@@ -1052,7 +1051,7 @@ def test_render_input_config_match(
                             ],
                         ),
                     ),
-                    vars=dict(
+                    values=dict(
                         match_path="bar.csv",
                         default_file="output.bean",
                     ),
