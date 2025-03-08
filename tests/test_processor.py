@@ -26,6 +26,8 @@ from beanhub_import.data_types import InputConfigDetails
 from beanhub_import.data_types import MetadataItem
 from beanhub_import.data_types import MetadataItemTemplate
 from beanhub_import.data_types import PostingTemplate
+from beanhub_import.data_types import RawFilter
+from beanhub_import.data_types import RawFilterFieldOperation
 from beanhub_import.data_types import SimpleFileMatch
 from beanhub_import.data_types import SimpleTxnMatchRule
 from beanhub_import.data_types import StrContainsMatch
@@ -37,7 +39,9 @@ from beanhub_import.data_types import StrSuffixMatch
 from beanhub_import.data_types import TransactionTemplate
 from beanhub_import.data_types import TxnMatchVars
 from beanhub_import.data_types import UnprocessedTransaction
+from beanhub_import.processor import eval_filter
 from beanhub_import.processor import expand_input_loops
+from beanhub_import.processor import Filter
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
@@ -1073,6 +1077,44 @@ def test_expand_input_loops(
                 template_env=template_env, inputs=inputs, omit_token=omit_token
             )
         )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    "values, raw_filter, expected",
+    [
+        (
+            dict(field_value="mock_field", op=">=", value="mock_value"),
+            [
+                RawFilterFieldOperation(
+                    field="{{ field }}",
+                    op="{{ op }}",
+                    value="{{ value }}",
+                ),
+            ],
+            [
+                RawFilterFieldOperation(
+                    field="mock_field",
+                    op=">=",
+                    value="mock_value",
+                ),
+            ],
+        ),
+    ],
+)
+def test_eval_filter(
+    template_env: SandboxedEnvironment,
+    values: dict,
+    raw_filter: RawFilter,
+    expected: list[Filter] | None,
+):
+    omit_token = "MOCK_OMIT_TOKEN"
+    render_str = lambda value: template_env.from_string(value).render(
+        dict(omit=omit_token) | values
+    )
+    assert (
+        eval_filter(render_str=render_str, omit_token=omit_token, raw_filter=raw_filter)
         == expected
     )
 
