@@ -900,7 +900,7 @@ def test_render_input_config_match(
 
 
 @pytest.mark.parametrize(
-    "inputs, omit_token, expected",
+    "inputs, expected",
     [
         pytest.param(
             [
@@ -947,7 +947,6 @@ def test_render_input_config_match(
                     ),
                 ),
             ],
-            "MOCK_OMIT_TOKEN",
             [
                 RenderedInputConfig(
                     input_config=InputConfig(
@@ -1019,6 +1018,164 @@ def test_render_input_config_match(
                 InputConfig(
                     match="import-data/connect/{{ match_path }}",
                     config=InputConfigDetails(
+                        extractor="{{ src_extractor }}",
+                        default_file="{{ default_file }}",
+                        prepend_postings=[
+                            PostingTemplate(
+                                account="Expenses:Food",
+                                amount=AmountTemplate(
+                                    number="{{ -(amount - 5) }}",
+                                    currency="{{ currency }}",
+                                ),
+                            ),
+                        ],
+                    ),
+                    filter=[
+                        RawFilterFieldOperation(
+                            field="{{ field }}",
+                            op="{{ op }}",
+                            value="{{ value }}",
+                        ),
+                    ],
+                    loop=[
+                        dict(
+                            match_path="bar.csv",
+                            src_extractor="mercury",
+                            default_file="output.bean",
+                            field="date",
+                            op=">=",
+                            value="2025-01-01",
+                        ),
+                        dict(
+                            match_path="eggs.csv",
+                            src_extractor="chase",
+                            default_file="eggs.bean",
+                            field="lineno",
+                            op="!=",
+                            value="1234",
+                        ),
+                    ],
+                ),
+                InputConfig(
+                    match="import-data/connect/other.csv",
+                    config=InputConfigDetails(
+                        prepend_postings=[
+                            PostingTemplate(
+                                account="Expenses:Other",
+                                amount=AmountTemplate(
+                                    number="{{ -(amount - 5) }}",
+                                    currency="{{ currency }}",
+                                ),
+                            ),
+                        ],
+                    ),
+                    filter=[
+                        RawFilterFieldOperation(
+                            field="mock_field",
+                            op=FilterOperator.greater_equal.value,
+                            value="mock_value",
+                        ),
+                    ],
+                ),
+            ],
+            [
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/bar.csv",
+                        config=InputConfigDetails(
+                            extractor="mercury",
+                            default_file="{{ default_file }}",
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Food",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    filter=[
+                        FilterFieldOperation(
+                            field="date",
+                            op=FilterOperator.greater_equal,
+                            value="2025-01-01",
+                        ),
+                    ],
+                    values=dict(
+                        match_path="bar.csv",
+                        src_extractor="mercury",
+                        default_file="output.bean",
+                        field="date",
+                        op=">=",
+                        value="2025-01-01",
+                    ),
+                ),
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/eggs.csv",
+                        config=InputConfigDetails(
+                            extractor="chase",
+                            default_file="{{ default_file }}",
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Food",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    filter=[
+                        FilterFieldOperation(
+                            field="lineno",
+                            op=FilterOperator.not_equal,
+                            value="1234",
+                        ),
+                    ],
+                    values=dict(
+                        match_path="eggs.csv",
+                        src_extractor="chase",
+                        default_file="eggs.bean",
+                        field="lineno",
+                        op="!=",
+                        value="1234",
+                    ),
+                ),
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/other.csv",
+                        config=InputConfigDetails(
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Other",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    filter=[
+                        FilterFieldOperation(
+                            field="mock_field",
+                            op=FilterOperator.greater_equal,
+                            value="mock_value",
+                        ),
+                    ],
+                ),
+            ],
+            id="filter",
+        ),
+        pytest.param(
+            [
+                InputConfig(
+                    match="import-data/connect/{{ match_path }}",
+                    config=InputConfigDetails(
                         extractor="{{ src_extractor | default(omit) }}",
                         default_file="{{ default_file }}",
                         prepend_postings=[
@@ -1039,7 +1196,6 @@ def test_render_input_config_match(
                     ],
                 ),
             ],
-            "MOCK_OMIT_TOKEN",
             [
                 RenderedInputConfig(
                     input_config=InputConfig(
@@ -1070,9 +1226,9 @@ def test_render_input_config_match(
 def test_expand_input_loops(
     template_env: template_env,
     inputs: list[InputConfig],
-    omit_token: str,
     expected: list[RenderedInputConfig],
 ):
+    omit_token = "MOCK_OMIT_TOKEN"
     assert (
         list(
             expand_input_loops(

@@ -50,6 +50,7 @@ from .templates import make_environment
 @dataclasses.dataclass(frozen=True)
 class RenderedInputConfig:
     input_config: InputConfig
+    filter: Filter | None = None
     values: dict | None = None
 
 
@@ -361,8 +362,23 @@ def expand_input_loops(
     omit_token: str,
 ) -> typing.Generator[RenderedInputConfig, None, None]:
     for input_config in inputs:
+        evaluated_filter = None
         if input_config.loop is None:
-            yield RenderedInputConfig(input_config=input_config)
+            if input_config.filter is not None:
+                evaluated_filter = eval_filter(
+                    render_str=lambda value: template_env.from_string(value).render(
+                        dict(omit=omit_token)
+                    ),
+                    omit_token=omit_token,
+                    raw_filter=input_config.filter,
+                )
+            yield RenderedInputConfig(
+                input_config=InputConfig(
+                    match=input_config.match,
+                    config=input_config.config,
+                ),
+                filter=evaluated_filter,
+            )
             continue
         if not input_config.loop:
             raise ValueError("Loop content cannot be empty")
@@ -370,6 +386,12 @@ def expand_input_loops(
             render_str = lambda value: template_env.from_string(value).render(
                 **(dict(omit=omit_token) | values)
             )
+            if input_config.filter is not None:
+                evaluated_filter = eval_filter(
+                    render_str=render_str,
+                    omit_token=omit_token,
+                    raw_filter=input_config.filter,
+                )
             rendered_match = render_input_config_match(
                 render_str=render_str,
                 match=input_config.match,
@@ -385,6 +407,7 @@ def expand_input_loops(
                     match=rendered_match,
                     config=config,
                 ),
+                filter=evaluated_filter,
                 values=values,
             )
 
@@ -472,6 +495,7 @@ def process_imports(
                 extractor = extractor_cls(fo)
                 for transaction in extractor():
                     txn = strip_txn_base_path(input_dir, transaction)
+                    # TODO: filter txn
                     txn_generator = process_transaction(
                         template_env=template_env,
                         input_config=input_config.config,
