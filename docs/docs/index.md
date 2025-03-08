@@ -107,6 +107,16 @@ inputs:
           amount:
             number: "{{ amount }}"
             currency: "{{ currency | default('USD', true) }}"
+    # filter allows you to consume only the transactions from input which meet certain conditions.
+    # For example, the example below consumes transactions only after 2024-01-01.
+    # This is particular useful when you have hand-crafted books in the past and you also have
+    # bank transactions in CSV input files from that period. To avoid duplication and only
+    # let beanhub-import generate transactions for you with the new transactions, you can add a filter
+    # like this.
+    filter:
+      - field: date
+        op: ">="
+        value: "2024-01-01"
     # loop through different variables with the same input file template to avoid repeating
     # the same input config over and over
     loop:
