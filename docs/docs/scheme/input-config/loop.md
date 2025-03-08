@@ -23,18 +23,22 @@ inputs:
             currency: "{{ currency | default('USD', true) }}"
 ```
 
-To avoid repetition, we introduced the new optional `loop` field, which allows you to define multiple inputs with mostly the same configurations by applying the provided variables.
+To avoid repetition, we introduced the new optional `loop` field since 1.1.0, which allows you to define multiple inputs with mostly the same configurations by applying the provided variables.
 Here's an example of how you can rewrite the above input rules with `loop`.
 
 ```yaml
 inputs:
+  # the `match_path` will be replaced with value provided by the loop variable
   - match: "import-data/{{ match_path }}"
     config:
       extractor: "{{ input_extractor | default(omit) }}"
       default_file: "books/{{ date.year }}.bean"
       prepend_postings:
-        - account: "{{ src_account }}"
+        # the `input_account` will be replaced with value provided by the loop variable
+        - account: "{{ input_account }}"
           amount:
+            # we multiply the amount with amount_scalar to change the sign
+            # of amount based on different input files
             number: "{{ amount * amount_scalar }}"
             currency: "{{ currency | default('USD', true) }}"
     loop:
@@ -63,10 +67,12 @@ inputs:
       extractor: "{{ input_extractor | default(omit) }}"
       default_file: "books/{{ date.year }}.bean"
       prepend_postings:
-        - account: "{{ src_account }}"
+        - account: "{{ input_account }}"
           amount:
             number: "{{ -amount }}"
             currency: "{{ currency | default('USD', true) }}"
+    # the actual filer value will be provided by the loop variable if it's present,
+    # otherwise we will omit the filter 
     filter: "{{ input_filter | default(omit) }}"
     loop:
     - match_path: "mercury/*.csv"
@@ -88,7 +94,7 @@ inputs:
       extractor: "{{ input_extractor | default(omit) }}"
       default_file: "books/{{ date.year }}.bean"
       prepend_postings:
-        - account: "{{ src_account }}"
+        - account: "{{ input_account }}"
           amount:
             number: "{{ -amount }}"
             currency: "{{ currency | default('USD', true) }}"
