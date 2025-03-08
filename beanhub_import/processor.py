@@ -462,16 +462,16 @@ def eval_filter(
 
 def filter_transaction(operation: FilterFieldOperation, txn: Transaction) -> bool:
     lhs = getattr(txn, operation.field)
-    if isinstance(lhs, datetime.date):
+    if isinstance(lhs, datetime.datetime):
+        rhs = datetime.datetime.fromisoformat(operation.value)
+    elif isinstance(lhs, datetime.date):
         rhs = parse_date(operation.value)
-    elif isinstance(lhs, datetime.datetime):
-        rhs = iso8601.parse_date(operation.value)
+    elif isinstance(lhs, decimal.Decimal):
+        rhs = decimal.Decimal(operation.value)
     elif isinstance(lhs, str):
         rhs = operation.value
     elif isinstance(lhs, int):
         rhs = int(operation.value)
-    elif isinstance(lhs, decimal.Decimal):
-        rhs = decimal.Decimal(operation.value)
     else:
         raise ValueError(
             f"Unexpected field value type {type(lhs)} for field {operation.field}"

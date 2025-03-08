@@ -1345,6 +1345,23 @@ def test_eval_filter(
         ),
         pytest.param(
             FilterFieldOperation(
+                field="timestamp",
+                op=FilterOperator.greater_equal,
+                value="2025-01-01T12:16:00",
+            ),
+            [
+                Transaction(
+                    extractor="mercury", timestamp=datetime.datetime(2025, 1, 1, 12, 15)
+                ),
+                Transaction(
+                    extractor="mercury", timestamp=datetime.datetime(2025, 1, 1, 12, 16)
+                ),
+            ],
+            [False, True],
+            id="datetime-field",
+        ),
+        pytest.param(
+            FilterFieldOperation(
                 field="lineno", op=FilterOperator.greater_equal, value="1234"
             ),
             [
@@ -1366,6 +1383,17 @@ def test_eval_filter(
             ],
             [False, False, True],
             id="int-field",
+        ),
+        pytest.param(
+            FilterFieldOperation(
+                field="amount", op=FilterOperator.less_equal, value="12.33"
+            ),
+            [
+                Transaction(extractor="mercury", amount=decimal.Decimal("12.34")),
+                Transaction(extractor="mercury", amount=decimal.Decimal("12.33")),
+            ],
+            [False, True],
+            id="decimal-field",
         ),
     ],
 )
