@@ -41,8 +41,65 @@ inputs:
     - match_path: "mercury/*.csv"
       input_account: Assets:NonBank:US:Mercury
       input_extractor: mercury
-      amount_scalar: "1"
     - match_path: "connect/American Express/Blue Cash Everyday/*.csv"
       input_account: Liabilities:CreditCard:US:AMEXBlueCashEveryday
-      amount_scalar: "-1"
+```
+
+## Schema
+
+The optional `loop` field is a simple list of objects containing the key and values to generate each input rule.
+The key is the variable name, and the value is the actual value to be rendered in the [Jinja2 templates](https://jinja.palletsprojects.com/en/stable/) in the input rules.
+
+## Loop with filters
+
+A [filter](./filter.md) usually comes as a list, but it can also be a Jinja2 template to be replaced with a variable defined in the loop. In that way, you can define different filters for each input rule. For example:
+
+```yaml
+inputs:
+  - match: "import-data/connect/{{ match_path }}"
+    config:
+      extractor: "{{ input_extractor | default(omit) }}"
+      default_file: "books/{{ date.year }}.bean"
+      prepend_postings:
+        - account: "{{ src_account }}"
+          amount:
+            number: "{{ -amount }}"
+            currency: "{{ currency | default('USD', true) }}"
+    filter: "{{ input_filter | default(omit) }}"
+    loop:
+    - match_path: "mercury/*.csv"
+      input_account: Assets:NonBank:US:Mercury
+      input_filter: 
+      - field: date
+        op: ">="
+        value: "2025-01-01"
+    - match_path: "American Express/Blue Cash Everyday/*.csv"
+      input_account: Liabilities:CreditCard:US:AMEXBlueCashEveryday
+```
+
+If you provide the filter as a list of objects, we will render the content with loop variables as well. For example:
+
+```yaml
+inputs:
+  - match: "import-data/connect/{{ match_path }}"
+    config:
+      extractor: "{{ input_extractor | default(omit) }}"
+      default_file: "books/{{ date.year }}.bean"
+      prepend_postings:
+        - account: "{{ src_account }}"
+          amount:
+            number: "{{ -amount }}"
+            currency: "{{ currency | default('USD', true) }}"
+    filter:
+      - field: date
+        op: ">="
+        # this will be replaced with the actual `begin_date` defined by the loop variables
+        value: "{{ begin_date }}"
+    loop:
+    - match_path: "mercury/*.csv"
+      input_account: Assets:NonBank:US:Mercury
+      begin_date: "2025-01-01"
+    - match_path: "American Express/Blue Cash Everyday/*.csv"
+      input_account: Liabilities:CreditCard:US:AMEXBlueCashEveryday
+      begin_date: "2024-01-01"
 ```
