@@ -530,7 +530,19 @@ def process_imports(
                 extractor = extractor_cls(fo)
                 for transaction in extractor():
                     txn = strip_txn_base_path(input_dir, transaction)
-                    # TODO: filter txn
+                    if rendered_input_config.filter is not None:
+                        keep = True
+                        for input_filter in rendered_input_config.filter:
+                            if not filter_transaction(operation=input_filter, txn=txn):
+                                keep = False
+                                logger.debug(
+                                    "Txn %s does not meet filter %s, skip",
+                                    txn,
+                                    input_filter,
+                                )
+                                break
+                        if not keep:
+                            continue
                     txn_generator = process_transaction(
                         template_env=template_env,
                         input_config=input_config.config,
