@@ -1,27 +1,26 @@
 inputs:
-- match: "{{ match_path }}"
+- match: "mercury.csv"
   config:
-    extractor: "{{ src_extractor }}"
+    extractor: "mercury"
     prepend_postings:
-      - account: "{{ input_account }}"
+      - account: Assets:NonBank:US:Mercury
         amount:
           number: "{{ amount }}"
           currency: "{{ currency | default('USD', true) }}"
-  loop:
-    - match_path: "mercury/*.csv"
-      input_account: Assets:Bank:US:Mercury
-      src_extractor: mercury
-      output_file: "mercury-output.bean"
-    - match_path: "chase/*.csv"
-      input_account: Assets:Bank:US:Chase
-      src_extractor: chase_credit_card
+  filter:
+    - field: date
+      op: "<="
+      value: "2024-04-16"
+    - field: amount
+      op: "<"
+      value: "-1.23"
 
 imports:
   - match:
       desc: "^Amazon (.+)"
     actions:
       - type: add_txn
-        file: "{{ output_file | default('output.bean') }}"
+        file: "output.bean"
         txn:
           narration: "{{ desc }}"
           postings:

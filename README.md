@@ -5,8 +5,6 @@ It generates Beancount transactions based on predefined rules.
 
 Read the [documentations here](https://beanhub-import-docs.beanhub.io/).
 
-**Note**: This project is still in early stage, still subject to rapid major changes
-
 Please also checkout our blog posts about the BeanHub Import and BeanHub Connect features based on this tool:
 - [BeanHub Import - One small step closer to fully automating transaction importing](https://beanhub.io/blog/2024/05/27/introduction-of-beanhub-import/)
 - [BeanHub Connect - one giant leap with fully automatic bank transactions import from 12,000+ financial institutions in 17 countries for all Beancount users!](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/)
@@ -98,18 +96,38 @@ context:
 # and other configurations, such as `prepend_postings` or default values for generating
 # a transaction
 inputs:
-  - match: "import-data/mercury/*.csv"
+  - match: "import-data/connect/{{ match_path }}"
     config:
-      # use `mercury` extractor for extracting transactions from the input file
-      extractor: mercury
+      # use the extractor from loop variables for extracting transactions from the input file
+      extractor: "{{ extractor }}"
       # the default output file to use
       default_file: "books/{{ date.year }}.bean"
       # postings to prepend for all transactions generated from this input file
       prepend_postings:
-        - account: Assets:Bank:US:Mercury
+        # the `input_account` will be replaced with the variable value provided in the loop
+        - account: "{{ input_account }}"
           amount:
             number: "{{ amount }}"
             currency: "{{ currency | default('USD', true) }}"
+    # filter allows you to consume only the transactions from input which meet certain conditions.
+    # For example, the example below consumes transactions only after 2024-01-01.
+    # This is particular useful when you have hand-crafted books in the past and you also have
+    # bank transactions in CSV input files from that period. To avoid duplication and only
+    # let beanhub-import generate transactions for you with the new transactions, you can add a filter
+    # like this.
+    filter:
+      - field: date
+        op: ">="
+        value: "2024-01-01"
+    # loop through different variables with the same input file template to avoid repeating
+    # the same input config over and over
+    loop:
+    - match_path: mercury/*.csv
+      input_account: Assets:Bank:US:Mercury
+      extractor: mercury
+    - match_path: chase/*.csv
+      input_account: Assets:Bank:US:Chase
+      extractor: chase_credit_card
 
 # the `imports` defines the rules to match transactions extracted from the input files and
 # how to generate the transaction

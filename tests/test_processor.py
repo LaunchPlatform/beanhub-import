@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import functools
 import pathlib
 import typing
 
@@ -16,6 +17,9 @@ from beanhub_import.data_types import Amount
 from beanhub_import.data_types import AmountTemplate
 from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import DeleteTransactionTemplate
+from beanhub_import.data_types import FilterFieldOperation
+from beanhub_import.data_types import FilterOperator
+from beanhub_import.data_types import FiltersAdapter
 from beanhub_import.data_types import GeneratedPosting
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
@@ -25,6 +29,8 @@ from beanhub_import.data_types import InputConfigDetails
 from beanhub_import.data_types import MetadataItem
 from beanhub_import.data_types import MetadataItemTemplate
 from beanhub_import.data_types import PostingTemplate
+from beanhub_import.data_types import RawFilter
+from beanhub_import.data_types import RawFilterFieldOperation
 from beanhub_import.data_types import SimpleFileMatch
 from beanhub_import.data_types import SimpleTxnMatchRule
 from beanhub_import.data_types import StrContainsMatch
@@ -36,7 +42,10 @@ from beanhub_import.data_types import StrSuffixMatch
 from beanhub_import.data_types import TransactionTemplate
 from beanhub_import.data_types import TxnMatchVars
 from beanhub_import.data_types import UnprocessedTransaction
+from beanhub_import.processor import eval_filter
 from beanhub_import.processor import expand_input_loops
+from beanhub_import.processor import Filter
+from beanhub_import.processor import filter_transaction
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
@@ -858,7 +867,7 @@ def test_process_transaction(
 
 
 @pytest.mark.parametrize(
-    "match, vars, expected",
+    "match, values, expected",
     [
         (
             "import-data/connect/{{ foo }}",
@@ -883,19 +892,17 @@ def test_process_transaction(
     ],
 )
 def test_render_input_config_match(
-    template_env: template_env,
+    template_env: SandboxedEnvironment,
     match: SimpleFileMatch,
-    vars: dict,
+    values: dict,
     expected: SimpleFileMatch,
 ):
-    assert (
-        render_input_config_match(template_env=template_env, match=match, vars=vars)
-        == expected
-    )
+    render_str = lambda value: template_env.from_string(value).render(values)
+    assert render_input_config_match(render_str=render_str, match=match) == expected
 
 
 @pytest.mark.parametrize(
-    "inputs, omit_token, expected",
+    "inputs, expected",
     [
         pytest.param(
             [
@@ -942,7 +949,6 @@ def test_render_input_config_match(
                     ),
                 ),
             ],
-            "MOCK_OMIT_TOKEN",
             [
                 RenderedInputConfig(
                     input_config=InputConfig(
@@ -961,7 +967,7 @@ def test_render_input_config_match(
                             ],
                         ),
                     ),
-                    vars=dict(
+                    values=dict(
                         match_path="bar.csv",
                         src_extractor="mercury",
                         default_file="output.bean",
@@ -984,7 +990,7 @@ def test_render_input_config_match(
                             ],
                         ),
                     ),
-                    vars=dict(
+                    values=dict(
                         match_path="eggs.csv",
                         src_extractor="chase",
                         default_file="eggs.bean",
@@ -1014,6 +1020,164 @@ def test_render_input_config_match(
                 InputConfig(
                     match="import-data/connect/{{ match_path }}",
                     config=InputConfigDetails(
+                        extractor="{{ src_extractor }}",
+                        default_file="{{ default_file }}",
+                        prepend_postings=[
+                            PostingTemplate(
+                                account="Expenses:Food",
+                                amount=AmountTemplate(
+                                    number="{{ -(amount - 5) }}",
+                                    currency="{{ currency }}",
+                                ),
+                            ),
+                        ],
+                    ),
+                    filter=[
+                        RawFilterFieldOperation(
+                            field="{{ field }}",
+                            op="{{ op }}",
+                            value="{{ value }}",
+                        ),
+                    ],
+                    loop=[
+                        dict(
+                            match_path="bar.csv",
+                            src_extractor="mercury",
+                            default_file="output.bean",
+                            field="date",
+                            op=">=",
+                            value="2025-01-01",
+                        ),
+                        dict(
+                            match_path="eggs.csv",
+                            src_extractor="chase",
+                            default_file="eggs.bean",
+                            field="lineno",
+                            op="!=",
+                            value="1234",
+                        ),
+                    ],
+                ),
+                InputConfig(
+                    match="import-data/connect/other.csv",
+                    config=InputConfigDetails(
+                        prepend_postings=[
+                            PostingTemplate(
+                                account="Expenses:Other",
+                                amount=AmountTemplate(
+                                    number="{{ -(amount - 5) }}",
+                                    currency="{{ currency }}",
+                                ),
+                            ),
+                        ],
+                    ),
+                    filter=[
+                        RawFilterFieldOperation(
+                            field="mock_field",
+                            op=FilterOperator.greater_equal.value,
+                            value="mock_value",
+                        ),
+                    ],
+                ),
+            ],
+            [
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/bar.csv",
+                        config=InputConfigDetails(
+                            extractor="mercury",
+                            default_file="{{ default_file }}",
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Food",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    filter=[
+                        FilterFieldOperation(
+                            field="date",
+                            op=FilterOperator.greater_equal,
+                            value="2025-01-01",
+                        ),
+                    ],
+                    values=dict(
+                        match_path="bar.csv",
+                        src_extractor="mercury",
+                        default_file="output.bean",
+                        field="date",
+                        op=">=",
+                        value="2025-01-01",
+                    ),
+                ),
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/eggs.csv",
+                        config=InputConfigDetails(
+                            extractor="chase",
+                            default_file="{{ default_file }}",
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Food",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    filter=[
+                        FilterFieldOperation(
+                            field="lineno",
+                            op=FilterOperator.not_equal,
+                            value="1234",
+                        ),
+                    ],
+                    values=dict(
+                        match_path="eggs.csv",
+                        src_extractor="chase",
+                        default_file="eggs.bean",
+                        field="lineno",
+                        op="!=",
+                        value="1234",
+                    ),
+                ),
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/other.csv",
+                        config=InputConfigDetails(
+                            prepend_postings=[
+                                PostingTemplate(
+                                    account="Expenses:Other",
+                                    amount=AmountTemplate(
+                                        number="{{ -(amount - 5) }}",
+                                        currency="{{ currency }}",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    filter=[
+                        FilterFieldOperation(
+                            field="mock_field",
+                            op=FilterOperator.greater_equal,
+                            value="mock_value",
+                        ),
+                    ],
+                ),
+            ],
+            id="filter",
+        ),
+        pytest.param(
+            [
+                InputConfig(
+                    match="import-data/connect/{{ match_path }}",
+                    config=InputConfigDetails(
                         extractor="{{ src_extractor | default(omit) }}",
                         default_file="{{ default_file }}",
                         prepend_postings=[
@@ -1034,7 +1198,6 @@ def test_render_input_config_match(
                     ],
                 ),
             ],
-            "MOCK_OMIT_TOKEN",
             [
                 RenderedInputConfig(
                     input_config=InputConfig(
@@ -1052,7 +1215,7 @@ def test_render_input_config_match(
                             ],
                         ),
                     ),
-                    vars=dict(
+                    values=dict(
                         match_path="bar.csv",
                         default_file="output.bean",
                     ),
@@ -1063,11 +1226,11 @@ def test_render_input_config_match(
     ],
 )
 def test_expand_input_loops(
-    template_env: template_env,
+    template_env: SandboxedEnvironment,
     inputs: list[InputConfig],
-    omit_token: str,
     expected: list[RenderedInputConfig],
 ):
+    omit_token = "MOCK_OMIT_TOKEN"
     assert (
         list(
             expand_input_loops(
@@ -1076,6 +1239,169 @@ def test_expand_input_loops(
         )
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    "values, raw_filter, expected",
+    [
+        pytest.param(
+            dict(field="mock_field", op=">=", value="mock_value"),
+            [
+                RawFilterFieldOperation(
+                    field="{{ field }}",
+                    op="{{ op }}",
+                    value="{{ value }}",
+                ),
+                RawFilterFieldOperation(
+                    field="{{ field }}_2",
+                    op="==",
+                    value="{{ value }}_2",
+                ),
+            ],
+            [
+                FilterFieldOperation(
+                    field="mock_field",
+                    op=FilterOperator.greater_equal,
+                    value="mock_value",
+                ),
+                FilterFieldOperation(
+                    field="mock_field_2",
+                    op=FilterOperator.equal,
+                    value="mock_value_2",
+                ),
+            ],
+            id="list",
+        ),
+        pytest.param(
+            dict(
+                filter=FiltersAdapter.dump_python(
+                    [
+                        FilterFieldOperation(
+                            field="mock_field",
+                            op=FilterOperator.greater_equal,
+                            value="mock_value",
+                        ),
+                        FilterFieldOperation(
+                            field="mock_field_2",
+                            op=FilterOperator.equal,
+                            value="mock_value_2",
+                        ),
+                    ],
+                    mode="json",
+                )
+            ),
+            "{{ filter }}",
+            [
+                FilterFieldOperation(
+                    field="mock_field",
+                    op=FilterOperator.greater_equal,
+                    value="mock_value",
+                ),
+                FilterFieldOperation(
+                    field="mock_field_2",
+                    op=FilterOperator.equal,
+                    value="mock_value_2",
+                ),
+            ],
+            id="render-str-eval",
+        ),
+        pytest.param(
+            dict(),
+            "{{ omit }}",
+            None,
+            id="omit",
+        ),
+    ],
+)
+def test_eval_filter(
+    template_env: SandboxedEnvironment,
+    values: dict,
+    raw_filter: RawFilter,
+    expected: list[Filter] | None,
+):
+    omit_token = "MOCK_OMIT_TOKEN"
+    render_str = lambda value: template_env.from_string(value).render(
+        dict(omit=omit_token) | values
+    )
+    assert (
+        eval_filter(render_str=render_str, omit_token=omit_token, raw_filter=raw_filter)
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    "operation, txns, expected",
+    [
+        pytest.param(
+            FilterFieldOperation(
+                field="date", op=FilterOperator.greater_equal, value="2025-01-01"
+            ),
+            [
+                Transaction(extractor="mercury", date=datetime.date(2025, 1, 1)),
+                Transaction(extractor="mercury", date=datetime.date(2024, 12, 31)),
+            ],
+            [True, False],
+            id="date-field",
+        ),
+        pytest.param(
+            FilterFieldOperation(
+                field="timestamp",
+                op=FilterOperator.greater_equal,
+                value="2025-01-01T12:16:00",
+            ),
+            [
+                Transaction(
+                    extractor="mercury", timestamp=datetime.datetime(2025, 1, 1, 12, 15)
+                ),
+                Transaction(
+                    extractor="mercury", timestamp=datetime.datetime(2025, 1, 1, 12, 16)
+                ),
+            ],
+            [False, True],
+            id="datetime-field",
+        ),
+        pytest.param(
+            FilterFieldOperation(
+                field="lineno", op=FilterOperator.greater_equal, value="1234"
+            ),
+            [
+                Transaction(extractor="mercury", lineno=1233),
+                Transaction(extractor="mercury", lineno=1234),
+                Transaction(extractor="mercury", lineno=1235),
+            ],
+            [False, True, True],
+            id="int-field",
+        ),
+        pytest.param(
+            FilterFieldOperation(
+                field="extractor", op=FilterOperator.equal, value="chase"
+            ),
+            [
+                Transaction(extractor="mercury", lineno=1233),
+                Transaction(extractor="mercury", lineno=1235),
+                Transaction(extractor="chase", lineno=5),
+            ],
+            [False, False, True],
+            id="int-field",
+        ),
+        pytest.param(
+            FilterFieldOperation(
+                field="amount", op=FilterOperator.less_equal, value="12.33"
+            ),
+            [
+                Transaction(extractor="mercury", amount=decimal.Decimal("12.34")),
+                Transaction(extractor="mercury", amount=decimal.Decimal("12.33")),
+            ],
+            [False, True],
+            id="decimal-field",
+        ),
+    ],
+)
+def test_filter_transaction(
+    operation: FilterFieldOperation, txns: list[Transaction], expected: list[bool]
+):
+    results = list(map(functools.partial(filter_transaction, operation), txns))
+    assert results == expected
 
 
 @pytest.mark.parametrize(
@@ -1374,6 +1700,114 @@ def test_expand_input_loops(
                     postings=[
                         GeneratedPosting(
                             account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-353.63", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="353.63", currency="USD"),
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        (
+            "input-loop-filter",
+            [
+                UnprocessedTransaction(
+                    import_id="chase/2024.csv:-3",
+                    txn=Transaction(
+                        extractor="chase_credit_card",
+                        file=str(pathlib.Path("chase") / "2024.csv"),
+                        lineno=1,
+                        reversed_lineno=-3,
+                        date=datetime.date(2024, 4, 3),
+                        post_date=datetime.date(2024, 4, 5),
+                        desc="APPLE.COM/BILL",
+                        amount=decimal.Decimal("-1.23"),
+                        category="Shopping",
+                        type="Sale",
+                        note="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-1.23", currency="USD"),
+                        )
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="chase/2024.csv:-2",
+                    sources=[str(pathlib.Path("chase") / "2024.csv")],
+                    date="2024-04-02",
+                    flag="*",
+                    narration="Amazon web services",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-6.54", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="6.54", currency="USD"),
+                        ),
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="chase/2024.csv:-1",
+                    txn=Transaction(
+                        extractor="chase_credit_card",
+                        file=str(pathlib.Path("chase") / "2024.csv"),
+                        lineno=3,
+                        reversed_lineno=-1,
+                        date=datetime.date(2024, 4, 1),
+                        post_date=datetime.date(2024, 4, 2),
+                        desc="GITHUB  INC.",
+                        amount=decimal.Decimal("-4.00"),
+                        category="Professional Services",
+                        type="Sale",
+                        note="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-4.00", currency="USD"),
+                        )
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="mercury-output.bean",
+                    id="mercury/2024.csv:-2",
+                    sources=[str(pathlib.Path("mercury") / "2024.csv")],
+                    date="2024-04-16",
+                    flag="*",
+                    narration="Amazon Web Services",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-353.63", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="353.63", currency="USD"),
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        (
+            "input-filter",
+            [
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="mercury.csv:-2",
+                    sources=["mercury.csv"],
+                    date="2024-04-16",
+                    flag="*",
+                    narration="Amazon Web Services",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:NonBank:US:Mercury",
                             amount=Amount(number="-353.63", currency="USD"),
                         ),
                         GeneratedPosting(

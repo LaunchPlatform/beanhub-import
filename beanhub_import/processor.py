@@ -1,6 +1,11 @@
+import ast
 import copy
 import dataclasses
+import datetime
+import decimal
+import functools
 import logging
+import operator
 import os
 import pathlib
 import re
@@ -8,6 +13,8 @@ import typing
 import uuid
 import warnings
 
+import iso8601
+from beancount_black.formatter import parse_date
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
 from beanhub_extract.extractors import detect_extractor
@@ -18,6 +25,10 @@ from . import constants
 from .data_types import ActionType
 from .data_types import Amount
 from .data_types import DeletedTransaction
+from .data_types import Filter
+from .data_types import FilterFieldOperation
+from .data_types import FilterOperator
+from .data_types import FiltersAdapter
 from .data_types import GeneratedPosting
 from .data_types import GeneratedTransaction
 from .data_types import ImportDoc
@@ -26,6 +37,8 @@ from .data_types import InputConfig
 from .data_types import InputConfigDetails
 from .data_types import MetadataItem
 from .data_types import PostingTemplate
+from .data_types import RawFilter
+from .data_types import RawFilterFieldOperation
 from .data_types import SimpleFileMatch
 from .data_types import SimpleTxnMatchRule
 from .data_types import StrContainsMatch
@@ -39,11 +52,21 @@ from .data_types import TxnMatchVars
 from .data_types import UnprocessedTransaction
 from .templates import make_environment
 
+FILTER_OPERATOR_MAP: dict[FilterOperator, typing.Callable] = {
+    FilterOperator.equal: operator.eq,
+    FilterOperator.not_equal: operator.ne,
+    FilterOperator.greater: operator.gt,
+    FilterOperator.greater_equal: operator.ge,
+    FilterOperator.less: operator.lt,
+    FilterOperator.less_equal: operator.le,
+}
+
 
 @dataclasses.dataclass(frozen=True)
 class RenderedInputConfig:
     input_config: InputConfig
-    vars: dict | None = None
+    filter: Filter | None = None
+    values: dict | None = None
 
 
 def walk_dir_files(
@@ -336,16 +359,14 @@ def generate_postings(
 
 
 def render_input_config_match(
-    template_env: SandboxedEnvironment, match: SimpleFileMatch, vars: dict
+    render_str: typing.Callable, match: SimpleFileMatch
 ) -> SimpleFileMatch:
     if isinstance(match, str):
-        return template_env.from_string(match).render(**vars)
+        return render_str(match)
     elif isinstance(match, StrExactMatch):
-        return StrExactMatch(
-            equals=template_env.from_string(match.equals).render(**vars)
-        )
+        return StrExactMatch(equals=render_str(match.equals))
     elif isinstance(match, StrRegexMatch):
-        return StrRegexMatch(regex=template_env.from_string(match.regex).render(**vars))
+        return StrRegexMatch(regex=render_str(match.regex))
     else:
         raise ValueError(f"Unexpected match type {type(match)}")
 
@@ -356,21 +377,44 @@ def expand_input_loops(
     omit_token: str,
 ) -> typing.Generator[RenderedInputConfig, None, None]:
     for input_config in inputs:
+        evaluated_filter = None
         if input_config.loop is None:
-            yield RenderedInputConfig(input_config=input_config)
+            if input_config.filter is not None:
+                evaluated_filter = eval_filter(
+                    render_str=lambda value: template_env.from_string(value).render(
+                        dict(omit=omit_token)
+                    ),
+                    omit_token=omit_token,
+                    raw_filter=input_config.filter,
+                )
+            yield RenderedInputConfig(
+                input_config=InputConfig(
+                    match=input_config.match,
+                    config=input_config.config,
+                ),
+                filter=evaluated_filter,
+            )
             continue
         if not input_config.loop:
             raise ValueError("Loop content cannot be empty")
-        for vars in input_config.loop:
+        for values in input_config.loop:
+            render_str = lambda value: template_env.from_string(value).render(
+                **(dict(omit=omit_token) | values)
+            )
+            if input_config.filter is not None:
+                evaluated_filter = eval_filter(
+                    render_str=render_str,
+                    omit_token=omit_token,
+                    raw_filter=input_config.filter,
+                )
             rendered_match = render_input_config_match(
-                template_env=template_env, match=input_config.match, vars=vars
+                render_str=render_str,
+                match=input_config.match,
             )
             config = input_config.config
             if config.extractor is not None:
                 config = copy.deepcopy(config)
-                config.extractor = template_env.from_string(config.extractor).render(
-                    **(dict(omit=omit_token) | vars)
-                )
+                config.extractor = render_str(config.extractor)
                 if config.extractor == omit_token or not config.extractor:
                     config.extractor = None
             yield RenderedInputConfig(
@@ -378,8 +422,62 @@ def expand_input_loops(
                     match=rendered_match,
                     config=config,
                 ),
-                vars=vars,
+                filter=evaluated_filter,
+                values=values,
             )
+
+
+def render_raw_filter_operation(
+    render_str: typing.Callable, omit_token: str, operation: RawFilterFieldOperation
+) -> FilterFieldOperation:
+    obj = operation.model_dump()
+    return FilterFieldOperation(
+        **dict(
+            filter(
+                lambda item: item[1] != omit_token,
+                ((key, render_str(value)) for key, value in obj.items()),
+            )
+        )
+    )
+
+
+def eval_filter(
+    render_str: typing.Callable, omit_token: str, raw_filter: RawFilter
+) -> list[Filter] | None:
+    if isinstance(raw_filter, str):
+        filter_value = render_str(raw_filter)
+        if filter_value == omit_token:
+            return None
+        return FiltersAdapter.validate_python(ast.literal_eval(filter_value))
+    elif isinstance(raw_filter, list):
+        return list(
+            map(
+                functools.partial(render_raw_filter_operation, render_str, omit_token),
+                raw_filter,
+            )
+        )
+    else:
+        raise ValueError(f"Unexpected filter type {type(raw_filter)}")
+
+
+def filter_transaction(operation: FilterFieldOperation, txn: Transaction) -> bool:
+    lhs = getattr(txn, operation.field)
+    if isinstance(lhs, datetime.datetime):
+        rhs = datetime.datetime.fromisoformat(operation.value)
+    elif isinstance(lhs, datetime.date):
+        rhs = parse_date(operation.value)
+    elif isinstance(lhs, decimal.Decimal):
+        rhs = decimal.Decimal(operation.value)
+    elif isinstance(lhs, str):
+        rhs = operation.value
+    elif isinstance(lhs, int):
+        rhs = int(operation.value)
+    else:
+        raise ValueError(
+            f"Unexpected field value type {type(lhs)} for field {operation.field}"
+        )
+    func = FILTER_OPERATOR_MAP[operation.op]
+    return func(lhs, rhs)
 
 
 def process_imports(
@@ -432,6 +530,19 @@ def process_imports(
                 extractor = extractor_cls(fo)
                 for transaction in extractor():
                     txn = strip_txn_base_path(input_dir, transaction)
+                    if rendered_input_config.filter is not None:
+                        keep = True
+                        for input_filter in rendered_input_config.filter:
+                            if not filter_transaction(operation=input_filter, txn=txn):
+                                keep = False
+                                logger.debug(
+                                    "Txn %s does not meet filter %s, skip",
+                                    txn,
+                                    input_filter,
+                                )
+                                break
+                        if not keep:
+                            continue
                     txn_generator = process_transaction(
                         template_env=template_env,
                         input_config=input_config.config,
@@ -439,7 +550,7 @@ def process_imports(
                         omit_token=omit_token,
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
-                        input_vars=rendered_input_config.vars,
+                        input_vars=rendered_input_config.values,
                     )
                     unprocessed_txn = yield from txn_generator
                     if unprocessed_txn is not None:

@@ -7,11 +7,19 @@ inputs:
         amount:
           number: "{{ amount }}"
           currency: "{{ currency | default('USD', true) }}"
+  filter: "{{ filter | default(omit) }}"
   loop:
     - match_path: "mercury/*.csv"
       input_account: Assets:Bank:US:Mercury
       src_extractor: mercury
       output_file: "mercury-output.bean"
+      filter:
+        - field: date
+          op: "<="
+          value: "2024-04-16"
+        - field: amount
+          op: "<"
+          value: "-1.23"
     - match_path: "chase/*.csv"
       input_account: Assets:Bank:US:Chase
       src_extractor: chase_credit_card
