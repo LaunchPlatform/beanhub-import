@@ -8,6 +8,7 @@ Read the [documentations here](https://beanhub-import-docs.beanhub.io/).
 Please also checkout our blog posts about the BeanHub Import and BeanHub Connect features based on this tool:
 - [BeanHub Import - One small step closer to fully automating transaction importing](https://beanhub.io/blog/2024/05/27/introduction-of-beanhub-import/)
 - [BeanHub Connect - one giant leap with fully automatic bank transactions import from 12,000+ financial institutions in 17 countries for all Beancount users!](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/)
+- [Direct Connect: Pulling transactions as CSV files from banks via Plaid directly](https://beanhub.io/blog/2025/01/16/direct-connect-repository/)
 
 ## Features
 
