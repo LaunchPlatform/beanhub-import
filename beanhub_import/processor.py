@@ -13,7 +13,7 @@ import typing
 import uuid
 import warnings
 
-import iso8601
+import pydantic
 from beancount_black.formatter import parse_date
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
@@ -65,8 +65,34 @@ FILTER_OPERATOR_MAP: dict[FilterOperator, typing.Callable] = {
 @dataclasses.dataclass(frozen=True)
 class RenderedInputConfig:
     input_config: InputConfig
+    # filter for transaction
     filter: Filter | None = None
+    # values to pass down to be rendered in the import stage
     values: dict | None = None
+
+
+def extend_txn_match_rule(
+    field_types: dict[str, typing.Type],
+) -> typing.Type[SimpleTxnMatchRule]:
+    """Extend SimpleTxnMatchRule model with extra_attrs fields
+
+    :param field_types: mapping from key to value type
+    :return: Extended SimpleTxnMatchRule
+    """
+    extra_fields = {}
+    for key, field_type in field_types.items():
+        if field_type is not str:
+            # we only support StrMatch for all the fields right now.
+            # in the future, we may want to support number or matching rules with other types
+            raise ValueError(
+                f"Extra field {key} has value type {type(field_type)} is not currently supported for matching"
+            )
+        extra_fields[key] = typing.Annotated[StrMatch, pydantic.Field(None)]
+    return pydantic.create_model(
+        "ExtendedSimpleTxnMatchRule",
+        **extra_fields,
+        __base__=SimpleTxnMatchRule,
+    )
 
 
 def walk_dir_files(
@@ -124,9 +150,16 @@ def match_str(pattern: StrMatch, value: str | None) -> bool:
 def match_transaction(
     txn: Transaction,
     rule: SimpleTxnMatchRule,
+    extra_attrs: dict | None = None,
 ) -> bool:
+    def get_value(key: str):
+        nonlocal txn
+        if extra_attrs is not None and key in extra_attrs:
+            return extra_attrs[key]
+        return getattr(txn, key, None)
+
     return all(
-        match_str(getattr(rule, key), getattr(txn, key))
+        match_str(getattr(rule, key), get_value(key))
         for key, pattern in rule.model_dump().items()
         if pattern is not None
     )
@@ -136,10 +169,12 @@ def match_transaction_with_vars(
     txn: Transaction,
     rules: list[TxnMatchVars],
     common_condition: SimpleTxnMatchRule | None = None,
+    extra_attrs: dict | None = None,
 ) -> TxnMatchVars | None:
     for rule in rules:
-        if match_transaction(txn, rule.cond) and (
-            common_condition is None or match_transaction(txn, common_condition)
+        if match_transaction(txn, rule.cond, extra_attrs=extra_attrs) and (
+            common_condition is None
+            or match_transaction(txn, common_condition, extra_attrs=extra_attrs)
         ):
             return rule
 
@@ -156,6 +191,7 @@ def process_transaction(
     omit_token: str | None = None,
     default_import_id: str | None = None,
     input_vars: dict | None = None,
+    extra_attrs: dict | None = None,
 ) -> typing.Generator[
     GeneratedTransaction | DeletedTransaction, None, UnprocessedTransaction | None
 ]:
@@ -177,12 +213,15 @@ def process_transaction(
         default_file = input_config.default_file
     processed = False
     matched_vars: dict | None = None
+    rendered_extra_attrs: dict | None = None
 
     def render_str(value: str | None) -> str | None:
         nonlocal matched_vars
         if value is None:
             return None
         template_ctx = txn_ctx
+        if rendered_extra_attrs is not None:
+            template_ctx |= rendered_extra_attrs
         if input_vars is not None:
             template_ctx |= input_vars
         if matched_vars is not None:
@@ -200,11 +239,22 @@ def process_transaction(
             return
         return result
 
+    if extra_attrs is not None:
+        rendered_extra_attrs = render_extra_attrs(
+            render_str=render_str, extra_attrs=extra_attrs
+        )
+
     for import_rule in import_rules:
+        import_rule = extend_import_match_rules(
+            extra_attrs=extra_attrs, import_rule=import_rule
+        )
         matched_vars = None
         if isinstance(import_rule.match, list):
             matched = match_transaction_with_vars(
-                txn, import_rule.match, common_condition=import_rule.common_cond
+                txn,
+                import_rule.match,
+                common_condition=import_rule.common_cond,
+                extra_attrs=rendered_extra_attrs,
             )
             if matched is None:
                 continue
@@ -215,7 +265,9 @@ def process_transaction(
                 for key, value in (matched.vars or {}).items()
             }
         else:
-            if not match_transaction(txn, import_rule.match):
+            if not match_transaction(
+                txn, import_rule.match, extra_attrs=rendered_extra_attrs
+            ):
                 continue
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
@@ -371,6 +423,17 @@ def render_input_config_match(
         raise ValueError(f"Unexpected match type {type(match)}")
 
 
+def render_extra_attrs(render_str: typing.Callable, extra_attrs: dict) -> dict:
+    result = {}
+    for key, value in extra_attrs.items():
+        if isinstance(value, str):
+            value = render_str(value)
+        elif isinstance(value, dict):
+            value = render_extra_attrs(render_str=render_str, extra_attrs=value)
+        result[key] = value
+    return result
+
+
 def expand_input_loops(
     template_env: SandboxedEnvironment,
     inputs: list[InputConfig],
@@ -378,28 +441,17 @@ def expand_input_loops(
 ) -> typing.Generator[RenderedInputConfig, None, None]:
     for input_config in inputs:
         evaluated_filter = None
-        if input_config.loop is None:
-            if input_config.filter is not None:
-                evaluated_filter = eval_filter(
-                    render_str=lambda value: template_env.from_string(value).render(
-                        dict(omit=omit_token)
-                    ),
-                    omit_token=omit_token,
-                    raw_filter=input_config.filter,
-                )
-            yield RenderedInputConfig(
-                input_config=InputConfig(
-                    match=input_config.match,
-                    config=input_config.config,
-                ),
-                filter=evaluated_filter,
-            )
-            continue
-        if not input_config.loop:
-            raise ValueError("Loop content cannot be empty")
-        for values in input_config.loop:
+
+        if input_config.loop is not None:
+            if not input_config.loop:
+                raise ValueError("Loop content cannot be empty")
+            loop = input_config.loop
+        else:
+            loop = [None]
+
+        for values in loop:
             render_str = lambda value: template_env.from_string(value).render(
-                **(dict(omit=omit_token) | values)
+                **(dict(omit=omit_token) | (values if values is not None else {}))
             )
             if input_config.filter is not None:
                 evaluated_filter = eval_filter(
@@ -412,7 +464,7 @@ def expand_input_loops(
                 match=input_config.match,
             )
             config = input_config.config
-            if config.extractor is not None:
+            if config is not None and config.extractor is not None:
                 config = copy.deepcopy(config)
                 config.extractor = render_str(config.extractor)
                 if config.extractor == omit_token or not config.extractor:
@@ -421,6 +473,7 @@ def expand_input_loops(
                 input_config=InputConfig(
                     match=rendered_match,
                     config=config,
+                    extra_attrs=input_config.extra_attrs,
                 ),
                 filter=evaluated_filter,
                 values=values,
@@ -480,6 +533,27 @@ def filter_transaction(operation: FilterFieldOperation, txn: Transaction) -> boo
     return func(lhs, rhs)
 
 
+def extend_import_match_rules(
+    extra_attrs: dict | None, import_rule: ImportRule
+) -> ImportRule:
+    if extra_attrs is None:
+        return import_rule
+    import_rule = copy.deepcopy(import_rule)
+    ExtendedSimpleTxnMatchRule = extend_txn_match_rule(
+        {key: type(value) for key, value in extra_attrs.items()}
+    )
+    if isinstance(import_rule.match, list):
+        for match_rule in import_rule.match:
+            match_rule.cond = ExtendedSimpleTxnMatchRule.model_validate(
+                match_rule.cond.model_dump(exclude_unset=True)
+            )
+    else:
+        import_rule.match = ExtendedSimpleTxnMatchRule.model_validate(
+            import_rule.match.model_dump(exclude_unset=True)
+        )
+    return import_rule
+
+
 def process_imports(
     import_doc: ImportDoc,
     input_dir: pathlib.Path,
@@ -496,7 +570,9 @@ def process_imports(
             template_env=template_env, inputs=import_doc.inputs, omit_token=omit_token
         ),
     )
-    for filepath in walk_dir_files(input_dir):
+    # sort filepaths for deterministic behavior across platforms
+    filepaths = sorted(walk_dir_files(input_dir))
+    for filepath in filepaths:
         for rendered_input_config in expanded_input_configs:
             input_config = rendered_input_config.input_config
             if not match_file(input_config.match, filepath):
@@ -551,6 +627,7 @@ def process_imports(
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
                         input_vars=rendered_input_config.values,
+                        extra_attrs=input_config.extra_attrs,
                     )
                     unprocessed_txn = yield from txn_generator
                     if unprocessed_txn is not None:

@@ -44,6 +44,7 @@ from beanhub_import.data_types import TxnMatchVars
 from beanhub_import.data_types import UnprocessedTransaction
 from beanhub_import.processor import eval_filter
 from beanhub_import.processor import expand_input_loops
+from beanhub_import.processor import extend_txn_match_rule
 from beanhub_import.processor import Filter
 from beanhub_import.processor import filter_transaction
 from beanhub_import.processor import match_file
@@ -57,10 +58,29 @@ from beanhub_import.processor import RenderedInputConfig
 from beanhub_import.processor import walk_dir_files
 from beanhub_import.templates import make_environment
 
+ExtendedSimpleTxnMatchRule = extend_txn_match_rule(dict(extra_key0=str))
+
 
 @pytest.fixture
 def template_env() -> SandboxedEnvironment:
     return make_environment()
+
+
+@pytest.mark.parametrize(
+    "field_types, rule_payload",
+    [
+        (dict(), dict(extractor="foo")),
+        (dict(key0=str), dict(extractor="foo", key0=dict(equals="bar"))),
+        (
+            dict(key0=str, key1=str),
+            dict(extractor="foo", key0=dict(equals="bar"), key1=dict(prefix="eggs")),
+        ),
+    ],
+)
+def test_extend_txn_match_rule(field_types: dict, rule_payload: dict):
+    ExtendedSimpleTxnMatchRule = extend_txn_match_rule(field_types=field_types)
+    rule = ExtendedSimpleTxnMatchRule.model_validate(rule_payload)
+    assert rule.model_dump(mode="json", exclude_unset=True) == rule_payload
 
 
 @pytest.mark.parametrize(
@@ -163,16 +183,18 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
 
 
 @pytest.mark.parametrize(
-    "txn, rule, expected",
+    "txn, rule, extra_attrs, expected",
     [
         (
             Transaction(extractor="MOCK_EXTRACTOR"),
             SimpleTxnMatchRule(extractor=StrExactMatch(equals="MOCK_EXTRACTOR")),
+            None,
             True,
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR"),
             SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER_EXTRACTOR")),
+            None,
             False,
         ),
         (
@@ -181,6 +203,7 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
                 extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
                 desc=StrExactMatch(equals="MOCK_DESC"),
             ),
+            None,
             True,
         ),
         (
@@ -189,24 +212,41 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
                 extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
                 desc=StrExactMatch(equals="OTHER_DESC"),
             ),
+            None,
             False,
         ),
-        (
+        pytest.param(
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
-            SimpleTxnMatchRule(
-                extractor=StrExactMatch(equals="OTHER_DESC"),
+            ExtendedSimpleTxnMatchRule(
+                extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
                 desc=StrExactMatch(equals="MOCK_DESC"),
+                extra_key0=StrExactMatch(equals="MOCK_VAL"),
             ),
+            dict(extra_key0="MOCK_VAL"),
+            True,
+            id="match-extra-attr",
+        ),
+        pytest.param(
+            Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
+            ExtendedSimpleTxnMatchRule(
+                extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
+                desc=StrExactMatch(equals="MOCK_DESC"),
+                extra_key0=StrExactMatch(equals="MOCK_VAL"),
+            ),
+            dict(extra_key0="OTHER_VAL"),
             False,
+            id="match-extra-attr-not-matched",
         ),
     ],
 )
-def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected: bool):
-    assert match_transaction(txn, rule) == expected
+def test_match_transaction(
+    txn: Transaction, rule: SimpleTxnMatchRule, extra_attrs: dict, expected: bool
+):
+    assert match_transaction(txn, rule, extra_attrs=extra_attrs) == expected
 
 
 @pytest.mark.parametrize(
-    "txn, rules, common_cond, expected",
+    "txn, rules, common_cond, extra_attrs, expected",
     [
         (
             Transaction(extractor="MOCK_EXTRACTOR"),
@@ -221,6 +261,7 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                     vars=dict(foo="bar"),
                 ),
             ],
+            None,
             None,
             TxnMatchVars(
                 cond=SimpleTxnMatchRule(
@@ -245,6 +286,7 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             None,
+            None,
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
@@ -261,6 +303,7 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
                 ),
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
+            None,
             TxnMatchVars(
                 cond=SimpleTxnMatchRule(
                     extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
@@ -282,6 +325,31 @@ def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected:
             ],
             None,
             None,
+            None,
+        ),
+        pytest.param(
+            Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=ExtendedSimpleTxnMatchRule(
+                        extra_key0=StrExactMatch(equals="MOCK_VAL")
+                    ),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
+            dict(extra_key0="MOCK_VAL"),
+            TxnMatchVars(
+                cond=ExtendedSimpleTxnMatchRule(
+                    extra_key0=StrExactMatch(equals="MOCK_VAL")
+                ),
+                vars=dict(foo="bar"),
+            ),
+            id="extra-attrs",
         ),
     ],
 )
@@ -289,16 +357,19 @@ def test_match_transaction_with_vars(
     txn: Transaction,
     rules: list[TxnMatchVars],
     common_cond: SimpleTxnMatchRule | None,
+    extra_attrs: dict,
     expected: TxnMatchVars,
 ):
     assert (
-        match_transaction_with_vars(txn, rules, common_condition=common_cond)
+        match_transaction_with_vars(
+            txn, rules, common_condition=common_cond, extra_attrs=extra_attrs
+        )
         == expected
     )
 
 
 @pytest.mark.parametrize(
-    "txn, input_config, import_rules, expected, expected_result",
+    "txn, input_config, import_rules, extra_attrs, expected, expected_result",
     [
         pytest.param(
             Transaction(
@@ -354,6 +425,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="mock.csv:123",
@@ -423,6 +495,98 @@ def test_match_transaction_with_vars(
             ),
             [
                 ImportRule(
+                    match=ExtendedSimpleTxnMatchRule(
+                        extra_key0=StrExactMatch(equals="prefixed_btc")
+                    ),
+                    actions=[
+                        ActionAddTxn(
+                            file="{{ extractor }}.bean",
+                            txn=TransactionTemplate(
+                                narration="{{ extra_key0 }}",
+                                postings=[
+                                    PostingTemplate(
+                                        account="Assets:Bank:{{ source_account }}",
+                                        amount=AmountTemplate(
+                                            number="{{ amount }}",
+                                            currency="{{ currency }}",
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        )
+                    ],
+                )
+            ],
+            dict(extra_key0="prefixed_{{ currency | lower }}"),
+            [
+                GeneratedTransaction(
+                    id="mock.csv:123",
+                    sources=["mock.csv"],
+                    date="2024-05-05",
+                    file="MOCK_EXTRACTOR.bean",
+                    flag="*",
+                    narration="prefixed_btc",
+                    postings=[
+                        GeneratedPosting(
+                            account="Expenses:Food",
+                            amount=Amount(
+                                number="-118.45",
+                                currency="BTC",
+                            ),
+                        ),
+                        GeneratedPosting(
+                            account="Assets:Bank:Foobar",
+                            amount=Amount(
+                                number="123.45",
+                                currency="BTC",
+                            ),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:Fees",
+                            amount=Amount(
+                                number="-5",
+                                currency="BTC",
+                            ),
+                        ),
+                    ],
+                )
+            ],
+            None,
+            id="extra-attrs",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            InputConfigDetails(
+                prepend_postings=[
+                    PostingTemplate(
+                        account="Expenses:Food",
+                        amount=AmountTemplate(
+                            number="{{ -(amount - 5) }}",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+                append_postings=[
+                    PostingTemplate(
+                        account="Expenses:Fees",
+                        amount=AmountTemplate(
+                            number="-5",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+            ),
+            [
+                ImportRule(
                     common_cond=SimpleTxnMatchRule(
                         source_account=StrExactMatch(equals="Foobar")
                     ),
@@ -457,6 +621,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="mock.csv:123",
@@ -537,6 +702,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="my-mock.csv:123",
@@ -595,6 +761,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="mock.csv:123",
@@ -656,6 +823,7 @@ def test_match_transaction_with_vars(
                     actions=[],
                 )
             ],
+            None,
             [],
             UnprocessedTransaction(
                 txn=Transaction(
@@ -714,6 +882,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 DeletedTransaction(id="id-mock.csv:123"),
             ],
@@ -740,6 +909,7 @@ def test_match_transaction_with_vars(
                     actions=[ActionDelTxn()],
                 )
             ],
+            None,
             [
                 DeletedTransaction(id="mock.csv:123"),
             ],
@@ -766,6 +936,7 @@ def test_match_transaction_with_vars(
                     actions=[ActionIgnore()],
                 )
             ],
+            None,
             [],
             None,
             id="ignore",
@@ -812,6 +983,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="mock.csv:123",
@@ -848,6 +1020,7 @@ def test_process_transaction(
     input_config: InputConfigDetails | None,
     import_rules: list[ImportRule],
     txn: Transaction,
+    extra_attrs: dict,
     expected: list[GeneratedTransaction],
     expected_result: UnprocessedTransaction | None,
 ):
@@ -860,6 +1033,7 @@ def test_process_transaction(
             input_config=input_config,
             import_rules=import_rules,
             txn=txn,
+            extra_attrs=extra_attrs,
         )
 
     assert list(get_result()) == expected
@@ -1813,6 +1987,156 @@ def test_filter_transaction(
                         GeneratedPosting(
                             account="Expenses:AWS",
                             amount=Amount(number="353.63", currency="USD"),
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        (
+            "extra-attrs",
+            [
+                UnprocessedTransaction(
+                    import_id="chase/2024.csv:-3",
+                    txn=Transaction(
+                        extractor="chase_credit_card",
+                        file=str(pathlib.Path("chase") / "2024.csv"),
+                        lineno=1,
+                        reversed_lineno=-3,
+                        date=datetime.date(2024, 4, 3),
+                        post_date=datetime.date(2024, 4, 5),
+                        desc="APPLE.COM/BILL",
+                        amount=decimal.Decimal("-1.23"),
+                        category="Shopping",
+                        type="Sale",
+                        note="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-1.23", currency="USD"),
+                        )
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="chase/2024.csv:-2",
+                    sources=[str(pathlib.Path("chase") / "2024.csv")],
+                    date="2024-04-02",
+                    flag="*",
+                    narration="Amazon web services",
+                    metadata=[MetadataItem(name="match-type", value="credit_card")],
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-6.54", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="6.54", currency="USD"),
+                        ),
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="chase/2024.csv:-1",
+                    txn=Transaction(
+                        extractor="chase_credit_card",
+                        file=str(pathlib.Path("chase") / "2024.csv"),
+                        lineno=3,
+                        reversed_lineno=-1,
+                        date=datetime.date(2024, 4, 1),
+                        post_date=datetime.date(2024, 4, 2),
+                        desc="GITHUB  INC.",
+                        amount=decimal.Decimal("-4.00"),
+                        category="Professional Services",
+                        type="Sale",
+                        note="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Chase",
+                            amount=Amount(number="-4.00", currency="USD"),
+                        )
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="mercury/2024.csv:-2",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file=str(pathlib.Path("mercury") / "2024.csv"),
+                        lineno=1,
+                        reversed_lineno=-2,
+                        date=datetime.date(2024, 4, 17),
+                        timestamp=datetime.datetime(
+                            2024, 4, 17, 21, 30, 40, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="GUSTO",
+                        bank_desc="GUSTO; FEE 111111; Launch Platform LLC",
+                        amount=decimal.Decimal("-46.00"),
+                        currency="",
+                        category="",
+                        status="Sent",
+                        source_account="Mercury Checking xx12",
+                        note="",
+                        reference="",
+                        gl_code="",
+                        name_on_card="",
+                        last_four_digits="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-46.00", currency="USD"),
+                        )
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="mercury/2024.csv:-1",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file=str(pathlib.Path("mercury") / "2024.csv"),
+                        lineno=2,
+                        reversed_lineno=-1,
+                        date=datetime.date(2024, 4, 16),
+                        timestamp=datetime.datetime(
+                            2024, 4, 16, 3, 25, 55, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="Amazon Web Services",
+                        bank_desc="Amazon web services",
+                        amount=decimal.Decimal("-353.63"),
+                        currency="USD",
+                        category="Software",
+                        status="Sent",
+                        source_account="Mercury Credit",
+                        note="",
+                        reference="",
+                        gl_code="",
+                        name_on_card="Fang-Pen Lin",
+                        last_four_digits="5678",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-353.63", currency="USD"),
+                        ),
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="other/2024.csv:-1",
+                    sources=[str(pathlib.Path("other") / "2024.csv")],
+                    date="2024-04-02",
+                    flag="*",
+                    narration="BeanHub",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Other",
+                            amount=Amount(number="-6.54", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="6.54", currency="USD"),
                         ),
                     ],
                 ),

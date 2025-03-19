@@ -1,0 +1,60 @@
+inputs:
+- match: "{{ match_path }}"
+  config:
+    prepend_postings:
+      - account: "{{ input_account }}"
+        amount:
+          number: "{{ amount }}"
+          currency: "{{ currency | default('USD', true) }}"
+  extra_attrs:
+    match_type: "{{ txn_type | default('default') }}"
+    lineno_x10: "{{ lineno * 10 }}"
+  loop:
+    - match_path: "mercury/*.csv"
+      input_account: Assets:Bank:US:Mercury
+      output_file: "mercury-output.bean"
+    - match_path: "chase/*.csv"
+      input_account: Assets:Bank:US:Chase
+      txn_type: "credit_card"
+# add other txns without extra attrs to ensure it works regardless if extra attrs exists or not
+- match: "other/*.csv"
+  config:
+    prepend_postings:
+      - account: Assets:Bank:US:Other
+        amount:
+          number: "{{ amount }}"
+          currency: "{{ currency | default('USD', true) }}"
+
+imports:
+  - match:
+      desc: "^Amazon (.+)"
+      match_type:
+        equals: credit_card
+      lineno_x10:
+        equals: "20"
+    actions:
+      - type: add_txn
+        file: "{{ output_file | default('output.bean') }}"
+        txn:
+          narration: "{{ desc }}"
+          metadata:
+            - name: match-type
+              value: "{{ match_type }}"
+          postings:
+            - account: "Expenses:AWS"
+              amount:
+                number: "{{ -amount }}"
+                currency: "{{ currency | default('USD', true) }}"
+  - match:
+      desc:
+        equals: BeanHub
+    actions:
+      - type: add_txn
+        file: "{{ output_file | default('output.bean') }}"
+        txn:
+          narration: "{{ desc }}"
+          postings:
+            - account: "Expenses:AWS"
+              amount:
+                number: "{{ -amount }}"
+                currency: "{{ currency | default('USD', true) }}"
