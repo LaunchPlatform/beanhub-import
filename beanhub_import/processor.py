@@ -13,7 +13,6 @@ import typing
 import uuid
 import warnings
 
-import iso8601
 from beancount_black.formatter import parse_date
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
