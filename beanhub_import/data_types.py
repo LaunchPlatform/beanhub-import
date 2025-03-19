@@ -228,7 +228,7 @@ class InputConfig(ImportBaseModel):
     config: InputConfigDetails | None = None
     filter: RawFilter | None = None
     loop: list[dict] | None = None
-    extra_attrs: dict | None = None
+    extra_attrs: dict[str, str | int | float | bool] | None = None
 
 
 class OutputConfig(ImportBaseModel):
