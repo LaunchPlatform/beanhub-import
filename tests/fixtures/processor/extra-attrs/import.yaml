@@ -8,7 +8,7 @@ inputs:
           number: "{{ amount }}"
           currency: "{{ currency | default('USD', true) }}"
   extra_attrs:
-    txn_type: "{{ credit_card | default('default') }}"
+    txn_type: "{{ txn_type | default('default') }}"
   loop:
     - match_path: "mercury/*.csv"
       input_account: Assets:Bank:US:Mercury

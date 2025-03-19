@@ -1728,25 +1728,21 @@ def test_filter_transaction(
                         )
                     ],
                 ),
-                UnprocessedTransaction(
-                    import_id="chase/2024.csv:-2",
-                    txn=Transaction(
-                        extractor="chase_credit_card",
-                        file=str(pathlib.Path("chase") / "2024.csv"),
-                        lineno=2,
-                        reversed_lineno=-2,
-                        date=datetime.date(2024, 4, 2),
-                        post_date=datetime.date(2024, 4, 3),
-                        desc="Amazon web services",
-                        amount=decimal.Decimal("-6.54"),
-                        category="Personal",
-                        type="Sale",
-                        note="",
-                    ),
-                    prepending_postings=[
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="chase/2024.csv:-2",
+                    sources=[str(pathlib.Path("chase") / "2024.csv")],
+                    date="2024-04-02",
+                    flag="*",
+                    narration="Amazon web services",
+                    postings=[
                         GeneratedPosting(
                             account="Assets:Bank:US:Chase",
                             amount=Amount(number="-6.54", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="6.54", currency="USD"),
                         ),
                     ],
                 ),
@@ -1804,21 +1800,35 @@ def test_filter_transaction(
                         )
                     ],
                 ),
-                GeneratedTransaction(
-                    file="mercury-output.bean",
-                    id="mercury/2024.csv:-1",
-                    sources=[str(pathlib.Path("mercury") / "2024.csv")],
-                    date="2024-04-16",
-                    flag="*",
-                    narration="Amazon Web Services",
-                    postings=[
+                UnprocessedTransaction(
+                    import_id="mercury/2024.csv:-1",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file=str(pathlib.Path("mercury") / "2024.csv"),
+                        lineno=2,
+                        reversed_lineno=-1,
+                        date=datetime.date(2024, 4, 16),
+                        timestamp=datetime.datetime(
+                            2024, 4, 16, 3, 25, 55, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="Amazon Web Services",
+                        bank_desc="Amazon web services",
+                        amount=decimal.Decimal("-353.63"),
+                        currency="USD",
+                        category="Software",
+                        status="Sent",
+                        source_account="Mercury Credit",
+                        note="",
+                        reference="",
+                        gl_code="",
+                        name_on_card="Fang-Pen Lin",
+                        last_four_digits="5678",
+                    ),
+                    prepending_postings=[
                         GeneratedPosting(
                             account="Assets:Bank:US:Mercury",
                             amount=Amount(number="-353.63", currency="USD"),
-                        ),
-                        GeneratedPosting(
-                            account="Expenses:AWS",
-                            amount=Amount(number="353.63", currency="USD"),
                         ),
                     ],
                 ),
