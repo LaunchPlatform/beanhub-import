@@ -64,7 +64,9 @@ FILTER_OPERATOR_MAP: dict[FilterOperator, typing.Callable] = {
 @dataclasses.dataclass(frozen=True)
 class RenderedInputConfig:
     input_config: InputConfig
+    # filter for transaction
     filter: Filter | None = None
+    # values to pass down to be rendered in the import stage
     values: dict | None = None
 
 
@@ -377,28 +379,17 @@ def expand_input_loops(
 ) -> typing.Generator[RenderedInputConfig, None, None]:
     for input_config in inputs:
         evaluated_filter = None
-        if input_config.loop is None:
-            if input_config.filter is not None:
-                evaluated_filter = eval_filter(
-                    render_str=lambda value: template_env.from_string(value).render(
-                        dict(omit=omit_token)
-                    ),
-                    omit_token=omit_token,
-                    raw_filter=input_config.filter,
-                )
-            yield RenderedInputConfig(
-                input_config=InputConfig(
-                    match=input_config.match,
-                    config=input_config.config,
-                ),
-                filter=evaluated_filter,
-            )
-            continue
-        if not input_config.loop:
-            raise ValueError("Loop content cannot be empty")
-        for values in input_config.loop:
+
+        if input_config.loop is not None:
+            if not input_config.loop:
+                raise ValueError("Loop content cannot be empty")
+            loop = input_config.loop
+        else:
+            loop = [None]
+
+        for values in loop:
             render_str = lambda value: template_env.from_string(value).render(
-                **(dict(omit=omit_token) | values)
+                **(dict(omit=omit_token) | (values if values is not None else {}))
             )
             if input_config.filter is not None:
                 evaluated_filter = eval_filter(

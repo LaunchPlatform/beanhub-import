@@ -190,7 +190,6 @@ class InputConfigDetails(ImportBaseModel):
     appending_postings: list[PostingTemplate] | None = None
     append_postings: list[PostingTemplate] | None = None
     default_txn: TransactionTemplate | None = None
-    extra_attrs: dict | None = None
 
 
 class FilterOperation(ImportBaseModel):
@@ -229,6 +228,7 @@ class InputConfig(ImportBaseModel):
     config: InputConfigDetails | None = None
     filter: RawFilter | None = None
     loop: list[dict] | None = None
+    extra_attrs: dict | None = None
 
 
 class OutputConfig(ImportBaseModel):
