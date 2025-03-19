@@ -244,7 +244,7 @@ def test_match_transaction(
 
 
 @pytest.mark.parametrize(
-    "txn, rules, common_cond, expected",
+    "txn, rules, common_cond, extra_attrs, expected",
     [
         (
             Transaction(extractor="MOCK_EXTRACTOR"),
@@ -259,6 +259,7 @@ def test_match_transaction(
                     vars=dict(foo="bar"),
                 ),
             ],
+            None,
             None,
             TxnMatchVars(
                 cond=SimpleTxnMatchRule(
@@ -283,6 +284,7 @@ def test_match_transaction(
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             None,
+            None,
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
@@ -299,6 +301,7 @@ def test_match_transaction(
                 ),
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
+            None,
             TxnMatchVars(
                 cond=SimpleTxnMatchRule(
                     extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
@@ -320,6 +323,31 @@ def test_match_transaction(
             ],
             None,
             None,
+            None,
+        ),
+        pytest.param(
+            Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=extend_txn_match_rule(dict(extra_key0=str))(
+                        extra_key0=StrExactMatch(equals="MOCK_VAL")
+                    ),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
+            dict(extra_key0="MOCK_VAL"),
+            TxnMatchVars(
+                cond=extend_txn_match_rule(dict(extra_key0=str))(
+                    extra_key0=StrExactMatch(equals="MOCK_VAL")
+                ),
+                vars=dict(foo="bar"),
+            ),
+            id="extra-attrs",
         ),
     ],
 )
@@ -327,10 +355,13 @@ def test_match_transaction_with_vars(
     txn: Transaction,
     rules: list[TxnMatchVars],
     common_cond: SimpleTxnMatchRule | None,
+    extra_attrs: dict,
     expected: TxnMatchVars,
 ):
     assert (
-        match_transaction_with_vars(txn, rules, common_condition=common_cond)
+        match_transaction_with_vars(
+            txn, rules, common_condition=common_cond, extra_attrs=extra_attrs
+        )
         == expected
     )
 

@@ -154,10 +154,8 @@ def match_transaction(
 ) -> bool:
     def get_value(key: str):
         nonlocal txn
-        if extra_attrs is not None:
-            result = extra_attrs.get(key)
-            if result is not None:
-                return result
+        if extra_attrs is not None and key in extra_attrs:
+            return extra_attrs[key]
         return getattr(txn, key)
 
     return all(
@@ -175,7 +173,8 @@ def match_transaction_with_vars(
 ) -> TxnMatchVars | None:
     for rule in rules:
         if match_transaction(txn, rule.cond) and (
-            common_condition is None or match_transaction(txn, common_condition)
+            common_condition is None
+            or match_transaction(txn, common_condition, extra_attrs=extra_attrs)
         ):
             return rule
 
