@@ -405,6 +405,29 @@ def test_match_transaction(
             ),
             id="extra-attrs",
         ),
+        pytest.param(
+            Transaction(extractor="MOCK_EXTRACTOR", payee="MOCK_PAYEE"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor="MOCK_(?P<extractor_name>.+)"),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            SimpleTxnMatchRule(payee="MOCK_(?P<payee_name>.+)"),
+            None,
+            (
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor="MOCK_(?P<extractor_name>.+)"),
+                    vars=dict(eggs="spam"),
+                ),
+                dict(payee_name="PAYEE", extractor_name="EXTRACTOR"),
+            ),
+            id="named-group",
+        ),
     ],
 )
 def test_match_transaction_with_vars(
