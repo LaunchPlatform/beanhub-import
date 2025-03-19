@@ -58,6 +58,8 @@ from beanhub_import.processor import RenderedInputConfig
 from beanhub_import.processor import walk_dir_files
 from beanhub_import.templates import make_environment
 
+ExtendedSimpleTxnMatchRule = extend_txn_match_rule(dict(extra_key0=str))
+
 
 @pytest.fixture
 def template_env() -> SandboxedEnvironment:
@@ -215,7 +217,7 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
         ),
         pytest.param(
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
-            extend_txn_match_rule(dict(extra_key0=str))(
+            ExtendedSimpleTxnMatchRule(
                 extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
                 desc=StrExactMatch(equals="MOCK_DESC"),
                 extra_key0=StrExactMatch(equals="MOCK_VAL"),
@@ -226,7 +228,7 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
         ),
         pytest.param(
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
-            extend_txn_match_rule(dict(extra_key0=str))(
+            ExtendedSimpleTxnMatchRule(
                 extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
                 desc=StrExactMatch(equals="MOCK_DESC"),
                 extra_key0=StrExactMatch(equals="MOCK_VAL"),
@@ -333,7 +335,7 @@ def test_match_transaction(
                     vars=dict(eggs="spam"),
                 ),
                 TxnMatchVars(
-                    cond=extend_txn_match_rule(dict(extra_key0=str))(
+                    cond=ExtendedSimpleTxnMatchRule(
                         extra_key0=StrExactMatch(equals="MOCK_VAL")
                     ),
                     vars=dict(foo="bar"),
@@ -342,7 +344,7 @@ def test_match_transaction(
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             dict(extra_key0="MOCK_VAL"),
             TxnMatchVars(
-                cond=extend_txn_match_rule(dict(extra_key0=str))(
+                cond=ExtendedSimpleTxnMatchRule(
                     extra_key0=StrExactMatch(equals="MOCK_VAL")
                 ),
                 vars=dict(foo="bar"),

@@ -172,7 +172,7 @@ def match_transaction_with_vars(
     extra_attrs: dict | None = None,
 ) -> TxnMatchVars | None:
     for rule in rules:
-        if match_transaction(txn, rule.cond) and (
+        if match_transaction(txn, rule.cond, extra_attrs=extra_attrs) and (
             common_condition is None
             or match_transaction(txn, common_condition, extra_attrs=extra_attrs)
         ):
