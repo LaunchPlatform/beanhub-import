@@ -268,7 +268,7 @@ def process_transaction(
         )
         matched_vars = None
         if isinstance(import_rule.match, list):
-            matched = match_transaction_with_vars(
+            matched, name_group = match_transaction_with_vars(
                 txn,
                 import_rule.match,
                 common_condition=import_rule.common_cond,
@@ -281,12 +281,14 @@ def process_transaction(
                 if isinstance(value, str)
                 else value
                 for key, value in (matched.vars or {}).items()
-            }
+            } | name_group
         else:
-            if not match_transaction(
+            matched, name_group = match_transaction(
                 txn, import_rule.match, extra_attrs=rendered_extra_attrs
-            ):
+            )
+            if not matched:
                 continue
+            matched_vars = name_group
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
                 logger.debug("Ignored transaction %s:%s", txn.file, txn.lineno)
