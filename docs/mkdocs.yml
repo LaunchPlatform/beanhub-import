@@ -38,6 +38,7 @@ nav:
         - 'Input Config': 'scheme/input-config/input-config.md'
         - 'Simple File Match': 'scheme/input-config/match.md'
         - 'Config': 'scheme/input-config/config.md'
+        - 'Extra attributes': 'scheme/input-config/extra-attrs.md'
         - 'Filter': 'scheme/input-config/filter.md'
         - 'Loop': 'scheme/input-config/loop.md'
     - 'Import Config':
