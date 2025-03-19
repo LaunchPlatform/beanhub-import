@@ -85,7 +85,7 @@ def extend_txn_match_rule(
             # we only support StrMatch for all the fields right now.
             # in the future, we may want to support number or matching rules with other types
             raise ValueError(
-                f"Extra field {key} has value type {type(value)} is not currently supported for matching"
+                f"Extra field {key} has value type {type(field_type)} is not currently supported for matching"
             )
         extra_fields[key] = typing.Annotated[StrMatch, pydantic.Field(None)]
     return pydantic.create_model(
@@ -527,6 +527,27 @@ def filter_transaction(operation: FilterFieldOperation, txn: Transaction) -> boo
     return func(lhs, rhs)
 
 
+def extend_import_match_rules(
+    extra_attrs: dict | None, import_rule: ImportRule
+) -> ImportRule:
+    if extra_attrs is None:
+        return import_rule
+    import_rule = copy.deepcopy(import_rule)
+    ExtendedSimpleTxnMatchRule = extend_txn_match_rule(
+        {key: type(value) for key, value in extra_attrs.items()}
+    )
+    if isinstance(import_rule.match, list):
+        for match_rule in import_rule.match:
+            match_rule.cond = ExtendedSimpleTxnMatchRule.model_validate(
+                match_rule.cond.model_dump(exclude_unset=True)
+            )
+    else:
+        import_rule.match = ExtendedSimpleTxnMatchRule.model_validate(
+            import_rule.match.model_dump(exclude_unset=True)
+        )
+    return import_rule
+
+
 def process_imports(
     import_doc: ImportDoc,
     input_dir: pathlib.Path,
@@ -593,7 +614,14 @@ def process_imports(
                     txn_generator = process_transaction(
                         template_env=template_env,
                         input_config=input_config.config,
-                        import_rules=import_doc.imports,
+                        import_rules=list(
+                            map(
+                                functools.partial(
+                                    extend_import_match_rules, input_config.extra_attrs
+                                ),
+                                import_doc.imports,
+                            )
+                        ),
                         omit_token=omit_token,
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,

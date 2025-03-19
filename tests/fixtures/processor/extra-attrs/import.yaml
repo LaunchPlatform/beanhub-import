@@ -7,6 +7,8 @@ inputs:
         amount:
           number: "{{ amount }}"
           currency: "{{ currency | default('USD', true) }}"
+  extra_attrs:
+    txn_type: "{{ credit_card | default('default') }}"
   loop:
     - match_path: "mercury/*.csv"
       input_account: Assets:Bank:US:Mercury
@@ -15,10 +17,13 @@ inputs:
     - match_path: "chase/*.csv"
       input_account: Assets:Bank:US:Chase
       src_extractor: chase_credit_card
+      txn_type: "credit_card"
 
 imports:
   - match:
       desc: "^Amazon (.+)"
+      txn_type:
+        equals: credit_card
     actions:
       - type: add_txn
         file: "{{ output_file | default('output.bean') }}"

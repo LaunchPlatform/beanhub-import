@@ -7,6 +7,7 @@ from datetime import datetime
 import pydantic
 from beanhub_extract.data_types import Transaction
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import TypeAdapter
 
 
@@ -51,6 +52,7 @@ StrMatch = (
 
 
 class SimpleTxnMatchRule(ImportBaseModel):
+    model_config = ConfigDict(extra="allow")
     extractor: StrMatch | None = None
     file: StrMatch | None = None
     date: StrMatch | None = None
