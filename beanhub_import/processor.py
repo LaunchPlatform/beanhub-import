@@ -242,7 +242,10 @@ def process_transaction(
         matched_vars = None
         if isinstance(import_rule.match, list):
             matched = match_transaction_with_vars(
-                txn, import_rule.match, common_condition=import_rule.common_cond
+                txn,
+                import_rule.match,
+                common_condition=import_rule.common_cond,
+                extra_attrs=extra_attrs,
             )
             if matched is None:
                 continue
@@ -253,7 +256,7 @@ def process_transaction(
                 for key, value in (matched.vars or {}).items()
             }
         else:
-            if not match_transaction(txn, import_rule.match):
+            if not match_transaction(txn, import_rule.match, extra_attrs=extra_attrs):
                 continue
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
@@ -595,6 +598,7 @@ def process_imports(
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
                         input_vars=rendered_input_config.values,
+                        extra_attrs=input_config.extra_attrs,
                     )
                     unprocessed_txn = yield from txn_generator
                     if unprocessed_txn is not None:
