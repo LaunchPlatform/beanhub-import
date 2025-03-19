@@ -73,7 +73,6 @@ Of course, you can also use the extra attributes in the generated transactions l
 imports:
   - match:
       extractor: "plaid"
-      desc: ""
     actions:
       - type: add_txn
         file: "{{ output_file | default('output.bean') }}"
