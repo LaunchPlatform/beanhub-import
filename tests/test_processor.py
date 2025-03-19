@@ -2242,6 +2242,125 @@ def test_filter_transaction(
                 ),
             ],
         ),
+        (
+            "regex-name-group",
+            [
+                UnprocessedTransaction(
+                    import_id="mercury.csv:-4",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file="mercury.csv",
+                        lineno=1,
+                        reversed_lineno=-4,
+                        date=datetime.date(2024, 4, 17),
+                        timestamp=datetime.datetime(
+                            2024, 4, 17, 21, 30, 40, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="GUSTO",
+                        bank_desc="GUSTO; FEE 111111; Launch Platform LLC",
+                        amount=decimal.Decimal("-46.00"),
+                        currency="",
+                        category="",
+                        status="Sent",
+                        source_account="Mercury Checking xx12",
+                        note="",
+                        reference="",
+                        gl_code="",
+                        name_on_card="",
+                        last_four_digits="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-46.00", currency="USD"),
+                        )
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="mercury.csv:-3",
+                    sources=["mercury.csv"],
+                    date="2024-04-16",
+                    flag="*",
+                    narration="Web Services in file mercury",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-353.63", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="353.63", currency="USD"),
+                        ),
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="mercury.csv:-2",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file="mercury.csv",
+                        lineno=3,
+                        reversed_lineno=-2,
+                        date=datetime.date(2024, 4, 16),
+                        timestamp=datetime.datetime(
+                            2024, 4, 16, 3, 24, 57, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="Adobe",
+                        bank_desc="ADOBE  *ADOBE",
+                        amount=decimal.Decimal("-54.99"),
+                        currency="USD",
+                        category="Software",
+                        status="Sent",
+                        source_account="Mercury Credit",
+                        note="",
+                        reference="",
+                        gl_code="",
+                        name_on_card="Fang-Pen Lin",
+                        last_four_digits="5678",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-54.99", currency="USD"),
+                        ),
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="mercury.csv:-1",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file="mercury.csv",
+                        lineno=4,
+                        reversed_lineno=-1,
+                        date=datetime.date(2024, 4, 15),
+                        timestamp=datetime.datetime(
+                            2024, 4, 15, 14, 35, 37, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="Jane Doe",
+                        bank_desc="Send Money transaction initiated on Mercury",
+                        amount=decimal.Decimal("-1500.00"),
+                        currency="",
+                        category="",
+                        status="Sent",
+                        source_account="Mercury Checking xx1234",
+                        note="",
+                        reference="Profit distribution",
+                        gl_code="",
+                        name_on_card="",
+                        last_four_digits="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-1500.00", currency="USD"),
+                        ),
+                    ],
+                ),
+            ],
+        ),
     ],
 )
 def test_process_imports(
