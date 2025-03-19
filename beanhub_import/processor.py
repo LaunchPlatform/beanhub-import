@@ -245,6 +245,9 @@ def process_transaction(
         )
 
     for import_rule in import_rules:
+        import_rule = extend_import_match_rules(
+            extra_attrs=extra_attrs, import_rule=import_rule
+        )
         matched_vars = None
         if isinstance(import_rule.match, list):
             matched = match_transaction_with_vars(
@@ -617,14 +620,7 @@ def process_imports(
                     txn_generator = process_transaction(
                         template_env=template_env,
                         input_config=input_config.config,
-                        import_rules=list(
-                            map(
-                                functools.partial(
-                                    extend_import_match_rules, input_config.extra_attrs
-                                ),
-                                import_doc.imports,
-                            )
-                        ),
+                        import_rules=import_doc.imports,
                         omit_token=omit_token,
                         default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                         txn=txn,
