@@ -122,7 +122,7 @@ inputs:
       input_account: Assets:Bank:US:Mercury
       extractor: mercury
     - match_path: chase/*.csv
-      input_account: Assets:Bank:US:Chase
+      input_account: Liabilities:CreditCard:US:ChaseFreedom
       extractor: chase_credit_card
 
 # the `imports` defines the rules to match transactions extracted from the input files and
