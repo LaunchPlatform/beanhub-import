@@ -110,6 +110,15 @@ inputs:
           amount:
             number: "{{ amount }}"
             currency: "{{ currency | default('USD', true) }}"
+    # extra attrs allows you to define extra attributes to pass down to import stage
+    extra_attrs:
+      input_method: "{{ input_method | default('auto') }}"
+      # extra attrs are rendered with txn attributes before processing import rules,
+      # so that you can also use attributes from the transaction, making it a very powerful
+      # way to define custom matching logic
+      high_amount_purchase: "{{ amount > 1000 }}"
+      # You can also set a simple value like str, bool, or number
+      tag_name: "my-value"
     # filter allows you to consume only the transactions from input which meet certain conditions.
     # For example, the example below consumes transactions only after 2024-01-01.
     # This is particular useful when you have hand-crafted books in the past and you also have
@@ -126,6 +135,7 @@ inputs:
     - match_path: mercury/*.csv
       input_account: Assets:Bank:US:Mercury
       extractor: mercury
+      input_method: "manual"
     - match_path: chase/*.csv
       input_account: Liabilities:CreditCard:US:ChaseFreedom
       extractor: chase_credit_card
@@ -179,6 +189,14 @@ imports:
         vars:
           account: Expenses:Gas:PGE
           narration: "PG&E Gas"
+      - cond:
+          # This is the extra attribute value defined in `extra_attrs` under the input rules
+          # We can also use them as part of the matching conditions.
+          input_method:
+            equals: manual
+        vars:
+          account: Expenses:Others
+          narration: "Manual input"          
     actions:
       # generate a transaction into the beancount file
       - file: "books/{{ date.year }}.bean"
