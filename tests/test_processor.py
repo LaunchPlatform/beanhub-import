@@ -2058,24 +2058,6 @@ def test_filter_transaction(
                         )
                     ],
                 ),
-                GeneratedTransaction(
-                    file="output.bean",
-                    id="other/2024.csv:-1",
-                    sources=[str(pathlib.Path("other") / "2024.csv")],
-                    date="2024-04-02",
-                    flag="*",
-                    narration="BeanHub",
-                    postings=[
-                        GeneratedPosting(
-                            account="Assets:Bank:US:Other",
-                            amount=Amount(number="-6.54", currency="USD"),
-                        ),
-                        GeneratedPosting(
-                            account="Expenses:AWS",
-                            amount=Amount(number="6.54", currency="USD"),
-                        ),
-                    ],
-                ),
                 UnprocessedTransaction(
                     import_id="mercury/2024.csv:-2",
                     txn=Transaction(
@@ -2137,6 +2119,24 @@ def test_filter_transaction(
                         GeneratedPosting(
                             account="Assets:Bank:US:Mercury",
                             amount=Amount(number="-353.63", currency="USD"),
+                        ),
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="other/2024.csv:-1",
+                    sources=[str(pathlib.Path("other") / "2024.csv")],
+                    date="2024-04-02",
+                    flag="*",
+                    narration="BeanHub",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Other",
+                            amount=Amount(number="-6.54", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="6.54", currency="USD"),
                         ),
                     ],
                 ),

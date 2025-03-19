@@ -570,7 +570,9 @@ def process_imports(
             template_env=template_env, inputs=import_doc.inputs, omit_token=omit_token
         ),
     )
-    for filepath in walk_dir_files(input_dir):
+    # sort filepaths for deterministic behavior across platforms
+    filepaths = sorted(walk_dir_files(input_dir))
+    for filepath in filepaths:
         for rendered_input_config in expanded_input_configs:
             input_config = rendered_input_config.input_config
             if not match_file(input_config.match, filepath):
