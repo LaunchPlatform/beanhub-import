@@ -372,6 +372,17 @@ def render_input_config_match(
         raise ValueError(f"Unexpected match type {type(match)}")
 
 
+def render_extra_attrs(render_str: typing.Callable, extra_attrs: dict) -> dict:
+    result = {}
+    for key, value in extra_attrs.items():
+        if isinstance(value, str):
+            value = render_str(value)
+        elif isinstance(value, dict):
+            value = render_extra_attrs(render_str=render_str, extra_attrs=value)
+        result[key] = value
+    return result
+
+
 def expand_input_loops(
     template_env: SandboxedEnvironment,
     inputs: list[InputConfig],
@@ -401,6 +412,11 @@ def expand_input_loops(
                 render_str=render_str,
                 match=input_config.match,
             )
+            rendered_extra_attrs = None
+            if input_config.extra_attrs is not None:
+                rendered_extra_attrs = render_extra_attrs(
+                    render_str=render_str, extra_attrs=input_config.extra_attrs
+                )
             config = input_config.config
             if config.extractor is not None:
                 config = copy.deepcopy(config)
@@ -411,6 +427,7 @@ def expand_input_loops(
                 input_config=InputConfig(
                     match=rendered_match,
                     config=config,
+                    extra_attrs=rendered_extra_attrs,
                 ),
                 filter=evaluated_filter,
                 values=values,
