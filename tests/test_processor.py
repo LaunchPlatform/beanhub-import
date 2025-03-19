@@ -1231,6 +1231,8 @@ def test_render_input_config_match(
                         key0="{{ val0 }}",
                         key1=dict(nested0="{{ val1 }}"),
                         key2="MOCK_VAL",
+                        key3=True,
+                        key4=12.34,
                     ),
                     loop=[
                         dict(
@@ -1249,6 +1251,8 @@ def test_render_input_config_match(
                             key0="123",
                             key1=dict(nested0="eggs"),
                             key2="MOCK_VAL",
+                            key3=True,
+                            key4=12.34,
                         ),
                     ),
                     values=dict(
