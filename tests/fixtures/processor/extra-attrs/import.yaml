@@ -1,34 +1,34 @@
 inputs:
 - match: "{{ match_path }}"
   config:
-    extractor: "{{ src_extractor }}"
     prepend_postings:
       - account: "{{ input_account }}"
         amount:
           number: "{{ amount }}"
           currency: "{{ currency | default('USD', true) }}"
   extra_attrs:
-    txn_type: "{{ txn_type | default('default') }}"
+    match_type: "{{ txn_type | default('default') }}"
   loop:
     - match_path: "mercury/*.csv"
       input_account: Assets:Bank:US:Mercury
-      src_extractor: mercury
       output_file: "mercury-output.bean"
     - match_path: "chase/*.csv"
       input_account: Assets:Bank:US:Chase
-      src_extractor: chase_credit_card
       txn_type: "credit_card"
 
 imports:
   - match:
       desc: "^Amazon (.+)"
-      txn_type:
+      match_type:
         equals: credit_card
     actions:
       - type: add_txn
         file: "{{ output_file | default('output.bean') }}"
         txn:
           narration: "{{ desc }}"
+          metadata:
+            - name: match-type
+              value: "{{ match_type }}"
           postings:
             - account: "Expenses:AWS"
               amount:

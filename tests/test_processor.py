@@ -1735,6 +1735,7 @@ def test_filter_transaction(
                     date="2024-04-02",
                     flag="*",
                     narration="Amazon web services",
+                    metadata=[MetadataItem(name="match-type", value="credit_card")],
                     postings=[
                         GeneratedPosting(
                             account="Assets:Bank:US:Chase",
