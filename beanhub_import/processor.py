@@ -116,33 +116,38 @@ def match_file(
         raise ValueError(f"Unexpected file match type {type(pattern)}")
 
 
-def match_str(pattern: StrMatch, value: str | None) -> bool:
+def match_str(pattern: StrMatch, value: str | None) -> typing.Tuple[bool, dict]:
     if value is None:
-        return False
+        return False, {}
     if isinstance(pattern, str):
-        return re.match(pattern, value) is not None
+        match = re.match(pattern, value)
+        if match is None:
+            return False, {}
+        return True, match.groupdict()
     elif isinstance(pattern, StrExactMatch):
-        return value == pattern.equals
+        return value == pattern.equals, {}
     elif isinstance(pattern, StrPrefixMatch):
-        return value.startswith(pattern.prefix)
+        return value.startswith(pattern.prefix), {}
     elif isinstance(pattern, StrSuffixMatch):
-        return value.endswith(pattern.suffix)
+        return value.endswith(pattern.suffix), {}
     elif isinstance(pattern, StrContainsMatch):
-        return pattern.contains in value
+        return pattern.contains in value, {}
     elif isinstance(pattern, StrOneOfMatch):
         if not pattern.regex:
             if not pattern.ignore_case:
-                return value in pattern.one_of
+                return value in pattern.one_of, {}
             else:
                 return value.lower() in frozenset(
                     item.lower() for item in pattern.one_of
-                )
+                ), {}
         else:
-            return any(
-                re.match(item, value, flags=re.IGNORECASE if pattern.ignore_case else 0)
-                is not None
-                for item in pattern.one_of
-            )
+            for item in pattern.one_of:
+                match = re.match(
+                    item, value, flags=re.IGNORECASE if pattern.ignore_case else 0
+                )
+                if match is not None:
+                    return True, match.groupdict()
+            return False, {}
     else:
         raise ValueError(f"Unexpected str match type {type(pattern)}")
 
@@ -158,11 +163,11 @@ def match_transaction(
             return extra_attrs[key]
         return getattr(txn, key, None)
 
-    return all(
-        match_str(getattr(rule, key), get_value(key))
-        for key, pattern in rule.model_dump().items()
-        if pattern is not None
-    )
+    for key, pattern in rule.model_dump().items():
+        if pattern is None:
+            continue
+        if not match_str(getattr(rule, key), get_value(key)):
+            return False
 
 
 def match_transaction_with_vars(
