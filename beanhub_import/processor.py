@@ -418,7 +418,7 @@ def expand_input_loops(
                     render_str=render_str, extra_attrs=input_config.extra_attrs
                 )
             config = input_config.config
-            if config.extractor is not None:
+            if config is not None and config.extractor is not None:
                 config = copy.deepcopy(config)
                 config.extractor = render_str(config.extractor)
                 if config.extractor == omit_token or not config.extractor:

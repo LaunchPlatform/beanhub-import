@@ -1223,6 +1223,43 @@ def test_render_input_config_match(
             ],
             id="omit",
         ),
+        pytest.param(
+            [
+                InputConfig(
+                    match="import-data/connect/{{ match_path }}",
+                    extra_attrs=dict(
+                        key0="{{ val0 }}",
+                        key1=dict(nested0="{{ val1 }}"),
+                        key2="MOCK_VAL",
+                    ),
+                    loop=[
+                        dict(
+                            match_path="bar.csv",
+                            val0=123,
+                            val1="eggs",
+                        ),
+                    ],
+                ),
+            ],
+            [
+                RenderedInputConfig(
+                    input_config=InputConfig(
+                        match="import-data/connect/bar.csv",
+                        extra_attrs=dict(
+                            key0="123",
+                            key1=dict(nested0="eggs"),
+                            key2="MOCK_VAL",
+                        ),
+                    ),
+                    values=dict(
+                        match_path="bar.csv",
+                        val0=123,
+                        val1="eggs",
+                    ),
+                ),
+            ],
+            id="extra_attrs",
+        ),
     ],
 )
 def test_expand_input_loops(
