@@ -150,9 +150,18 @@ def match_str(pattern: StrMatch, value: str | None) -> bool:
 def match_transaction(
     txn: Transaction,
     rule: SimpleTxnMatchRule,
+    extra_attrs: dict | None = None,
 ) -> bool:
+    def get_value(key: str):
+        nonlocal txn
+        if extra_attrs is not None:
+            result = extra_attrs.get(key)
+            if result is not None:
+                return result
+        return getattr(txn, key)
+
     return all(
-        match_str(getattr(rule, key), getattr(txn, key))
+        match_str(getattr(rule, key), get_value(key))
         for key, pattern in rule.model_dump().items()
         if pattern is not None
     )
@@ -162,6 +171,7 @@ def match_transaction_with_vars(
     txn: Transaction,
     rules: list[TxnMatchVars],
     common_condition: SimpleTxnMatchRule | None = None,
+    extra_attrs: dict | None = None,
 ) -> TxnMatchVars | None:
     for rule in rules:
         if match_transaction(txn, rule.cond) and (
@@ -182,6 +192,7 @@ def process_transaction(
     omit_token: str | None = None,
     default_import_id: str | None = None,
     input_vars: dict | None = None,
+    extra_attrs: dict | None = None,
 ) -> typing.Generator[
     GeneratedTransaction | DeletedTransaction, None, UnprocessedTransaction | None
 ]:
@@ -209,6 +220,8 @@ def process_transaction(
         if value is None:
             return None
         template_ctx = txn_ctx
+        if extra_attrs is not None:
+            template_ctx |= extra_attrs
         if input_vars is not None:
             template_ctx |= input_vars
         if matched_vars is not None:

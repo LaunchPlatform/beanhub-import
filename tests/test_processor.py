@@ -181,16 +181,18 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
 
 
 @pytest.mark.parametrize(
-    "txn, rule, expected",
+    "txn, rule, extra_attrs, expected",
     [
         (
             Transaction(extractor="MOCK_EXTRACTOR"),
             SimpleTxnMatchRule(extractor=StrExactMatch(equals="MOCK_EXTRACTOR")),
+            None,
             True,
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR"),
             SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER_EXTRACTOR")),
+            None,
             False,
         ),
         (
@@ -199,6 +201,7 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
                 extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
                 desc=StrExactMatch(equals="MOCK_DESC"),
             ),
+            None,
             True,
         ),
         (
@@ -207,20 +210,37 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
                 extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
                 desc=StrExactMatch(equals="OTHER_DESC"),
             ),
+            None,
             False,
         ),
-        (
+        pytest.param(
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
-            SimpleTxnMatchRule(
-                extractor=StrExactMatch(equals="OTHER_DESC"),
+            extend_txn_match_rule(dict(extra_key0=str))(
+                extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
                 desc=StrExactMatch(equals="MOCK_DESC"),
+                extra_key0=StrExactMatch(equals="MOCK_VAL"),
             ),
+            dict(extra_key0="MOCK_VAL"),
+            True,
+            id="match-extra-attr",
+        ),
+        pytest.param(
+            Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
+            extend_txn_match_rule(dict(extra_key0=str))(
+                extractor=StrExactMatch(equals="MOCK_EXTRACTOR"),
+                desc=StrExactMatch(equals="MOCK_DESC"),
+                extra_key0=StrExactMatch(equals="MOCK_VAL"),
+            ),
+            dict(extra_key0="OTHER_VAL"),
             False,
+            id="match-extra-attr-not-matched",
         ),
     ],
 )
-def test_match_transaction(txn: Transaction, rule: SimpleTxnMatchRule, expected: bool):
-    assert match_transaction(txn, rule) == expected
+def test_match_transaction(
+    txn: Transaction, rule: SimpleTxnMatchRule, extra_attrs: dict, expected: bool
+):
+    assert match_transaction(txn, rule, extra_attrs=extra_attrs) == expected
 
 
 @pytest.mark.parametrize(
