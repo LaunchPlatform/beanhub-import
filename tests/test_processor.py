@@ -369,7 +369,7 @@ def test_match_transaction_with_vars(
 
 
 @pytest.mark.parametrize(
-    "txn, input_config, import_rules, expected, expected_result",
+    "txn, input_config, import_rules, extra_attrs, expected, expected_result",
     [
         pytest.param(
             Transaction(
@@ -425,6 +425,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="mock.csv:123",
@@ -494,6 +495,98 @@ def test_match_transaction_with_vars(
             ),
             [
                 ImportRule(
+                    match=ExtendedSimpleTxnMatchRule(
+                        extra_key0=StrExactMatch(equals="prefixed_btc")
+                    ),
+                    actions=[
+                        ActionAddTxn(
+                            file="{{ extractor }}.bean",
+                            txn=TransactionTemplate(
+                                narration="{{ extra_key0 }}",
+                                postings=[
+                                    PostingTemplate(
+                                        account="Assets:Bank:{{ source_account }}",
+                                        amount=AmountTemplate(
+                                            number="{{ amount }}",
+                                            currency="{{ currency }}",
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        )
+                    ],
+                )
+            ],
+            dict(extra_key0="prefixed_{{ currency | lower }}"),
+            [
+                GeneratedTransaction(
+                    id="mock.csv:123",
+                    sources=["mock.csv"],
+                    date="2024-05-05",
+                    file="MOCK_EXTRACTOR.bean",
+                    flag="*",
+                    narration="prefixed_btc",
+                    postings=[
+                        GeneratedPosting(
+                            account="Expenses:Food",
+                            amount=Amount(
+                                number="-118.45",
+                                currency="BTC",
+                            ),
+                        ),
+                        GeneratedPosting(
+                            account="Assets:Bank:Foobar",
+                            amount=Amount(
+                                number="123.45",
+                                currency="BTC",
+                            ),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:Fees",
+                            amount=Amount(
+                                number="-5",
+                                currency="BTC",
+                            ),
+                        ),
+                    ],
+                )
+            ],
+            None,
+            id="extra-attrs",
+        ),
+        pytest.param(
+            Transaction(
+                extractor="MOCK_EXTRACTOR",
+                file="mock.csv",
+                lineno=123,
+                desc="MOCK_DESC",
+                source_account="Foobar",
+                date=datetime.date(2024, 5, 5),
+                currency="BTC",
+                amount=decimal.Decimal("123.45"),
+            ),
+            InputConfigDetails(
+                prepend_postings=[
+                    PostingTemplate(
+                        account="Expenses:Food",
+                        amount=AmountTemplate(
+                            number="{{ -(amount - 5) }}",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+                append_postings=[
+                    PostingTemplate(
+                        account="Expenses:Fees",
+                        amount=AmountTemplate(
+                            number="-5",
+                            currency="{{ currency }}",
+                        ),
+                    ),
+                ],
+            ),
+            [
+                ImportRule(
                     common_cond=SimpleTxnMatchRule(
                         source_account=StrExactMatch(equals="Foobar")
                     ),
@@ -528,6 +621,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="mock.csv:123",
@@ -608,6 +702,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="my-mock.csv:123",
@@ -666,6 +761,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="mock.csv:123",
@@ -727,6 +823,7 @@ def test_match_transaction_with_vars(
                     actions=[],
                 )
             ],
+            None,
             [],
             UnprocessedTransaction(
                 txn=Transaction(
@@ -785,6 +882,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 DeletedTransaction(id="id-mock.csv:123"),
             ],
@@ -811,6 +909,7 @@ def test_match_transaction_with_vars(
                     actions=[ActionDelTxn()],
                 )
             ],
+            None,
             [
                 DeletedTransaction(id="mock.csv:123"),
             ],
@@ -837,6 +936,7 @@ def test_match_transaction_with_vars(
                     actions=[ActionIgnore()],
                 )
             ],
+            None,
             [],
             None,
             id="ignore",
@@ -883,6 +983,7 @@ def test_match_transaction_with_vars(
                     ],
                 )
             ],
+            None,
             [
                 GeneratedTransaction(
                     id="mock.csv:123",
@@ -919,6 +1020,7 @@ def test_process_transaction(
     input_config: InputConfigDetails | None,
     import_rules: list[ImportRule],
     txn: Transaction,
+    extra_attrs: dict,
     expected: list[GeneratedTransaction],
     expected_result: UnprocessedTransaction | None,
 ):
@@ -931,6 +1033,7 @@ def test_process_transaction(
             input_config=input_config,
             import_rules=import_rules,
             txn=txn,
+            extra_attrs=extra_attrs,
         )
 
     assert list(get_result()) == expected
@@ -1293,45 +1396,6 @@ def test_render_input_config_match(
                 ),
             ],
             id="omit",
-        ),
-        pytest.param(
-            [
-                InputConfig(
-                    match="import-data/connect/{{ match_path }}",
-                    extra_attrs=dict(
-                        key0="{{ val0 }}",
-                        key1="MOCK_VAL",
-                        key2=True,
-                        key3=12.34,
-                    ),
-                    loop=[
-                        dict(
-                            match_path="bar.csv",
-                            val0=123,
-                            val1="eggs",
-                        ),
-                    ],
-                ),
-            ],
-            [
-                RenderedInputConfig(
-                    input_config=InputConfig(
-                        match="import-data/connect/bar.csv",
-                        extra_attrs=dict(
-                            key0="123",
-                            key1="MOCK_VAL",
-                            key2=True,
-                            key3=12.34,
-                        ),
-                    ),
-                    values=dict(
-                        match_path="bar.csv",
-                        val0=123,
-                        val1="eggs",
-                    ),
-                ),
-            ],
-            id="extra_attrs",
         ),
     ],
 )

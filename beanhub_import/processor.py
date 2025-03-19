@@ -213,14 +213,15 @@ def process_transaction(
         default_file = input_config.default_file
     processed = False
     matched_vars: dict | None = None
+    rendered_extra_attrs: dict | None = None
 
     def render_str(value: str | None) -> str | None:
         nonlocal matched_vars
         if value is None:
             return None
         template_ctx = txn_ctx
-        if extra_attrs is not None:
-            template_ctx |= extra_attrs
+        if rendered_extra_attrs is not None:
+            template_ctx |= rendered_extra_attrs
         if input_vars is not None:
             template_ctx |= input_vars
         if matched_vars is not None:
@@ -238,6 +239,11 @@ def process_transaction(
             return
         return result
 
+    if extra_attrs is not None:
+        rendered_extra_attrs = render_extra_attrs(
+            render_str=render_str, extra_attrs=extra_attrs
+        )
+
     for import_rule in import_rules:
         matched_vars = None
         if isinstance(import_rule.match, list):
@@ -245,7 +251,7 @@ def process_transaction(
                 txn,
                 import_rule.match,
                 common_condition=import_rule.common_cond,
-                extra_attrs=extra_attrs,
+                extra_attrs=rendered_extra_attrs,
             )
             if matched is None:
                 continue
@@ -256,7 +262,9 @@ def process_transaction(
                 for key, value in (matched.vars or {}).items()
             }
         else:
-            if not match_transaction(txn, import_rule.match, extra_attrs=extra_attrs):
+            if not match_transaction(
+                txn, import_rule.match, extra_attrs=rendered_extra_attrs
+            ):
                 continue
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
@@ -452,11 +460,6 @@ def expand_input_loops(
                 render_str=render_str,
                 match=input_config.match,
             )
-            rendered_extra_attrs = None
-            if input_config.extra_attrs is not None:
-                rendered_extra_attrs = render_extra_attrs(
-                    render_str=render_str, extra_attrs=input_config.extra_attrs
-                )
             config = input_config.config
             if config is not None and config.extractor is not None:
                 config = copy.deepcopy(config)
@@ -467,7 +470,7 @@ def expand_input_loops(
                 input_config=InputConfig(
                     match=rendered_match,
                     config=config,
-                    extra_attrs=rendered_extra_attrs,
+                    extra_attrs=input_config.extra_attrs,
                 ),
                 filter=evaluated_filter,
                 values=values,
