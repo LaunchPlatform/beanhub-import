@@ -13,6 +13,7 @@ import typing
 import uuid
 import warnings
 
+import pydantic
 from beancount_black.formatter import parse_date
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.extractors import ALL_EXTRACTORS
@@ -68,6 +69,30 @@ class RenderedInputConfig:
     filter: Filter | None = None
     # values to pass down to be rendered in the import stage
     values: dict | None = None
+
+
+def extend_txn_match_rule(
+    field_types: dict[str, typing.Type],
+) -> typing.Type[SimpleTxnMatchRule]:
+    """Extend SimpleTxnMatchRule model with extra_attrs fields
+
+    :param field_types: mapping from key to value type
+    :return: Extended SimpleTxnMatchRule
+    """
+    extra_fields = {}
+    for key, field_type in field_types.items():
+        if field_type is not str:
+            # we only support StrMatch for all the fields right now.
+            # in the future, we may want to support number or matching rules with other types
+            raise ValueError(
+                f"Extra field {key} has value type {type(value)} is not currently supported for matching"
+            )
+        extra_fields[key] = typing.Annotated[StrMatch, pydantic.Field(None)]
+    return pydantic.create_model(
+        "ExtendedSimpleTxnMatchRule",
+        **extra_fields,
+        __base__=SimpleTxnMatchRule,
+    )
 
 
 def walk_dir_files(

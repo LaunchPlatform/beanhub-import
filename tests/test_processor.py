@@ -44,6 +44,7 @@ from beanhub_import.data_types import TxnMatchVars
 from beanhub_import.data_types import UnprocessedTransaction
 from beanhub_import.processor import eval_filter
 from beanhub_import.processor import expand_input_loops
+from beanhub_import.processor import extend_txn_match_rule
 from beanhub_import.processor import Filter
 from beanhub_import.processor import filter_transaction
 from beanhub_import.processor import match_file
@@ -61,6 +62,23 @@ from beanhub_import.templates import make_environment
 @pytest.fixture
 def template_env() -> SandboxedEnvironment:
     return make_environment()
+
+
+@pytest.mark.parametrize(
+    "field_types, rule_payload",
+    [
+        (dict(), dict(extractor="foo")),
+        (dict(key0=str), dict(extractor="foo", key0=dict(equals="bar"))),
+        (
+            dict(key0=str, key1=str),
+            dict(extractor="foo", key0=dict(equals="bar"), key1=dict(prefix="eggs")),
+        ),
+    ],
+)
+def test_extend_txn_match_rule(field_types: dict, rule_payload: dict):
+    ExtendedSimpleTxnMatchRule = extend_txn_match_rule(field_types=field_types)
+    rule = ExtendedSimpleTxnMatchRule.model_validate(rule_payload)
+    assert rule.model_dump(mode="json", exclude_unset=True) == rule_payload
 
 
 @pytest.mark.parametrize(
