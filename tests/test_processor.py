@@ -308,11 +308,14 @@ def test_match_transaction(
             ],
             None,
             None,
-            TxnMatchVars(
-                cond=SimpleTxnMatchRule(
-                    extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+            (
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
                 ),
-                vars=dict(foo="bar"),
+                {},
             ),
         ),
         (
@@ -331,7 +334,7 @@ def test_match_transaction(
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             None,
-            None,
+            (None, {}),
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
@@ -349,11 +352,14 @@ def test_match_transaction(
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             None,
-            TxnMatchVars(
-                cond=SimpleTxnMatchRule(
-                    extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+            (
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
                 ),
-                vars=dict(foo="bar"),
+                {},
             ),
         ),
         (
@@ -370,7 +376,7 @@ def test_match_transaction(
             ],
             None,
             None,
-            None,
+            (None, {}),
         ),
         pytest.param(
             Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
@@ -388,11 +394,14 @@ def test_match_transaction(
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             dict(extra_key0="MOCK_VAL"),
-            TxnMatchVars(
-                cond=ExtendedSimpleTxnMatchRule(
-                    extra_key0=StrExactMatch(equals="MOCK_VAL")
+            (
+                TxnMatchVars(
+                    cond=ExtendedSimpleTxnMatchRule(
+                        extra_key0=StrExactMatch(equals="MOCK_VAL")
+                    ),
+                    vars=dict(foo="bar"),
                 ),
-                vars=dict(foo="bar"),
+                {},
             ),
             id="extra-attrs",
         ),
@@ -403,7 +412,7 @@ def test_match_transaction_with_vars(
     rules: list[TxnMatchVars],
     common_cond: SimpleTxnMatchRule | None,
     extra_attrs: dict,
-    expected: TxnMatchVars,
+    expected: typing.Tuple[TxnMatchVars, dict],
 ):
     assert (
         match_transaction_with_vars(

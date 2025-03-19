@@ -179,13 +179,22 @@ def match_transaction_with_vars(
     rules: list[TxnMatchVars],
     common_condition: SimpleTxnMatchRule | None = None,
     extra_attrs: dict | None = None,
-) -> TxnMatchVars | None:
+) -> typing.Tuple[TxnMatchVars | None, dict]:
     for rule in rules:
-        if match_transaction(txn, rule.cond, extra_attrs=extra_attrs) and (
-            common_condition is None
-            or match_transaction(txn, common_condition, extra_attrs=extra_attrs)
-        ):
-            return rule
+        common_match = True
+        named_group = {}
+        if common_condition is not None:
+            common_match, common_named_group = match_transaction(
+                txn, common_condition, extra_attrs=extra_attrs
+            )
+            if common_match:
+                named_group |= common_named_group
+        cond_match, cond_named_group = match_transaction(
+            txn, rule.cond, extra_attrs=extra_attrs
+        )
+        if common_match and cond_match:
+            return rule, named_group | cond_named_group
+    return None, {}
 
 
 def first_non_none(*values):
