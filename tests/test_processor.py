@@ -2058,21 +2058,23 @@ def test_filter_transaction(
                         )
                     ],
                 ),
-                UnprocessedTransaction(
-                    import_id="other/2024.csv:-1",
-                    txn=Transaction(
-                        extractor="chase_credit_card",
-                        file=str(pathlib.Path("other") / "2024.csv"),
-                        lineno=1,
-                        reversed_lineno=-1,
-                        date=datetime.date(2024, 4, 2),
-                        post_date=datetime.date(2024, 4, 3),
-                        desc="Amazon web services",
-                        amount=decimal.Decimal("-6.54"),
-                        category="Personal",
-                        type="Sale",
-                        note="",
-                    ),
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="other/2024.csv:-1",
+                    sources=[str(pathlib.Path("other") / "2024.csv")],
+                    date="2024-04-02",
+                    flag="*",
+                    narration="BeanHub",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Other",
+                            amount=Amount(number="-6.54", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="6.54", currency="USD"),
+                        ),
+                    ],
                 ),
                 UnprocessedTransaction(
                     import_id="mercury/2024.csv:-2",

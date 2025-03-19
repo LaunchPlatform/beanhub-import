@@ -18,6 +18,12 @@ inputs:
       txn_type: "credit_card"
 # add other txns without extra attrs to ensure it works regardless if extra attrs exists or not
 - match: "other/*.csv"
+  config:
+    prepend_postings:
+      - account: Assets:Bank:US:Other
+        amount:
+          number: "{{ amount }}"
+          currency: "{{ currency | default('USD', true) }}"
 
 imports:
   - match:
@@ -34,6 +40,19 @@ imports:
           metadata:
             - name: match-type
               value: "{{ match_type }}"
+          postings:
+            - account: "Expenses:AWS"
+              amount:
+                number: "{{ -amount }}"
+                currency: "{{ currency | default('USD', true) }}"
+  - match:
+      desc:
+        equals: BeanHub
+    actions:
+      - type: add_txn
+        file: "{{ output_file | default('output.bean') }}"
+        txn:
+          narration: "{{ desc }}"
           postings:
             - account: "Expenses:AWS"
               amount:
