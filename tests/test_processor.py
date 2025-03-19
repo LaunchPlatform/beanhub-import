@@ -209,13 +209,13 @@ def test_match_str(
             Transaction(extractor="MOCK_EXTRACTOR"),
             SimpleTxnMatchRule(extractor=StrExactMatch(equals="MOCK_EXTRACTOR")),
             None,
-            True,
+            (True, {}),
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR"),
             SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER_EXTRACTOR")),
             None,
-            False,
+            (False, {}),
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
@@ -224,7 +224,7 @@ def test_match_str(
                 desc=StrExactMatch(equals="MOCK_DESC"),
             ),
             None,
-            True,
+            (True, {}),
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
@@ -233,7 +233,7 @@ def test_match_str(
                 desc=StrExactMatch(equals="OTHER_DESC"),
             ),
             None,
-            False,
+            (False, {}),
         ),
         pytest.param(
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
@@ -243,7 +243,7 @@ def test_match_str(
                 extra_key0=StrExactMatch(equals="MOCK_VAL"),
             ),
             dict(extra_key0="MOCK_VAL"),
-            True,
+            (True, {}),
             id="match-extra-attr",
         ),
         pytest.param(
@@ -254,13 +254,38 @@ def test_match_str(
                 extra_key0=StrExactMatch(equals="MOCK_VAL"),
             ),
             dict(extra_key0="OTHER_VAL"),
-            False,
+            (False, {}),
             id="match-extra-attr-not-matched",
+        ),
+        pytest.param(
+            Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
+            SimpleTxnMatchRule(
+                extractor="MOCK_(?P<name>.+)",
+            ),
+            None,
+            (True, dict(name="EXTRACTOR")),
+            id="regex-named-group",
+        ),
+        pytest.param(
+            Transaction(extractor="bar1234", desc="MOCK_DESC"),
+            SimpleTxnMatchRule(
+                extractor=StrOneOfMatch(
+                    one_of=["Foo(.+)", "Bar(?P<val>.+)", "bar(.+)"],
+                    regex=True,
+                    ignore_case=True,
+                ),
+            ),
+            None,
+            (True, dict(val="1234")),
+            id="regex-one-of-named-group",
         ),
     ],
 )
 def test_match_transaction(
-    txn: Transaction, rule: SimpleTxnMatchRule, extra_attrs: dict, expected: bool
+    txn: Transaction,
+    rule: SimpleTxnMatchRule,
+    extra_attrs: dict,
+    expected: typing.Tuple[bool, dict],
 ):
     assert match_transaction(txn, rule, extra_attrs=extra_attrs) == expected
 

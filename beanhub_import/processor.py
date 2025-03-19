@@ -116,7 +116,7 @@ def match_file(
         raise ValueError(f"Unexpected file match type {type(pattern)}")
 
 
-def match_str(pattern: StrMatch, value: str | None) -> typing.Tuple[bool, dict]:
+def match_str(pattern: StrMatch, value: str | None) -> typing.Tuple[bool, dict | None]:
     if value is None:
         return False, {}
     if isinstance(pattern, str):
@@ -156,18 +156,22 @@ def match_transaction(
     txn: Transaction,
     rule: SimpleTxnMatchRule,
     extra_attrs: dict | None = None,
-) -> bool:
+) -> typing.Tuple[bool, dict]:
     def get_value(key: str):
         nonlocal txn
         if extra_attrs is not None and key in extra_attrs:
             return extra_attrs[key]
         return getattr(txn, key, None)
 
+    match_vars = {}
     for key, pattern in rule.model_dump().items():
         if pattern is None:
             continue
-        if not match_str(getattr(rule, key), get_value(key)):
-            return False
+        matched, named_group = match_str(getattr(rule, key), get_value(key))
+        if not matched:
+            return False, {}
+        match_vars |= named_group
+    return True, match_vars
 
 
 def match_transaction_with_vars(
