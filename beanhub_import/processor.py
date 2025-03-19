@@ -277,7 +277,7 @@ def process_transaction(
             if matched is None:
                 continue
             matched_vars = {
-                key: template_env.from_string(value).render(**txn_ctx)
+                key: template_env.from_string(value).render(**(txn_ctx | name_group))
                 if isinstance(value, str)
                 else value
                 for key, value in (matched.vars or {}).items()
