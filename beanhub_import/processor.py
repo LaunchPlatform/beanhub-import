@@ -156,7 +156,7 @@ def match_transaction(
         nonlocal txn
         if extra_attrs is not None and key in extra_attrs:
             return extra_attrs[key]
-        return getattr(txn, key)
+        return getattr(txn, key, None)
 
     return all(
         match_str(getattr(rule, key), get_value(key))

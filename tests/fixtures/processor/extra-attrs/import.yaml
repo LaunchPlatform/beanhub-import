@@ -16,6 +16,8 @@ inputs:
     - match_path: "chase/*.csv"
       input_account: Assets:Bank:US:Chase
       txn_type: "credit_card"
+# add other txns without extra attrs to ensure it works regardless if extra attrs exists or not
+- match: "other/*.csv"
 
 imports:
   - match:
