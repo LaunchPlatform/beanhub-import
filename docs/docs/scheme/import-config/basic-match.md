@@ -30,6 +30,30 @@ imports:
       desc: "^DoorDash (.+)"
 ```
 
+Since it's a very common case where you may want to match a transaction attribute with regular expression but also capture the value from the regular expression groups and use them in your transactions, we added a named group capturing feature since 1.2.0.
+For example, to match a description starting with "DoorDash:" and then the restaurant name, you can write a regular expression match like this:
+
+```YAML
+imports:
+  - match:
+      desc: "^DoorDash: (?P<restaurant_name>.+)"
+```
+
+With that, you can then use the captured variable `restaurant_name` in generating transactions like this:
+
+```YAML
+imports:
+  - match:
+      desc: "^DoorDash: (?P<restaurant_name>.+)"
+    actions:
+      - type: add_txn
+        txn:
+          narration: "Order food via DoorDash from {{ restaurant_name }}"
+          # ...
+```
+
+For more information about the regular expression named group, please refer to Python's [document for the regular expression module](https://docs.python.org/3/library/re.html).
+
 ## Exact match
 
 To match an exact value, one can do this:
@@ -104,3 +128,21 @@ imports:
         - ubereats(.+)
         - postmate(.+)
 ```
+
+Capturing name groups as variables for regular expression also works in this case.
+For example:
+
+```YAML
+imports:
+- match:
+    desc:
+      regex: true
+      ignore_case: true
+      one_of:
+        - doordash(?P<restaurant_name>.+)
+        - ubereats(?P<restaurant_name>.+)
+        - postmate(?P<restaurant_name>.+)
+```
+
+Then, you can use the `restaurant_name` variable like usual.
+Since we encounter the first matched regular expression and stop looking further, if there are multiple matches, only the variables from the first one will be captured.

@@ -138,47 +138,67 @@ def test_match_file(pattern: SimpleFileMatch, path: str, expected: bool):
 @pytest.mark.parametrize(
     "pattern, value, expected",
     [
-        ("^Foo([0-9]+)", "Foo0", True),
-        ("^Foo([0-9]+)", "Foo", False),
-        ("^Foo([0-9]+)", "foo0", False),
-        ("^Foo([0-9]+)", "", False),
-        ("^Foo([0-9]+)", None, False),
-        (StrPrefixMatch(prefix="Foo"), "Foo", True),
-        (StrPrefixMatch(prefix="Foo"), "Foobar", True),
-        (StrPrefixMatch(prefix="Foo"), "FooBAR", True),
-        (StrPrefixMatch(prefix="Foo"), "xFooBAR", False),
-        (StrPrefixMatch(prefix="Foo"), "", False),
-        (StrPrefixMatch(prefix="Foo"), None, False),
-        (StrSuffixMatch(suffix="Bar"), "Bar", True),
-        (StrSuffixMatch(suffix="Bar"), "fooBar", True),
-        (StrSuffixMatch(suffix="Bar"), "FooBar", True),
-        (StrSuffixMatch(suffix="Bar"), "Foobar", False),
-        (StrSuffixMatch(suffix="Bar"), "FooBarx", False),
-        (StrSuffixMatch(suffix="Bar"), "", False),
-        (StrSuffixMatch(suffix="Bar"), None, False),
-        (StrContainsMatch(contains="Foo"), "Foo", True),
-        (StrContainsMatch(contains="Foo"), "prefix-Foo", True),
-        (StrContainsMatch(contains="Foo"), "Foo-suffix", True),
-        (StrContainsMatch(contains="Foo"), "prefix-Foo-suffix", True),
-        (StrContainsMatch(contains="Foo"), "prefix-Fo-suffix", False),
-        (StrContainsMatch(contains="Foo"), "", False),
-        (StrContainsMatch(contains="Foo"), None, False),
-        (StrOneOfMatch(one_of=["Foo", "Bar"]), "Foo", True),
-        (StrOneOfMatch(one_of=["Foo", "Bar"]), "Bar", True),
-        (StrOneOfMatch(one_of=["Foo", "Bar"]), "Eggs", False),
-        (StrOneOfMatch(one_of=["Foo", "Bar"]), "boo", False),
-        (StrOneOfMatch(one_of=["Foo", "Bar"], ignore_case=True), "bar", True),
-        (StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True), "FooBar", True),
-        (StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True), "Foo", False),
-        (StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True), "foo", False),
+        ("^Foo([0-9]+)", "Foo0", (True, {})),
+        ("^Foo([0-9]+)", "Foo", (False, {})),
+        ("^Foo([0-9]+)", "foo0", (False, {})),
+        ("^Foo([0-9]+)", "", (False, {})),
+        ("^Foo([0-9]+)", None, (False, {})),
+        (
+            r"(?P<first_name>\w+) (?P<last_name>\w+)",
+            "Malcolm Reynolds",
+            (True, {"first_name": "Malcolm", "last_name": "Reynolds"}),
+        ),
+        (StrPrefixMatch(prefix="Foo"), "Foo", (True, {})),
+        (StrPrefixMatch(prefix="Foo"), "Foobar", (True, {})),
+        (StrPrefixMatch(prefix="Foo"), "FooBAR", (True, {})),
+        (StrPrefixMatch(prefix="Foo"), "xFooBAR", (False, {})),
+        (StrPrefixMatch(prefix="Foo"), "", (False, {})),
+        (StrPrefixMatch(prefix="Foo"), None, (False, {})),
+        (StrSuffixMatch(suffix="Bar"), "Bar", (True, {})),
+        (StrSuffixMatch(suffix="Bar"), "fooBar", (True, {})),
+        (StrSuffixMatch(suffix="Bar"), "FooBar", (True, {})),
+        (StrSuffixMatch(suffix="Bar"), "Foobar", (False, {})),
+        (StrSuffixMatch(suffix="Bar"), "FooBarx", (False, {})),
+        (StrSuffixMatch(suffix="Bar"), "", (False, {})),
+        (StrSuffixMatch(suffix="Bar"), None, (False, {})),
+        (StrContainsMatch(contains="Foo"), "Foo", (True, {})),
+        (StrContainsMatch(contains="Foo"), "prefix-Foo", (True, {})),
+        (StrContainsMatch(contains="Foo"), "Foo-suffix", (True, {})),
+        (StrContainsMatch(contains="Foo"), "prefix-Foo-suffix", (True, {})),
+        (StrContainsMatch(contains="Foo"), "prefix-Fo-suffix", (False, {})),
+        (StrContainsMatch(contains="Foo"), "", (False, {})),
+        (StrContainsMatch(contains="Foo"), None, (False, {})),
+        (StrOneOfMatch(one_of=["Foo", "Bar"]), "Foo", (True, {})),
+        (StrOneOfMatch(one_of=["Foo", "Bar"]), "Bar", (True, {})),
+        (StrOneOfMatch(one_of=["Foo", "Bar"]), "Eggs", (False, {})),
+        (StrOneOfMatch(one_of=["Foo", "Bar"]), "boo", (False, {})),
+        (StrOneOfMatch(one_of=["Foo", "Bar"], ignore_case=True), "bar", (True, {})),
+        (
+            StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True),
+            "FooBar",
+            (True, {}),
+        ),
+        (StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True), "Foo", (False, {})),
+        (StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True), "foo", (False, {})),
         (
             StrOneOfMatch(one_of=["Foo(.+)", "Bar(.+)"], regex=True, ignore_case=True),
             "foobar",
-            True,
+            (True, {}),
+        ),
+        (
+            StrOneOfMatch(
+                one_of=["Foo(.+)", "Bar(?P<val>.+)", "bar(.+)"],
+                regex=True,
+                ignore_case=True,
+            ),
+            "bar1234",
+            (True, dict(val="1234")),
         ),
     ],
 )
-def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
+def test_match_str(
+    pattern: SimpleFileMatch, value: str | None, expected: typing.Tuple[bool, dict]
+):
     assert match_str(pattern, value) == expected
 
 
@@ -189,13 +209,13 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
             Transaction(extractor="MOCK_EXTRACTOR"),
             SimpleTxnMatchRule(extractor=StrExactMatch(equals="MOCK_EXTRACTOR")),
             None,
-            True,
+            (True, {}),
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR"),
             SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER_EXTRACTOR")),
             None,
-            False,
+            (False, {}),
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
@@ -204,7 +224,7 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
                 desc=StrExactMatch(equals="MOCK_DESC"),
             ),
             None,
-            True,
+            (True, {}),
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
@@ -213,7 +233,7 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
                 desc=StrExactMatch(equals="OTHER_DESC"),
             ),
             None,
-            False,
+            (False, {}),
         ),
         pytest.param(
             Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
@@ -223,7 +243,7 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
                 extra_key0=StrExactMatch(equals="MOCK_VAL"),
             ),
             dict(extra_key0="MOCK_VAL"),
-            True,
+            (True, {}),
             id="match-extra-attr",
         ),
         pytest.param(
@@ -234,13 +254,38 @@ def test_match_str(pattern: SimpleFileMatch, value: str | None, expected: bool):
                 extra_key0=StrExactMatch(equals="MOCK_VAL"),
             ),
             dict(extra_key0="OTHER_VAL"),
-            False,
+            (False, {}),
             id="match-extra-attr-not-matched",
+        ),
+        pytest.param(
+            Transaction(extractor="MOCK_EXTRACTOR", desc="MOCK_DESC"),
+            SimpleTxnMatchRule(
+                extractor="MOCK_(?P<name>.+)",
+            ),
+            None,
+            (True, dict(name="EXTRACTOR")),
+            id="regex-named-group",
+        ),
+        pytest.param(
+            Transaction(extractor="bar1234", desc="MOCK_DESC"),
+            SimpleTxnMatchRule(
+                extractor=StrOneOfMatch(
+                    one_of=["Foo(.+)", "Bar(?P<val>.+)", "bar(.+)"],
+                    regex=True,
+                    ignore_case=True,
+                ),
+            ),
+            None,
+            (True, dict(val="1234")),
+            id="regex-one-of-named-group",
         ),
     ],
 )
 def test_match_transaction(
-    txn: Transaction, rule: SimpleTxnMatchRule, extra_attrs: dict, expected: bool
+    txn: Transaction,
+    rule: SimpleTxnMatchRule,
+    extra_attrs: dict,
+    expected: typing.Tuple[bool, dict],
 ):
     assert match_transaction(txn, rule, extra_attrs=extra_attrs) == expected
 
@@ -263,11 +308,14 @@ def test_match_transaction(
             ],
             None,
             None,
-            TxnMatchVars(
-                cond=SimpleTxnMatchRule(
-                    extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+            (
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
                 ),
-                vars=dict(foo="bar"),
+                {},
             ),
         ),
         (
@@ -286,7 +334,7 @@ def test_match_transaction(
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             None,
-            None,
+            (None, {}),
         ),
         (
             Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
@@ -304,11 +352,14 @@ def test_match_transaction(
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             None,
-            TxnMatchVars(
-                cond=SimpleTxnMatchRule(
-                    extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+            (
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(
+                        extractor=StrExactMatch(equals="MOCK_EXTRACTOR")
+                    ),
+                    vars=dict(foo="bar"),
                 ),
-                vars=dict(foo="bar"),
+                {},
             ),
         ),
         (
@@ -325,7 +376,7 @@ def test_match_transaction(
             ],
             None,
             None,
-            None,
+            (None, {}),
         ),
         pytest.param(
             Transaction(extractor="MOCK_EXTRACTOR", payee="PAYEE"),
@@ -343,13 +394,62 @@ def test_match_transaction(
             ],
             SimpleTxnMatchRule(payee=StrExactMatch(equals="PAYEE")),
             dict(extra_key0="MOCK_VAL"),
-            TxnMatchVars(
-                cond=ExtendedSimpleTxnMatchRule(
-                    extra_key0=StrExactMatch(equals="MOCK_VAL")
+            (
+                TxnMatchVars(
+                    cond=ExtendedSimpleTxnMatchRule(
+                        extra_key0=StrExactMatch(equals="MOCK_VAL")
+                    ),
+                    vars=dict(foo="bar"),
                 ),
-                vars=dict(foo="bar"),
+                {},
             ),
             id="extra-attrs",
+        ),
+        pytest.param(
+            Transaction(extractor="MOCK_EXTRACTOR", payee="MOCK_PAYEE"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor="MOCK_(?P<extractor_name>.+)"),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            SimpleTxnMatchRule(payee="MOCK_(?P<payee_name>.+)"),
+            None,
+            (
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor="MOCK_(?P<extractor_name>.+)"),
+                    vars=dict(eggs="spam"),
+                ),
+                dict(payee_name="PAYEE", extractor_name="EXTRACTOR"),
+            ),
+            id="named-group",
+        ),
+        pytest.param(
+            Transaction(extractor="MOCK_EXTRACTOR", payee="MOCK_PAYEE"),
+            [
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor="MOCK_(?P<my_val>.+)"),
+                    vars=dict(eggs="spam"),
+                ),
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor=StrExactMatch(equals="OTHER")),
+                    vars=dict(foo="bar"),
+                ),
+            ],
+            SimpleTxnMatchRule(payee="MOCK_(?P<my_val>.+)"),
+            None,
+            (
+                TxnMatchVars(
+                    cond=SimpleTxnMatchRule(extractor="MOCK_(?P<my_val>.+)"),
+                    vars=dict(eggs="spam"),
+                ),
+                dict(my_val="EXTRACTOR"),
+            ),
+            id="named-group-order",
         ),
     ],
 )
@@ -358,7 +458,7 @@ def test_match_transaction_with_vars(
     rules: list[TxnMatchVars],
     common_cond: SimpleTxnMatchRule | None,
     extra_attrs: dict,
-    expected: TxnMatchVars,
+    expected: typing.Tuple[TxnMatchVars, dict],
 ):
     assert (
         match_transaction_with_vars(
@@ -2137,6 +2237,125 @@ def test_filter_transaction(
                         GeneratedPosting(
                             account="Expenses:AWS",
                             amount=Amount(number="6.54", currency="USD"),
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        (
+            "regex-name-group",
+            [
+                UnprocessedTransaction(
+                    import_id="mercury.csv:-4",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file="mercury.csv",
+                        lineno=1,
+                        reversed_lineno=-4,
+                        date=datetime.date(2024, 4, 17),
+                        timestamp=datetime.datetime(
+                            2024, 4, 17, 21, 30, 40, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="GUSTO",
+                        bank_desc="GUSTO; FEE 111111; Launch Platform LLC",
+                        amount=decimal.Decimal("-46.00"),
+                        currency="",
+                        category="",
+                        status="Sent",
+                        source_account="Mercury Checking xx12",
+                        note="",
+                        reference="",
+                        gl_code="",
+                        name_on_card="",
+                        last_four_digits="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-46.00", currency="USD"),
+                        )
+                    ],
+                ),
+                GeneratedTransaction(
+                    file="output.bean",
+                    id="mercury.csv:-3",
+                    sources=["mercury.csv"],
+                    date="2024-04-16",
+                    flag="*",
+                    narration="Web Services in file mercury",
+                    postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-353.63", currency="USD"),
+                        ),
+                        GeneratedPosting(
+                            account="Expenses:AWS",
+                            amount=Amount(number="353.63", currency="USD"),
+                        ),
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="mercury.csv:-2",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file="mercury.csv",
+                        lineno=3,
+                        reversed_lineno=-2,
+                        date=datetime.date(2024, 4, 16),
+                        timestamp=datetime.datetime(
+                            2024, 4, 16, 3, 24, 57, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="Adobe",
+                        bank_desc="ADOBE  *ADOBE",
+                        amount=decimal.Decimal("-54.99"),
+                        currency="USD",
+                        category="Software",
+                        status="Sent",
+                        source_account="Mercury Credit",
+                        note="",
+                        reference="",
+                        gl_code="",
+                        name_on_card="Fang-Pen Lin",
+                        last_four_digits="5678",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-54.99", currency="USD"),
+                        ),
+                    ],
+                ),
+                UnprocessedTransaction(
+                    import_id="mercury.csv:-1",
+                    txn=Transaction(
+                        extractor="mercury",
+                        file="mercury.csv",
+                        lineno=4,
+                        reversed_lineno=-1,
+                        date=datetime.date(2024, 4, 15),
+                        timestamp=datetime.datetime(
+                            2024, 4, 15, 14, 35, 37, tzinfo=pytz.UTC
+                        ),
+                        timezone="UTC",
+                        desc="Jane Doe",
+                        bank_desc="Send Money transaction initiated on Mercury",
+                        amount=decimal.Decimal("-1500.00"),
+                        currency="",
+                        category="",
+                        status="Sent",
+                        source_account="Mercury Checking xx1234",
+                        note="",
+                        reference="Profit distribution",
+                        gl_code="",
+                        name_on_card="",
+                        last_four_digits="",
+                    ),
+                    prepending_postings=[
+                        GeneratedPosting(
+                            account="Assets:Bank:US:Mercury",
+                            amount=Amount(number="-1500.00", currency="USD"),
                         ),
                     ],
                 ),

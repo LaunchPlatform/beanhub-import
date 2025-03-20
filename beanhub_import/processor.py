@@ -116,33 +116,38 @@ def match_file(
         raise ValueError(f"Unexpected file match type {type(pattern)}")
 
 
-def match_str(pattern: StrMatch, value: str | None) -> bool:
+def match_str(pattern: StrMatch, value: str | None) -> typing.Tuple[bool, dict | None]:
     if value is None:
-        return False
+        return False, {}
     if isinstance(pattern, str):
-        return re.match(pattern, value) is not None
+        match = re.match(pattern, value)
+        if match is None:
+            return False, {}
+        return True, match.groupdict()
     elif isinstance(pattern, StrExactMatch):
-        return value == pattern.equals
+        return value == pattern.equals, {}
     elif isinstance(pattern, StrPrefixMatch):
-        return value.startswith(pattern.prefix)
+        return value.startswith(pattern.prefix), {}
     elif isinstance(pattern, StrSuffixMatch):
-        return value.endswith(pattern.suffix)
+        return value.endswith(pattern.suffix), {}
     elif isinstance(pattern, StrContainsMatch):
-        return pattern.contains in value
+        return pattern.contains in value, {}
     elif isinstance(pattern, StrOneOfMatch):
         if not pattern.regex:
             if not pattern.ignore_case:
-                return value in pattern.one_of
+                return value in pattern.one_of, {}
             else:
                 return value.lower() in frozenset(
                     item.lower() for item in pattern.one_of
-                )
+                ), {}
         else:
-            return any(
-                re.match(item, value, flags=re.IGNORECASE if pattern.ignore_case else 0)
-                is not None
-                for item in pattern.one_of
-            )
+            for item in pattern.one_of:
+                match = re.match(
+                    item, value, flags=re.IGNORECASE if pattern.ignore_case else 0
+                )
+                if match is not None:
+                    return True, match.groupdict()
+            return False, {}
     else:
         raise ValueError(f"Unexpected str match type {type(pattern)}")
 
@@ -151,18 +156,22 @@ def match_transaction(
     txn: Transaction,
     rule: SimpleTxnMatchRule,
     extra_attrs: dict | None = None,
-) -> bool:
+) -> typing.Tuple[bool, dict]:
     def get_value(key: str):
         nonlocal txn
         if extra_attrs is not None and key in extra_attrs:
             return extra_attrs[key]
         return getattr(txn, key, None)
 
-    return all(
-        match_str(getattr(rule, key), get_value(key))
-        for key, pattern in rule.model_dump().items()
-        if pattern is not None
-    )
+    match_vars = {}
+    for key, pattern in rule.model_dump().items():
+        if pattern is None:
+            continue
+        matched, named_group = match_str(getattr(rule, key), get_value(key))
+        if not matched:
+            return False, {}
+        match_vars |= named_group
+    return True, match_vars
 
 
 def match_transaction_with_vars(
@@ -170,13 +179,22 @@ def match_transaction_with_vars(
     rules: list[TxnMatchVars],
     common_condition: SimpleTxnMatchRule | None = None,
     extra_attrs: dict | None = None,
-) -> TxnMatchVars | None:
+) -> typing.Tuple[TxnMatchVars | None, dict]:
     for rule in rules:
-        if match_transaction(txn, rule.cond, extra_attrs=extra_attrs) and (
-            common_condition is None
-            or match_transaction(txn, common_condition, extra_attrs=extra_attrs)
-        ):
-            return rule
+        common_match = True
+        named_group = {}
+        if common_condition is not None:
+            common_match, common_named_group = match_transaction(
+                txn, common_condition, extra_attrs=extra_attrs
+            )
+            if common_match:
+                named_group |= common_named_group
+        cond_match, cond_named_group = match_transaction(
+            txn, rule.cond, extra_attrs=extra_attrs
+        )
+        if common_match and cond_match:
+            return rule, named_group | cond_named_group
+    return None, {}
 
 
 def first_non_none(*values):
@@ -250,7 +268,7 @@ def process_transaction(
         )
         matched_vars = None
         if isinstance(import_rule.match, list):
-            matched = match_transaction_with_vars(
+            matched, name_group = match_transaction_with_vars(
                 txn,
                 import_rule.match,
                 common_condition=import_rule.common_cond,
@@ -259,16 +277,18 @@ def process_transaction(
             if matched is None:
                 continue
             matched_vars = {
-                key: template_env.from_string(value).render(**txn_ctx)
+                key: template_env.from_string(value).render(**(txn_ctx | name_group))
                 if isinstance(value, str)
                 else value
                 for key, value in (matched.vars or {}).items()
-            }
+            } | name_group
         else:
-            if not match_transaction(
+            matched, name_group = match_transaction(
                 txn, import_rule.match, extra_attrs=rendered_extra_attrs
-            ):
+            )
+            if not matched:
                 continue
+            matched_vars = name_group
         for action in import_rule.actions:
             if action.type == ActionType.ignore:
                 logger.debug("Ignored transaction %s:%s", txn.file, txn.lineno)

@@ -1,0 +1,29 @@
+inputs:
+- match: "*.csv"
+  config:
+    extractor: mercury
+    prepend_postings:
+      - account: Assets:Bank:US:Mercury
+        amount:
+          number: "{{ amount }}"
+          currency: "{{ currency | default('USD', true) }}"
+
+imports:
+  - common_cond:
+      extractor:
+        equals: "mercury"
+      file: "(.?/)?(?P<filename>.+)\\.csv"
+    match:
+      - cond:
+          desc: "^Amazon (?P<service_desc>.+)"
+        vars:
+          account: "Expenses:AWS"
+    actions:
+      - txn:
+          narration: "{{ service_desc }} in file {{ filename }}"
+          postings:
+            - account: "{{ account }}"
+              amount:
+                number: "{{ -amount }}"
+                currency: "{{ currency | default('USD', true) }}"
+        file: "output.bean"
