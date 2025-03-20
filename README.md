@@ -177,7 +177,10 @@ imports:
       extractor:
         equals: "plaid"
       file:
-        suffix: "(.+)/Wells Fargo/(.+).csv"
+        # You can also use named group to capture variables in the regular expression
+        # to be used in generating transactions, like the `filename` as shown in the
+        # regex expression
+        suffix: "(.+)/Wells Fargo/(?P<filename>.+).csv"
     match:
       - cond:
           desc: "Comcast"
