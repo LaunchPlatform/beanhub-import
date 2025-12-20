@@ -604,7 +604,7 @@ def process_imports(
                 else None
             )
             if extractor_name is None:
-                with filepath.open("rt") as fo:
+                with filepath.open("rb") as fo:
                     extractor_cls = detect_extractor(fo)
                 if extractor_cls is None:
                     raise ValueError(
