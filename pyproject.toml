@@ -1,6 +1,6 @@
 [project]
 name = "beanhub-import"
-version = "1.2.0"
+version = "1.2.1"
 description = "The simple library for import extracted transactions provided by beanhub-extract and generate corresponding Beancount transactions based on predefined rules"
 authors = [{ name = "Fang-Pen Lin", email = "fangpen@launchplatform.com" }]
 requires-python = "~=3.9"
