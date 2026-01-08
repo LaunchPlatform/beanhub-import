@@ -4,6 +4,8 @@ import dataclasses
 import datetime
 import decimal
 import functools
+import importlib
+import inspect
 import logging
 import operator
 import os
@@ -60,6 +62,83 @@ FILTER_OPERATOR_MAP: dict[FilterOperator, typing.Callable] = {
     FilterOperator.less: operator.lt,
     FilterOperator.less_equal: operator.le,
 }
+
+
+def parse_extractor_uri(uri: str) -> tuple[str, str]:
+    """Parse extractor URI and return (type, identifier).
+
+    :param uri: Extractor identifier (e.g., "mercury" or "module://pkg.Extractor")
+    :return: Tuple of (type, identifier) where type is "builtin" or "module"
+    """
+    MODULE_PREFIX = "module://"
+    if uri.startswith(MODULE_PREFIX):
+        return ("module", uri[len(MODULE_PREFIX) :])
+    return ("builtin", uri)
+
+
+def validate_extractor_interface(extractor_cls: type, module_path: str) -> None:
+    """Validate that class implements required extractor interface.
+
+    :param extractor_cls: Class to validate
+    :param module_path: Full module path for error messages
+    :raises ValueError: If interface requirements not met
+    """
+    if not inspect.isclass(extractor_cls):
+        raise ValueError(
+            f"'{module_path}' is not a class (got {type(extractor_cls).__name__})"
+        )
+
+    if not hasattr(extractor_cls, "__init__"):
+        raise ValueError(f"Extractor class '{module_path}' missing __init__ method")
+
+    # Check if __call__ is defined in the class or its bases (not from object)
+    if "__call__" not in dir(extractor_cls) or not callable(
+        getattr(extractor_cls, "__call__", None)
+    ):
+        # More precise check: see if instances would be callable
+        has_call = any(
+            "__call__" in cls.__dict__ for cls in inspect.getmro(extractor_cls)
+        )
+        if not has_call:
+            raise ValueError(
+                f"Extractor class '{module_path}' must be callable (implement __call__)"
+            )
+
+
+def load_module_extractor(module_path: str) -> type:
+    """Dynamically load extractor class from module path.
+
+    :param module_path: Fully qualified path like "my_pkg.extractors.CustomExtractor"
+    :return: Extractor class
+    :raises ImportError: If module cannot be imported
+    :raises AttributeError: If class not found in module
+    :raises ValueError: If class doesn't implement extractor interface
+    """
+    parts = module_path.rsplit(".", 1)
+    if len(parts) != 2:
+        raise ValueError(
+            f"Invalid module path '{module_path}'. "
+            f"Expected format: 'module.submodule.ClassName'"
+        )
+
+    module_name, class_name = parts
+
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError as e:
+        raise ImportError(
+            f"Failed to import module '{module_name}' for extractor '{module_path}': {e}"
+        ) from e
+
+    if not hasattr(module, class_name):
+        raise AttributeError(
+            f"Module '{module_name}' has no attribute '{class_name}'"
+        )
+
+    extractor_cls = getattr(module, class_name)
+    validate_extractor_interface(extractor_cls, module_path)
+
+    return extractor_cls
 
 
 @dataclasses.dataclass(frozen=True)
@@ -611,14 +690,30 @@ def process_imports(
                         f"Extractor not specified for {rel_filepath} and the extractor type cannot be automatically detected"
                     )
             else:
-                extractor_cls = ALL_EXTRACTORS.get(extractor_name)
-                if extractor_cls is None:
-                    logger.warning(
-                        "Extractor %s not found for file %s, skip",
-                        extractor_name,
-                        rel_filepath,
-                    )
-                    continue
+                uri_type, identifier = parse_extractor_uri(extractor_name)
+
+                if uri_type == "module":
+                    try:
+                        extractor_cls = load_module_extractor(identifier)
+                    except (ImportError, AttributeError, ValueError) as e:
+                        logger.error(
+                            "Failed to load module extractor '%s' for file %s: %s",
+                            extractor_name,
+                            rel_filepath,
+                            e,
+                        )
+                        raise ValueError(
+                            f"Failed to load module extractor '{extractor_name}' for {rel_filepath}: {e}"
+                        ) from e
+                else:
+                    extractor_cls = ALL_EXTRACTORS.get(identifier)
+                    if extractor_cls is None:
+                        logger.warning(
+                            "Extractor %s not found for file %s, skip",
+                            extractor_name,
+                            rel_filepath,
+                        )
+                        continue
             logger.info(
                 "Processing file %s with extractor %s", rel_filepath, extractor_name
             )
