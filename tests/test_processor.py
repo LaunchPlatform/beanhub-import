@@ -47,14 +47,17 @@ from beanhub_import.processor import expand_input_loops
 from beanhub_import.processor import extend_txn_match_rule
 from beanhub_import.processor import Filter
 from beanhub_import.processor import filter_transaction
+from beanhub_import.processor import load_module_extractor
 from beanhub_import.processor import match_file
 from beanhub_import.processor import match_str
 from beanhub_import.processor import match_transaction
 from beanhub_import.processor import match_transaction_with_vars
+from beanhub_import.processor import parse_extractor_uri
 from beanhub_import.processor import process_imports
 from beanhub_import.processor import process_transaction
 from beanhub_import.processor import render_input_config_match
 from beanhub_import.processor import RenderedInputConfig
+from beanhub_import.processor import validate_extractor_interface
 from beanhub_import.processor import walk_dir_files
 from beanhub_import.templates import make_environment
 
@@ -81,6 +84,143 @@ def test_extend_txn_match_rule(field_types: dict, rule_payload: dict):
     ExtendedSimpleTxnMatchRule = extend_txn_match_rule(field_types=field_types)
     rule = ExtendedSimpleTxnMatchRule.model_validate(rule_payload)
     assert rule.model_dump(mode="json", exclude_unset=True) == rule_payload
+
+
+@pytest.mark.parametrize(
+    "uri, expected_type, expected_identifier",
+    [
+        ("mercury", "builtin", "mercury"),
+        ("chase_credit_card", "builtin", "chase_credit_card"),
+        ("module://my_pkg.CustomExtractor", "module", "my_pkg.CustomExtractor"),
+        ("module://pkg.subpkg.extractors.MyExtractor", "module", "pkg.subpkg.extractors.MyExtractor"),
+    ],
+)
+def test_parse_extractor_uri(uri, expected_type, expected_identifier):
+    uri_type, identifier = parse_extractor_uri(uri)
+    assert uri_type == expected_type
+    assert identifier == expected_identifier
+
+
+class MockModuleExtractor:
+    """Mock extractor for testing."""
+
+    DEFAULT_IMPORT_ID = "test-{{ date }}"
+
+    def __init__(self, input_file):
+        self.input_file = input_file
+        self.filename = getattr(input_file, "name", "test.csv")
+
+    def __call__(self):
+        yield Transaction(
+            extractor="mock",
+            file=self.filename,
+            lineno=1,
+            desc="Test",
+            date=datetime.date(2024, 1, 1),
+            amount=decimal.Decimal("100.00"),
+            currency="USD",
+        )
+
+
+def test_validate_extractor_interface_not_a_class():
+    not_a_class = lambda x: None
+    with pytest.raises(ValueError, match="is not a class"):
+        validate_extractor_interface(not_a_class, "test.path")
+
+
+def test_validate_extractor_interface_missing_call():
+    class NoCallMethod:
+        def __init__(self, f):
+            pass
+
+    with pytest.raises(ValueError, match="must be callable"):
+        validate_extractor_interface(NoCallMethod, "test.NoCallMethod")
+
+
+def test_validate_extractor_interface_success():
+    validate_extractor_interface(MockModuleExtractor, "test.Mock")
+
+
+def test_load_module_extractor_success(monkeypatch):
+    mock_module = type("module", (), {"CustomExtractor": MockModuleExtractor})
+    monkeypatch.setattr("importlib.import_module", lambda x: mock_module)
+
+    extractor_cls = load_module_extractor("pkg.CustomExtractor")
+    assert extractor_cls == MockModuleExtractor
+
+
+def test_load_module_extractor_import_error():
+    with pytest.raises(ImportError, match="Failed to import module"):
+        load_module_extractor("nonexistent_module.Extractor")
+
+
+def test_load_module_extractor_attribute_error(monkeypatch):
+    mock_module = type("module", (), {})
+    monkeypatch.setattr("importlib.import_module", lambda x: mock_module)
+
+    with pytest.raises(AttributeError, match="has no attribute"):
+        load_module_extractor("pkg.NonexistentClass")
+
+
+def test_load_module_extractor_invalid_path():
+    with pytest.raises(ValueError, match="Invalid module path"):
+        load_module_extractor("NoClassName")
+
+
+def test_process_imports_with_module_extractor(tmp_path, monkeypatch):
+    csv_file = tmp_path / "test.csv"
+    csv_file.write_text("date,amount\n2024-01-01,100.00")
+
+    mock_module = type("module", (), {"TestExtractor": MockModuleExtractor})
+    monkeypatch.setattr("importlib.import_module", lambda x: mock_module)
+
+    import_doc = ImportDoc(
+        inputs=[
+            InputConfig(
+                match="*.csv",
+                config=InputConfigDetails(
+                    extractor="module://test_pkg.TestExtractor",
+                    default_file="output.bean",
+                ),
+            )
+        ],
+        imports=[
+            ImportRule(
+                match=SimpleTxnMatchRule(extractor="mock"),
+                actions=[
+                    ActionAddTxn(
+                        file="output.bean",
+                        txn=TransactionTemplate(
+                            postings=[PostingTemplate(account="Assets:Bank")]
+                        ),
+                    )
+                ],
+            )
+        ],
+    )
+
+    results = list(process_imports(import_doc, tmp_path))
+    assert len(results) > 0
+
+
+def test_process_imports_module_extractor_import_failure(tmp_path):
+    csv_file = tmp_path / "test.csv"
+    csv_file.write_text("test")
+
+    import_doc = ImportDoc(
+        inputs=[
+            InputConfig(
+                match="*.csv",
+                config=InputConfigDetails(
+                    extractor="module://nonexistent.Extractor",
+                ),
+            )
+        ],
+        imports=[],
+    )
+
+    with pytest.raises(ValueError, match="Failed to load module extractor"):
+        list(process_imports(import_doc, tmp_path))
 
 
 @pytest.mark.parametrize(
