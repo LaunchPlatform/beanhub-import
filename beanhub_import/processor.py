@@ -468,7 +468,7 @@ def process_transaction(
             prepending_postings = generate_postings(prepend_postings, render_str)
         appending_postings = None
         if append_postings is not None:
-            appending_postings = generate_postings(prepend_postings, render_str)
+            appending_postings = generate_postings(append_postings, render_str)
         return UnprocessedTransaction(
             txn=txn,
             import_id=render_str(txn_id),
