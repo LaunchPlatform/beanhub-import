@@ -92,7 +92,11 @@ def test_extend_txn_match_rule(field_types: dict, rule_payload: dict):
         ("mercury", "builtin", "mercury"),
         ("chase_credit_card", "builtin", "chase_credit_card"),
         ("module://my_pkg.CustomExtractor", "module", "my_pkg.CustomExtractor"),
-        ("module://pkg.subpkg.extractors.MyExtractor", "module", "pkg.subpkg.extractors.MyExtractor"),
+        (
+            "module://pkg.subpkg.extractors.MyExtractor",
+            "module",
+            "pkg.subpkg.extractors.MyExtractor",
+        ),
     ],
 )
 def test_parse_extractor_uri(uri, expected_type, expected_identifier):
@@ -1087,8 +1091,8 @@ def test_match_transaction_with_vars(
                 ],
                 appending_postings=[
                     GeneratedPosting(
-                        account="Expenses:Food",
-                        amount=Amount(number="-118.45", currency="BTC"),
+                        account="Expenses:Fees",
+                        amount=Amount(number="-5", currency="BTC"),
                         price=None,
                         cost=None,
                     ),
