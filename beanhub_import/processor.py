@@ -814,7 +814,6 @@ def process_imports(
     input_dir: pathlib.Path,
     workers: int | None = None,
     worker_batch_size: int = 16,
-    worker_timeout: float | None = 600.0,
 ) -> typing.Generator[
     GeneratedTransaction | DeletedTransaction | Transaction, None, None
 ]:
