@@ -18,6 +18,10 @@ from beanhub_import.processor import process_imports
         (2, 16),
         (4, 1),
         (4, 16),
+        (8, 1),
+        (8, 16),
+        (16, 1),
+        (16, 16),
     ],
 )
 def test_process_imports_large_csv(

@@ -814,6 +814,7 @@ def process_imports(
     input_dir: pathlib.Path,
     workers: int | None = None,
     worker_batch_size: int = 16,
+    worker_timeout: float | None = 600.0,
 ) -> typing.Generator[
     GeneratedTransaction | DeletedTransaction | Transaction, None, None
 ]:
@@ -851,7 +852,9 @@ def process_imports(
     if workers is not None and workers > 1:
         with ProcessPoolExecutor(max_workers=workers) as executor:
             for results in executor.map(
-                _process_import_file_job, jobs, chunksize=worker_batch_size
+                _process_import_file_job,
+                jobs,
+                chunksize=worker_batch_size,
             ):
                 yield from results
         return

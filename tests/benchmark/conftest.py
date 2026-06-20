@@ -24,7 +24,7 @@ MERCURY_CSV_HEADER = (
 CHASE_CSV_HEADER = "Transaction Date,Post Date,Description,Category,Type,Amount,Memo"
 CITI_CSV_HEADER = "Status,Date,Description,Debit,Credit,Member Name"
 
-BENCHMARK_NUM_TXNS = int(os.environ.get("BENCHMARK_NUM_TXNS", "10000"))
+BENCHMARK_NUM_TXNS = int(os.environ.get("BENCHMARK_NUM_TXNS", "50000"))
 
 
 @dataclasses.dataclass(frozen=True)
