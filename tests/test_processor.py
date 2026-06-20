@@ -2515,3 +2515,37 @@ def test_process_imports(
         payload = yaml.safe_load(fo)
     doc = ImportDoc.model_validate(payload)
     assert list(process_imports(import_doc=doc, input_dir=folder_path)) == expected
+
+
+@pytest.mark.parametrize(
+    ("workers", "worker_batch_size"),
+    [
+        (None, 16),
+        (1, 16),
+        (2, 1),
+        (2, 16),
+        (4, 1),
+        (4, 16),
+    ],
+)
+def test_process_imports_multiprocessing(
+    fixtures_folder: pathlib.Path,
+    workers: int | None,
+    worker_batch_size: int,
+):
+    folder_path = fixtures_folder / "processor" / "simple-mercury"
+    with open(folder_path / "import.yaml", "rt") as fo:
+        payload = yaml.safe_load(fo)
+    doc = ImportDoc.model_validate(payload)
+    expected = list(process_imports(import_doc=doc, input_dir=folder_path))
+    assert (
+        list(
+            process_imports(
+                import_doc=doc,
+                input_dir=folder_path,
+                workers=workers,
+                worker_batch_size=worker_batch_size,
+            )
+        )
+        == expected
+    )
