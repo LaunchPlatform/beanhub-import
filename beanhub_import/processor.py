@@ -14,7 +14,6 @@ import re
 import typing
 import uuid
 import warnings
-from concurrent.futures import ProcessPoolExecutor
 
 import pydantic
 from beancount_black.formatter import parse_date
@@ -637,7 +636,7 @@ ImportProcessResult = typing.Union[
 
 
 @dataclasses.dataclass(frozen=True)
-class _ImportFileJob:
+class ImportFile:
     filepath: pathlib.Path
     input_dir: pathlib.Path
     rendered_input_config: RenderedInputConfig
@@ -704,28 +703,28 @@ def _collect_process_transaction_results(
     return results
 
 
-def _process_import_file_job(job: _ImportFileJob) -> list[ImportProcessResult]:
+def process_import_file(import_file: ImportFile) -> list[ImportProcessResult]:
     logger = logging.getLogger(__name__)
     template_env = make_environment()
-    if job.context is not None:
-        template_env.globals.update(job.context)
+    if import_file.context is not None:
+        template_env.globals.update(import_file.context)
 
-    input_config = job.rendered_input_config.input_config
-    rel_filepath = job.filepath.relative_to(job.input_dir)
+    input_config = import_file.rendered_input_config.input_config
+    rel_filepath = import_file.filepath.relative_to(import_file.input_dir)
     extractor_cls, extractor_name = _resolve_extractor_cls(
-        filepath=job.filepath,
-        input_dir=job.input_dir,
+        filepath=import_file.filepath,
+        input_dir=import_file.input_dir,
         input_config=input_config,
     )
-    logger.info("Processing file %s with extractor %s", rel_filepath, extractor_name)
+    logger.debug("Processing file %s with extractor %s", rel_filepath, extractor_name)
     results: list[ImportProcessResult] = []
-    with job.filepath.open("rt") as fo:
+    with import_file.filepath.open("rt") as fo:
         extractor = extractor_cls(fo)
         for transaction in extractor():
-            txn = strip_txn_base_path(job.input_dir, transaction)
-            if job.rendered_input_config.filter is not None:
+            txn = strip_txn_base_path(import_file.input_dir, transaction)
+            if import_file.rendered_input_config.filter is not None:
                 keep = True
-                for input_filter in job.rendered_input_config.filter:
+                for input_filter in import_file.rendered_input_config.filter:
                     if not filter_transaction(operation=input_filter, txn=txn):
                         keep = False
                         logger.debug(
@@ -739,25 +738,25 @@ def _process_import_file_job(job: _ImportFileJob) -> list[ImportProcessResult]:
             txn_generator = process_transaction(
                 template_env=template_env,
                 input_config=input_config.config,
-                import_rules=list(job.import_rules),
-                omit_token=job.omit_token,
+                import_rules=list(import_file.import_rules),
+                omit_token=import_file.omit_token,
                 default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
                 txn=txn,
-                input_vars=job.rendered_input_config.values,
+                input_vars=import_file.rendered_input_config.values,
                 extra_attrs=input_config.extra_attrs,
             )
             results.extend(_collect_process_transaction_results(txn_generator))
     return results
 
 
-def _iter_import_file_jobs(
+def _iter_import_files(
     filepaths: list[pathlib.Path],
     input_dir: pathlib.Path,
     expanded_input_configs: list[RenderedInputConfig],
     import_rules: list[ImportRule],
     omit_token: str,
     context: dict | None,
-) -> typing.Generator[_ImportFileJob, None, None]:
+) -> typing.Generator[ImportFile, None, None]:
     logger = logging.getLogger(__name__)
     for filepath in filepaths:
         for rendered_input_config in expanded_input_configs:
@@ -777,7 +776,7 @@ def _iter_import_file_jobs(
                     rel_filepath,
                 )
                 continue
-            yield _ImportFileJob(
+            yield ImportFile(
                 filepath=filepath,
                 input_dir=input_dir,
                 rendered_input_config=rendered_input_config,
@@ -786,6 +785,38 @@ def _iter_import_file_jobs(
                 context=context,
             )
             break
+
+
+def collect_import_files(
+    import_doc: ImportDoc,
+    input_dir: pathlib.Path,
+) -> list[ImportFile]:
+    """Collect input files to process from an import directory.
+
+    :param import_doc: Import configuration document
+    :param input_dir: Directory containing input files to process
+    """
+    template_env = make_environment()
+    omit_token = uuid.uuid4().hex
+    if import_doc.context is not None:
+        template_env.globals.update(import_doc.context)
+    expanded_input_configs = list(
+        expand_input_loops(
+            template_env=template_env, inputs=import_doc.inputs, omit_token=omit_token
+        ),
+    )
+    # sort filepaths for deterministic behavior across platforms
+    filepaths = sorted(walk_dir_files(input_dir))
+    return list(
+        _iter_import_files(
+            filepaths=filepaths,
+            input_dir=input_dir,
+            expanded_input_configs=expanded_input_configs,
+            import_rules=import_doc.imports,
+            omit_token=omit_token,
+            context=import_doc.context,
+        )
+    )
 
 
 def extend_import_match_rules(
@@ -812,7 +843,6 @@ def extend_import_match_rules(
 def process_imports(
     import_doc: ImportDoc,
     input_dir: pathlib.Path,
-    workers: int | None = None,
 ) -> typing.Generator[
     GeneratedTransaction | DeletedTransaction | Transaction, None, None
 ]:
@@ -820,36 +850,7 @@ def process_imports(
 
     :param import_doc: Import configuration document
     :param input_dir: Directory containing input files to process
-    :param workers: Number of worker processes to use. When ``None`` or ``1``,
-        processing runs sequentially in the current process. Values greater than
-        ``1`` use a process pool to process input files in parallel.
     """
-    template_env = make_environment()
-    omit_token = uuid.uuid4().hex
-    if import_doc.context is not None:
-        template_env.globals.update(import_doc.context)
-    expanded_input_configs = list(
-        expand_input_loops(
-            template_env=template_env, inputs=import_doc.inputs, omit_token=omit_token
-        ),
-    )
-    # sort filepaths for deterministic behavior across platforms
-    filepaths = sorted(walk_dir_files(input_dir))
-    jobs = list(
-        _iter_import_file_jobs(
-            filepaths=filepaths,
-            input_dir=input_dir,
-            expanded_input_configs=expanded_input_configs,
-            import_rules=import_doc.imports,
-            omit_token=omit_token,
-            context=import_doc.context,
-        )
-    )
-    if workers is not None and workers > 1:
-        with ProcessPoolExecutor(max_workers=workers) as executor:
-            for results in executor.map(_process_import_file_job, jobs, chunksize=1):
-                yield from results
-        return
-
-    for job in jobs:
-        yield from _process_import_file_job(job)
+    import_files = collect_import_files(import_doc=import_doc, input_dir=input_dir)
+    for import_file in import_files:
+        yield from process_import_file(import_file)
