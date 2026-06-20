@@ -131,9 +131,7 @@ def load_module_extractor(module_path: str) -> type:
         ) from e
 
     if not hasattr(module, class_name):
-        raise AttributeError(
-            f"Module '{module_name}' has no attribute '{class_name}'"
-        )
+        raise AttributeError(f"Module '{module_name}' has no attribute '{class_name}'")
 
     extractor_cls = getattr(module, class_name)
     validate_extractor_interface(extractor_cls, module_path)
@@ -632,6 +630,195 @@ def filter_transaction(operation: FilterFieldOperation, txn: Transaction) -> boo
     return func(lhs, rhs)
 
 
+ImportProcessResult = typing.Union[
+    GeneratedTransaction, DeletedTransaction, UnprocessedTransaction
+]
+
+
+@dataclasses.dataclass(frozen=True)
+class ImportFile:
+    filepath: pathlib.Path
+    input_dir: pathlib.Path
+    rendered_input_config: RenderedInputConfig
+    import_rules: tuple[ImportRule, ...]
+    omit_token: str
+    context: dict | None
+
+
+def _resolve_extractor_cls(
+    filepath: pathlib.Path,
+    input_dir: pathlib.Path,
+    input_config: InputConfig,
+) -> tuple[type | None, str | None]:
+    logger = logging.getLogger(__name__)
+    rel_filepath = filepath.relative_to(input_dir)
+    extractor_name = (
+        input_config.config.extractor if input_config.config is not None else None
+    )
+    if extractor_name is None:
+        with filepath.open("rb") as fo:
+            extractor_cls = detect_extractor(fo)
+        if extractor_cls is None:
+            raise ValueError(
+                f"Extractor not specified for {rel_filepath} and the extractor type cannot be automatically detected"
+            )
+        return extractor_cls, extractor_name
+
+    uri_type, identifier = parse_extractor_uri(extractor_name)
+    if uri_type == "module":
+        try:
+            extractor_cls = load_module_extractor(identifier)
+        except (ImportError, AttributeError, ValueError) as e:
+            logger.error(
+                "Failed to load module extractor '%s' for file %s: %s",
+                extractor_name,
+                rel_filepath,
+                e,
+            )
+            raise ValueError(
+                f"Failed to load module extractor '{extractor_name}' for {rel_filepath}: {e}"
+            ) from e
+        return extractor_cls, extractor_name
+
+    extractor_cls = ALL_EXTRACTORS.get(identifier)
+    if extractor_cls is None:
+        return None, extractor_name
+    return extractor_cls, extractor_name
+
+
+def _collect_process_transaction_results(
+    txn_generator: typing.Generator[
+        GeneratedTransaction | DeletedTransaction, None, UnprocessedTransaction | None
+    ],
+) -> list[ImportProcessResult]:
+    results: list[ImportProcessResult] = []
+    while True:
+        try:
+            results.append(next(txn_generator))
+        except StopIteration as exc:
+            unprocessed_txn = exc.value
+            if unprocessed_txn is not None:
+                results.append(unprocessed_txn)
+            break
+    return results
+
+
+def process_import_file(import_file: ImportFile) -> list[ImportProcessResult]:
+    logger = logging.getLogger(__name__)
+    template_env = make_environment()
+    if import_file.context is not None:
+        template_env.globals.update(import_file.context)
+
+    input_config = import_file.rendered_input_config.input_config
+    rel_filepath = import_file.filepath.relative_to(import_file.input_dir)
+    extractor_cls, extractor_name = _resolve_extractor_cls(
+        filepath=import_file.filepath,
+        input_dir=import_file.input_dir,
+        input_config=input_config,
+    )
+    logger.debug("Processing file %s with extractor %s", rel_filepath, extractor_name)
+    results: list[ImportProcessResult] = []
+    with import_file.filepath.open("rt") as fo:
+        extractor = extractor_cls(fo)
+        for transaction in extractor():
+            txn = strip_txn_base_path(import_file.input_dir, transaction)
+            if import_file.rendered_input_config.filter is not None:
+                keep = True
+                for input_filter in import_file.rendered_input_config.filter:
+                    if not filter_transaction(operation=input_filter, txn=txn):
+                        keep = False
+                        logger.debug(
+                            "Txn %s does not meet filter %s, skip",
+                            txn,
+                            input_filter,
+                        )
+                        break
+                if not keep:
+                    continue
+            txn_generator = process_transaction(
+                template_env=template_env,
+                input_config=input_config.config,
+                import_rules=list(import_file.import_rules),
+                omit_token=import_file.omit_token,
+                default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
+                txn=txn,
+                input_vars=import_file.rendered_input_config.values,
+                extra_attrs=input_config.extra_attrs,
+            )
+            results.extend(_collect_process_transaction_results(txn_generator))
+    return results
+
+
+def _iter_import_files(
+    filepaths: list[pathlib.Path],
+    input_dir: pathlib.Path,
+    expanded_input_configs: list[RenderedInputConfig],
+    import_rules: list[ImportRule],
+    omit_token: str,
+    context: dict | None,
+) -> typing.Generator[ImportFile, None, None]:
+    logger = logging.getLogger(__name__)
+    for filepath in filepaths:
+        for rendered_input_config in expanded_input_configs:
+            input_config = rendered_input_config.input_config
+            if not match_file(input_config.match, filepath):
+                continue
+            extractor_cls, extractor_name = _resolve_extractor_cls(
+                filepath=filepath,
+                input_dir=input_dir,
+                input_config=input_config,
+            )
+            if extractor_cls is None:
+                rel_filepath = filepath.relative_to(input_dir)
+                logger.warning(
+                    "Extractor %s not found for file %s, skip",
+                    extractor_name,
+                    rel_filepath,
+                )
+                continue
+            yield ImportFile(
+                filepath=filepath,
+                input_dir=input_dir,
+                rendered_input_config=rendered_input_config,
+                import_rules=tuple(import_rules),
+                omit_token=omit_token,
+                context=context,
+            )
+            break
+
+
+def collect_import_files(
+    import_doc: ImportDoc,
+    input_dir: pathlib.Path,
+) -> list[ImportFile]:
+    """Collect input files to process from an import directory.
+
+    :param import_doc: Import configuration document
+    :param input_dir: Directory containing input files to process
+    """
+    template_env = make_environment()
+    omit_token = uuid.uuid4().hex
+    if import_doc.context is not None:
+        template_env.globals.update(import_doc.context)
+    expanded_input_configs = list(
+        expand_input_loops(
+            template_env=template_env, inputs=import_doc.inputs, omit_token=omit_token
+        ),
+    )
+    # sort filepaths for deterministic behavior across platforms
+    filepaths = sorted(walk_dir_files(input_dir))
+    return list(
+        _iter_import_files(
+            filepaths=filepaths,
+            input_dir=input_dir,
+            expanded_input_configs=expanded_input_configs,
+            import_rules=import_doc.imports,
+            omit_token=omit_token,
+            context=import_doc.context,
+        )
+    )
+
+
 def extend_import_match_rules(
     extra_attrs: dict | None, import_rule: ImportRule
 ) -> ImportRule:
@@ -659,92 +846,11 @@ def process_imports(
 ) -> typing.Generator[
     GeneratedTransaction | DeletedTransaction | Transaction, None, None
 ]:
-    logger = logging.getLogger(__name__)
-    template_env = make_environment()
-    omit_token = uuid.uuid4().hex
-    if import_doc.context is not None:
-        template_env.globals.update(import_doc.context)
-    expanded_input_configs = list(
-        expand_input_loops(
-            template_env=template_env, inputs=import_doc.inputs, omit_token=omit_token
-        ),
-    )
-    # sort filepaths for deterministic behavior across platforms
-    filepaths = sorted(walk_dir_files(input_dir))
-    for filepath in filepaths:
-        for rendered_input_config in expanded_input_configs:
-            input_config = rendered_input_config.input_config
-            if not match_file(input_config.match, filepath):
-                continue
-            rel_filepath = filepath.relative_to(input_dir)
-            extractor_name = (
-                input_config.config.extractor
-                if input_config.config is not None
-                else None
-            )
-            if extractor_name is None:
-                with filepath.open("rb") as fo:
-                    extractor_cls = detect_extractor(fo)
-                if extractor_cls is None:
-                    raise ValueError(
-                        f"Extractor not specified for {rel_filepath} and the extractor type cannot be automatically detected"
-                    )
-            else:
-                uri_type, identifier = parse_extractor_uri(extractor_name)
+    """Process import rules against extracted transactions from input files.
 
-                if uri_type == "module":
-                    try:
-                        extractor_cls = load_module_extractor(identifier)
-                    except (ImportError, AttributeError, ValueError) as e:
-                        logger.error(
-                            "Failed to load module extractor '%s' for file %s: %s",
-                            extractor_name,
-                            rel_filepath,
-                            e,
-                        )
-                        raise ValueError(
-                            f"Failed to load module extractor '{extractor_name}' for {rel_filepath}: {e}"
-                        ) from e
-                else:
-                    extractor_cls = ALL_EXTRACTORS.get(identifier)
-                    if extractor_cls is None:
-                        logger.warning(
-                            "Extractor %s not found for file %s, skip",
-                            extractor_name,
-                            rel_filepath,
-                        )
-                        continue
-            logger.info(
-                "Processing file %s with extractor %s", rel_filepath, extractor_name
-            )
-            with filepath.open("rt") as fo:
-                extractor = extractor_cls(fo)
-                for transaction in extractor():
-                    txn = strip_txn_base_path(input_dir, transaction)
-                    if rendered_input_config.filter is not None:
-                        keep = True
-                        for input_filter in rendered_input_config.filter:
-                            if not filter_transaction(operation=input_filter, txn=txn):
-                                keep = False
-                                logger.debug(
-                                    "Txn %s does not meet filter %s, skip",
-                                    txn,
-                                    input_filter,
-                                )
-                                break
-                        if not keep:
-                            continue
-                    txn_generator = process_transaction(
-                        template_env=template_env,
-                        input_config=input_config.config,
-                        import_rules=import_doc.imports,
-                        omit_token=omit_token,
-                        default_import_id=getattr(extractor, "DEFAULT_IMPORT_ID", None),
-                        txn=txn,
-                        input_vars=rendered_input_config.values,
-                        extra_attrs=input_config.extra_attrs,
-                    )
-                    unprocessed_txn = yield from txn_generator
-                    if unprocessed_txn is not None:
-                        yield unprocessed_txn
-            break
+    :param import_doc: Import configuration document
+    :param input_dir: Directory containing input files to process
+    """
+    import_files = collect_import_files(import_doc=import_doc, input_dir=input_dir)
+    for import_file in import_files:
+        yield from process_import_file(import_file)
