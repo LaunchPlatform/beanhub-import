@@ -813,7 +813,6 @@ def process_imports(
     import_doc: ImportDoc,
     input_dir: pathlib.Path,
     workers: int | None = None,
-    worker_batch_size: int = 16,
 ) -> typing.Generator[
     GeneratedTransaction | DeletedTransaction | Transaction, None, None
 ]:
@@ -824,8 +823,6 @@ def process_imports(
     :param workers: Number of worker processes to use. When ``None`` or ``1``,
         processing runs sequentially in the current process. Values greater than
         ``1`` use a process pool to process input files in parallel.
-    :param worker_batch_size: Number of import file jobs to batch per worker
-        process when using a process pool.
     """
     template_env = make_environment()
     omit_token = uuid.uuid4().hex
@@ -850,11 +847,7 @@ def process_imports(
     )
     if workers is not None and workers > 1:
         with ProcessPoolExecutor(max_workers=workers) as executor:
-            for results in executor.map(
-                _process_import_file_job,
-                jobs,
-                chunksize=worker_batch_size,
-            ):
+            for results in executor.map(_process_import_file_job, jobs, chunksize=1):
                 yield from results
         return
 

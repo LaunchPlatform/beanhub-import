@@ -10,19 +10,8 @@ from beanhub_import.processor import process_imports
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    ("workers", "worker_batch_size"),
-    [
-        (None, 16),
-        (1, 16),
-        (2, 1),
-        (2, 16),
-        (4, 1),
-        (4, 16),
-        (8, 1),
-        (8, 16),
-        (16, 1),
-        (16, 16),
-    ],
+    "workers",
+    [None, 1, 2, 4, 8, 16],
 )
 def test_process_imports_large_csv(
     benchmark: BenchmarkFixture,
@@ -30,7 +19,6 @@ def test_process_imports_large_csv(
     large_import_doc: ImportDoc,
     benchmark_num_txns: int,
     workers: int | None,
-    worker_batch_size: int,
 ) -> None:
     def run_import() -> list[ImportProcessResult]:
         return list(
@@ -38,7 +26,6 @@ def test_process_imports_large_csv(
                 import_doc=large_import_doc,
                 input_dir=large_import_dir,
                 workers=workers,
-                worker_batch_size=worker_batch_size,
             )
         )
 
